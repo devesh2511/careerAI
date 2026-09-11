@@ -50,6 +50,52 @@
     }
     function clearState() { try { sessionStorage.removeItem(STATE_KEY); } catch (e) { } }
 
+    // -- Theme --
+    // Stored in localStorage, not sessionStorage: a theme choice should
+    // outlive the tab, unlike quiz progress. The <html data-theme> attribute
+    // is what style.css keys off, and it is set by an inline snippet in every
+    // page's <head> so the first paint is already correct -- without that,
+    // a dark-mode user gets a white flash on every navigation.
+    const THEME_KEY = 'careerai_theme';
+
+    function storedTheme() {
+      try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; }
+    }
+
+    function systemTheme() {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark' : 'light';
+    }
+
+    function applyTheme(theme) {
+      const t = theme === 'dark' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      document.querySelectorAll('.theme-toggle').forEach(b => {
+        b.setAttribute('aria-pressed', String(t === 'dark'));
+        b.setAttribute('title', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        b.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      });
+    }
+
+    function toggleTheme() {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* private mode */ }
+      applyTheme(next);
+    }
+
+    function initTheme() {
+      // The head snippet already set the attribute; this re-runs applyTheme
+      // only to label the toggle buttons, which do not exist that early.
+      applyTheme(storedTheme() || document.documentElement.getAttribute('data-theme') || systemTheme());
+      // Follow the OS while the user has not made an explicit choice.
+      if (!storedTheme() && window.matchMedia) {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const onChange = e => { if (!storedTheme()) applyTheme(e.matches ? 'dark' : 'light'); };
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else if (mq.addListener) mq.addListener(onChange);
+      }
+    }
+
     // ── Screen switching → real page navigation ──
     function show(id) {
       if (APP_PAGES.includes(id)) {
@@ -97,6 +143,7 @@
 
     // ── Per-page init: replaces the old single-page bootstrap ──
     document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
       switch (CURRENT_PAGE) {
         case 'app': {
           const hash = (location.hash || '').replace(/^#\/?/, '');
@@ -530,7 +577,7 @@
 
       const list = document.getElementById('air-careers');
       list.innerHTML = '';
-      const pcts = ['#a8a3ff', '#00d4aa', '#38bdf8', '#fcd34d', '#fb923c'];
+      const pcts = PCT_COLORS;
       (data.top_careers || []).forEach((c, i) => {
         const color = pcts[i] || 'var(--accent)';
         const div = document.createElement('div');
@@ -545,7 +592,7 @@
           '<div class="air-career-why"></div>' +
           '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
           '<span class="badge ' + cqStreamBadge(c.stream) + '"></span>' +
-          '<span class="badge" style="background:rgba(0,0,0,.3);color:var(--muted);border:1px solid var(--border);"></span>' +
+          '<span class="badge" style="background:var(--well);color:var(--muted);border:1px solid var(--border);"></span>' +
           '</div>' +
           '</div>' +
           '<div class="air-pct" style="color:' + color + ';">' + c.match_pct + '%</div>';
@@ -570,7 +617,9 @@
       const enjoyEl = document.getElementById('air-enjoy');
       if (!bars) return;
 
-      const colors = ['#a8a3ff', '#00d4aa', '#38bdf8', '#fcd34d', '#fb923c', '#f472b6'];
+      // Six dimensions, so these run one past the shared five-item ramp.
+      const fills = PCT_FILL.concat(['var(--fill-6)']);
+      const texts = PCT_COLORS.concat(['var(--ramp-6)']);
       bars.innerHTML = '';
       r.ranked.forEach((d, i) => {
         const strong = i < 3;
@@ -580,8 +629,8 @@
           '<div class="air-riasec-label"><span class="air-riasec-emoji">' + d.emoji + '</span>' +
           '<span class="air-riasec-name"></span></div>' +
           '<div class="air-riasec-track"><div class="air-riasec-fill" style="width:' + d.pct +
-          '%;background:' + colors[i] + ';opacity:' + (strong ? 1 : 0.45) + ';"></div></div>' +
-          '<div class="air-riasec-pct" style="color:' + (strong ? colors[i] : 'var(--muted)') + ';">' +
+          '%;background:' + fills[i] + ';opacity:' + (strong ? 1 : 0.45) + ';"></div></div>' +
+          '<div class="air-riasec-pct" style="color:' + (strong ? texts[i] : 'var(--muted)') + ';">' +
           d.pct + '%</div>';
         row.querySelector('.air-riasec-name').textContent = d.plain;
         bars.appendChild(row);
@@ -618,8 +667,26 @@
     // ══════════════════════════════════════════════════════════════
     // SYNC QUIZ RESULTS → DASHBOARD / RESULTS / STREAM / PROGRESS
     // ══════════════════════════════════════════════════════════════
-    const PCT_COLORS = ['#a8a3ff', '#00d4aa', '#38bdf8', '#fcd34d', '#fb923c'];
-    const ICON_BG = ['rgba(108,99,255,.12)', 'rgba(0,212,170,.1)', 'rgba(56,189,248,.1)', 'rgba(245,158,11,.1)', 'rgba(251,146,60,.1)'];
+    // Ranked-series colours, resolved per theme in style.css. PCT_COLORS is
+    // text (contrast-safe on --surface), PCT_FILL is the same series as a bar
+    // fill, ICON_BG the matching tile tint. The old literals were the dark
+    // palette and fell to roughly 1.5:1 once light became the default theme.
+    const PCT_COLORS = ['var(--ramp-1)', 'var(--ramp-2)', 'var(--ramp-3)', 'var(--ramp-4)', 'var(--ramp-5)'];
+    const PCT_FILL = ['var(--fill-1)', 'var(--fill-2)', 'var(--fill-3)', 'var(--fill-4)', 'var(--fill-5)'];
+    const ICON_BG = ['var(--tint-1)', 'var(--tint-2)', 'var(--tint-3)', 'var(--tint-4)', 'var(--tint-5)'];
+
+    // Builds one stat tile. Four of these sit in a fixed row, so the value,
+    // label and sub-line all come through the same shape whether the card is
+    // populated or still locked.
+    function dbStat(o) {
+      return '<div class="stat-card' + (o.locked ? ' locked' : '') + '">' +
+        '<div class="stat-icon" style="background:' + (o.tint || 'var(--surface2)') + ';">' + o.icon + '</div>' +
+        '<div class="stat-val' + (o.isText ? ' is-text' : '') + '"' +
+        (o.color ? ' style="color:' + o.color + ';"' : '') + '>' + o.val + '</div>' +
+        '<div class="stat-label">' + o.label + '</div>' +
+        '<div class="stat-change">' + o.sub + '</div>' +
+        '</div>';
+    }
 
     function syncDashboard() {
       const main = document.getElementById('db-main');
@@ -636,34 +703,26 @@
         ctaBtn.onclick = cqStart;
 
         main.innerHTML =
-          '<div style="background:linear-gradient(135deg,rgba(108,99,255,.08),rgba(0,212,170,.04));border:1px dashed rgba(108,99,255,.35);border-radius:16px;padding:36px 28px;margin-bottom:28px;text-align:center;">' +
-          '<div style="font-size:48px;margin-bottom:16px;">🧭</div>' +
-          '<div style="font-size:18px;font-weight:800;margin-bottom:8px;">No quiz results yet</div>' +
-          '<div style="font-size:14px;color:var(--muted);margin-bottom:24px;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.6;">Answer 20 quick questions and our AI will match you to the careers that fit your interests, strengths, and learning style.</div>' +
-          '<button class="btn btn-primary" onclick="cqStart()" style="font-size:15px;padding:13px 28px;">Start the Career Quiz — 5 mins →</button>' +
+          '<div class="db-empty">' +
+          '<div class="db-empty-icon">🧭</div>' +
+          '<h3>Start with the career quiz</h3>' +
+          '<p>Answer 20 quick questions and our AI will match you to the careers ' +
+          'that fit your interests, strengths, and learning style.</p>' +
+          '<button class="btn btn-primary btn-lg" onclick="cqStart()">Start the Career Quiz — 5 mins →</button>' +
+          '<div class="db-unlocks">' +
+          '<span class="db-unlock">🎯 Ranked career matches</span>' +
+          '<span class="db-unlock">🛤️ Stream recommendation</span>' +
+          '<span class="db-unlock">🗺️ 5-year roadmap</span>' +
+          '</div>' +
           '</div>';
 
+        // Locked, but still readable. The previous treatment was opacity .4
+        // over a --border-coloured value, which vanished on a white canvas.
         stats.innerHTML =
-          '<div class="stat-card" style="opacity:.4;">' +
-          '<div class="stat-val" style="color:var(--border);font-size:22px;">–</div>' +
-          '<div class="stat-label">Top Career Match</div>' +
-          '<div class="stat-change" style="color:var(--muted);">Take quiz to unlock</div>' +
-          '</div>' +
-          '<div class="stat-card" style="opacity:.4;">' +
-          '<div class="stat-val" style="color:var(--border);font-size:22px;">–</div>' +
-          '<div class="stat-label">Recommended Stream</div>' +
-          '<div class="stat-change" style="color:var(--muted);">Take quiz to unlock</div>' +
-          '</div>' +
-          '<div class="stat-card" style="opacity:.4;">' +
-          '<div class="stat-val" style="color:var(--border);font-size:22px;">0</div>' +
-          '<div class="stat-label">Quiz Sessions Done</div>' +
-          '<div class="stat-change" style="color:var(--muted);">Complete your first quiz</div>' +
-          '</div>' +
-          '<div class="stat-card" style="opacity:.4;">' +
-          '<div class="stat-val" style="color:var(--border);font-size:22px;">–</div>' +
-          '<div class="stat-label">Careers Evaluated</div>' +
-          '<div class="stat-change" style="color:var(--muted);">Unlocks after quiz</div>' +
-          '</div>';
+          dbStat({ locked: 1, icon: '🔒', val: '—', isText: 1, label: 'Top Career Match', sub: 'Take the quiz to unlock' }) +
+          dbStat({ locked: 1, icon: '🔒', val: '—', isText: 1, label: 'Recommended Stream', sub: 'Take the quiz to unlock' }) +
+          dbStat({ locked: 1, icon: '📝', val: '0', label: 'Quiz Sessions Done', sub: 'Complete your first quiz' }) +
+          dbStat({ locked: 1, icon: '🔍', val: '—', isText: 1, label: 'Careers Evaluated', sub: 'Unlocks after the quiz' });
         return;
       }
 
@@ -679,14 +738,16 @@
       let bannerHtml =
         '<div class="welcome-banner">' +
         '<div class="welcome-text">' +
-        '<h2>Top match: ' + top.emoji + ' ' + top.title + ' <span style="color:var(--accent2);">' + top.match_pct + '%</span></h2>' +
+        '<h2>Top match: ' + top.emoji + ' ' + top.title +
+        ' <span class="wb-pct">' + top.match_pct + '%</span></h2>' +
         '<p>' + d.personality_type + ' · Recommending <strong>' + d.stream_recommendation + '</strong> for Class 11</p>' +
         '</div>' +
         '<button class="btn btn-primary" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See All Matches →</button>' +
         '</div>';
 
       // Career strip
-      bannerHtml += '<div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Top Career Matches</div>';
+      bannerHtml += '<div class="section-label">Top Career Matches' +
+        '<button class="sl-link" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See all →</button></div>';
       bannerHtml += '<div class="top-career-strip" id="db-strip">';
       d.top_careers.forEach((c, i) => {
         bannerHtml +=
@@ -701,26 +762,23 @@
 
       // Stat cards
       stats.innerHTML =
-        '<div class="stat-card">' +
-        '<div class="stat-val" style="color:' + PCT_COLORS[0] + ';">' + top.match_pct + '%</div>' +
-        '<div class="stat-label">Top Career Match</div>' +
-        '<div class="stat-change" style="color:var(--accent2);">' + top.emoji + ' ' + top.title + '</div>' +
-        '</div>' +
-        '<div class="stat-card">' +
-        '<div class="stat-val" style="color:var(--accent2);font-size:20px;letter-spacing:-1px;">' + d.stream_recommendation + '</div>' +
-        '<div class="stat-label">Recommended Stream</div>' +
-        '<div class="stat-change" style="color:var(--muted);">' + d.stream_reason.slice(0, 52) + '…</div>' +
-        '</div>' +
-        '<div class="stat-card">' +
-        '<div class="stat-val" style="color:#38bdf8;">' + d.top_careers.length + '</div>' +
-        '<div class="stat-label">Careers Matched</div>' +
-        '<div class="stat-change" style="color:var(--muted);">From your quiz answers</div>' +
-        '</div>' +
-        '<div class="stat-card">' +
-        '<div class="stat-val" style="color:#fcd34d;">20</div>' +
-        '<div class="stat-label">Questions Answered</div>' +
-        '<div class="stat-change" style="color:var(--muted);">Quiz complete ✓</div>' +
-        '</div>';
+        dbStat({
+          icon: top.emoji, tint: ICON_BG[0], color: PCT_COLORS[0],
+          val: top.match_pct + '%', label: 'Top Career Match', sub: top.title
+        }) +
+        dbStat({
+          icon: '🛤️', tint: ICON_BG[1], color: PCT_COLORS[1],
+          val: d.stream_recommendation, isText: 1, label: 'Recommended Stream',
+          sub: d.stream_reason
+        }) +
+        dbStat({
+          icon: '🎯', tint: ICON_BG[2], color: PCT_COLORS[2],
+          val: d.top_careers.length, label: 'Careers Matched', sub: 'From your quiz answers'
+        }) +
+        dbStat({
+          icon: '✅', tint: ICON_BG[3], color: PCT_COLORS[3],
+          val: '20', label: 'Questions Answered', sub: 'Quiz complete'
+        });
     }
 
     function syncResults() {
@@ -762,7 +820,7 @@
           '</div>' +
           '<div class="career-score-wrap">' +
           '<div class="career-pct" style="color:' + color + ';">' + c.match_pct + '%</div>' +
-          '<div class="pct-mini-bar"><div class="pct-mini-fill" style="width:' + c.match_pct + '%;background:' + color + ';"></div></div>' +
+          '<div class="pct-mini-bar"><div class="pct-mini-fill" style="width:' + c.match_pct + '%;background:' + PCT_FILL[i] + ';"></div></div>' +
           '</div>';
         list.appendChild(div);
       });

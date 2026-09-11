@@ -5,6 +5,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CareerAI · Career Interest Quiz</title>
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
   <link rel="stylesheet" href="../style.css" />
 </head>
 
@@ -20,10 +31,14 @@
         <!-- Header -->
         <div class="cq-header">
           <div class="cq-meta">
-            <button id="cq-back-btn" class="back-btn" onclick="cqPrev()" style="margin:0;visibility:hidden;">←
+            <button id="cq-back-btn" class="back-btn" onclick="cqPrev()" style="visibility:hidden;">←
               Back</button>
             <span id="cq-num" class="cq-num-label">Question 1 of 20</span>
             <span id="cq-area" class="cq-area-tag">🌅 Free Time</span>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
+              <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
+              <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
+            </button>
           </div>
           <div class="progress-bar-wrap">
             <div class="progress-bar-fill" id="cq-bar" style="width:0%"></div>

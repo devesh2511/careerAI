@@ -5,6 +5,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CareerAI · Home</title>
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -16,59 +27,131 @@
   <div id="landing" class="screen active">
     <nav class="land-nav">
       <div class="land-logo">Career<span>AI</span></div>
+      <div class="land-nav-menu">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#start">Get started</a>
+      </div>
       <div class="land-nav-links">
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
+          <span class="ti ti-moon" aria-hidden="true">🌙</span>
+          <span class="ti ti-sun" aria-hidden="true">☀️</span>
+        </button>
         <button class="btn btn-ghost btn-sm" onclick="show('auth')">Login</button>
         <button class="btn btn-primary btn-sm" onclick="show('auth')">Get Started Free</button>
       </div>
     </nav>
 
+    <!-- ── Hero: copy left, product mock right ── -->
     <div class="land-hero">
-      <div class="land-eyebrow">For Class 8, 9 &amp; 10 Students</div>
-      <h1 class="land-h1">Discover the Career<br /><span>You Were Born For</span></h1>
-      <p class="land-p">AI-powered career discovery. Answer a few questions, take a personalised aptitude quiz, and get
-        your top career matches with a step-by-step roadmap.</p>
-      <div class="land-cta">
-        <button class="btn btn-primary btn-lg" onclick="cqStart()">Take the Career Quiz →</button>
-        <button class="btn btn-secondary btn-lg" onclick="show('auth')">Create Account</button>
+      <div class="land-hero-copy">
+        <div class="land-eyebrow">For Class 8, 9 &amp; 10 Students</div>
+        <h1 class="land-h1">Discover the Career<br /><span>You Were Born For</span></h1>
+        <p class="land-p">AI-powered career discovery. Answer a few questions, take a personalised aptitude quiz, and
+          get your top career matches with a step-by-step roadmap.</p>
+        <div class="land-cta">
+          <button class="btn btn-primary btn-lg" onclick="cqStart()">Take the Career Quiz →</button>
+          <button class="btn btn-secondary btn-lg" onclick="show('auth')">Create Account</button>
+        </div>
+        <div class="land-reassure">
+          <span><b>✓</b> No signup to start</span>
+          <span><b>✓</b> Free forever</span>
+          <span><b>✓</b> About 15 minutes</span>
+        </div>
+      </div>
+
+      <!-- A mock of the quiz-then-result payoff. Decorative: it is a static
+           illustration of the real screens, so it is hidden from assistive
+           tech rather than announced as live content. -->
+      <div class="land-visual" aria-hidden="true">
+        <div class="lv-card lv-card-q">
+          <div class="lv-head"><span>Question 7 of 20</span><span>🌅 Free Time</span></div>
+          <div class="lv-q">A free Saturday lands in your lap. What are you most drawn to?</div>
+          <div class="lv-opts">
+            <div class="lv-opt on"><i></i>Take apart an old gadget to see how it works</div>
+            <div class="lv-opt"><i></i>Sketch, edit videos, or write something</div>
+            <div class="lv-opt on"><i></i>Read up on something that has been nagging at you</div>
+          </div>
+        </div>
+        <div class="lv-card lv-card-r">
+          <div class="lv-head"><span>Your top matches</span><span>Sample</span></div>
+          <div class="lv-match">
+            <div class="lv-match-ico ic-violet">⚙️</div>
+            <div class="lv-match-name">Mechanical Engineer<small>PCM · Strong aptitude fit</small></div>
+            <div class="lv-match-pct">92%</div>
+          </div>
+          <div class="lv-match">
+            <div class="lv-match-ico ic-teal">🔬</div>
+            <div class="lv-match-name">Research Scientist<small>PCB · High curiosity score</small></div>
+            <div class="lv-match-pct">87%</div>
+          </div>
+          <div class="lv-match">
+            <div class="lv-match-ico ic-blue">📊</div>
+            <div class="lv-match-name">Data Analyst<small>PCM · Logical reasoning</small></div>
+            <div class="lv-match-pct">81%</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="land-features">
+    <!-- ── What the product does, in numbers ── -->
+    <div class="land-facts">
+      <div class="facts-grid">
+        <div class="fact">
+          <div class="fact-val">20</div>
+          <div class="fact-label">Quiz questions</div>
+        </div>
+        <div class="fact">
+          <div class="fact-val">100+</div>
+          <div class="fact-label">Careers ranked</div>
+        </div>
+        <div class="fact">
+          <div class="fact-val">15 min</div>
+          <div class="fact-label">Start to plan</div>
+        </div>
+        <div class="fact">
+          <div class="fact-val">5 yr</div>
+          <div class="fact-label">Roadmap ahead</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="land-features" id="features">
       <h2 class="land-feat-title">Everything you need to choose right</h2>
       <p class="land-feat-sub">From "I have no idea" to "I have a plan" — in under 15 minutes.</p>
       <div class="feat-grid">
         <div class="feat-card">
-          <div class="feat-icon" style="background:rgba(108,99,255,.12);">🎯</div>
+          <div class="feat-icon ic-violet">🎯</div>
           <h3>Career Match Score</h3>
           <p>100+ careers ranked by how well they fit your interests, aptitude, and academics. Every score comes with a
             plain-English reason.</p>
         </div>
         <div class="feat-card">
-          <div class="feat-icon" style="background:rgba(0,212,170,.1);">🧠</div>
+          <div class="feat-icon ic-teal">🧠</div>
           <h3>Adaptive Aptitude Quiz</h3>
           <p>20 personalised questions across logical, spatial, verbal &amp; domain areas. Questions adapt based on your
             answers in real time.</p>
         </div>
         <div class="feat-card">
-          <div class="feat-icon" style="background:rgba(56,189,248,.1);">🛤️</div>
+          <div class="feat-icon ic-blue">🛤️</div>
           <h3>Stream Recommendation</h3>
           <p>Get a clear recommendation for PCM, PCB, Commerce, or Arts — with the reasoning and subject plan to back it
             up.</p>
         </div>
         <div class="feat-card">
-          <div class="feat-icon" style="background:rgba(255,101,132,.1);">🗺️</div>
+          <div class="feat-icon ic-pink">🗺️</div>
           <h3>5-Year Roadmap</h3>
           <p>A personalised timeline from your current class to your first job. Milestones, exams, college types — all
             in one place.</p>
         </div>
         <div class="feat-card">
-          <div class="feat-icon" style="background:rgba(251,146,60,.1);">💬</div>
+          <div class="feat-icon ic-orange">💬</div>
           <h3>AI Chat Counsellor</h3>
           <p>Ask anything — "Is data science good for me?", "What do architects earn?" — and get honest, data-backed
             answers instantly.</p>
         </div>
         <div class="feat-card">
-          <div class="feat-icon" style="background:rgba(167,139,250,.12);">📈</div>
+          <div class="feat-icon ic-purple">📈</div>
           <h3>Progress Tracker</h3>
           <p>Retake the quiz each year (Class 8 → 9 → 10) and watch your career clarity grow as your interests develop.
           </p>
@@ -76,8 +159,8 @@
       </div>
     </div>
 
-    <div class="land-steps">
-      <h2 class="land-feat-title" style="margin-bottom:8px;">How it works</h2>
+    <div class="land-steps" id="how">
+      <h2 class="land-feat-title">How it works</h2>
       <p class="land-feat-sub">Four steps. 15 minutes. A career plan for life.</p>
       <div class="steps-grid">
         <div class="step">
@@ -103,8 +186,37 @@
       </div>
     </div>
 
+    <div class="land-final" id="start">
+      <h2 class="land-feat-title">Ready to find your direction?</h2>
+      <p class="land-feat-sub">Start the quiz now — you can create an account later to save your results.</p>
+      <div class="land-final-cta">
+        <button class="btn btn-primary btn-lg" onclick="cqStart()">Take the Career Quiz →</button>
+        <button class="btn btn-secondary btn-lg" onclick="show('auth')">Create Account</button>
+      </div>
+    </div>
+
     <div class="land-footer">
-      CareerAI · Built for Class 8, 9 &amp; 10 students in India · Free forever
+      <div class="footer-grid">
+        <div>
+          <div class="land-logo">Career<span>AI</span></div>
+          <p class="footer-blurb">Career discovery built for Class 8, 9 &amp; 10 students in India. Interests, aptitude
+            and academics in one plan.</p>
+        </div>
+        <div class="footer-cols">
+          <div class="footer-col">
+            <h5>Product</h5>
+            <a href="#features">Features</a>
+            <a href="#how">How it works</a>
+            <a href="#start">Take the quiz</a>
+          </div>
+          <div class="footer-col">
+            <h5>Account</h5>
+            <a href="pages/auth.html">Log in</a>
+            <a href="pages/auth.html">Create account</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-base">CareerAI · Built for Class 8, 9 &amp; 10 students in India · Free forever</div>
     </div>
   </div>
 
