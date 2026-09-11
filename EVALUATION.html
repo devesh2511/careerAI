@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Profile Evaluation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="evaluation">
+
+  <!-- ════════════════════════════════════════
+     PROFILE EVALUATION SCREEN
+════════════════════════════════════════ -->
+  <div id="evaluation" class="screen active">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+      <div class="eval-wrap">
+        <div class="eval-spinner" id="eval-spinner"></div>
+        <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;" id="eval-title">Analysing your profile…</h2>
+        <p style="font-size:14px;color:var(--muted);" id="eval-sub">Our AI is reading your interests and marks to
+          personalise your quiz.</p>
+
+        <div class="eval-steps-list">
+          <div class="eval-step done" id="es1">
+            <div class="eval-step-icon">✅</div>
+            <span>Reading academic marks &amp; subject preferences</span>
+          </div>
+          <div class="eval-step loading" id="es2">
+            <div class="eval-step-icon">🔄</div>
+            <span>Mapping hobbies to career families…</span>
+          </div>
+          <div class="eval-step pending" id="es3">
+            <div class="eval-step-icon">⏳</div>
+            <span>Identifying interest signals &amp; contradictions</span>
+          </div>
+          <div class="eval-step pending" id="es4">
+            <div class="eval-step-icon">⏳</div>
+            <span>Generating personalised quiz question set</span>
+          </div>
+        </div>
+
+        <div class="eval-signals" id="eval-signals">
+          <div style="font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:14px;">✦ Signals detected in
+            your profile</div>
+          <div class="signal-item">
+            <div class="signal-dot" style="background:var(--accent2);"></div><span
+              style="font-size:13px;color:var(--muted);">Strong interest in <strong style="color:var(--text);">visual
+                &amp; creative problem-solving</strong> (Drawing + Maths combination)</span>
+          </div>
+          <div class="signal-item">
+            <div class="signal-dot" style="background:var(--accent);"></div><span
+              style="font-size:13px;color:var(--muted);">High marks in <strong style="color:var(--text);">Mathematics
+                &amp; Computer Science</strong></span>
+          </div>
+          <div class="signal-item">
+            <div class="signal-dot" style="background:#38bdf8;"></div><span
+              style="font-size:13px;color:var(--muted);">Hobbies suggest <strong style="color:var(--text);">technology +
+                design</strong> career family</span>
+          </div>
+          <div class="signal-item">
+            <div class="signal-dot" style="background:#f59e0b;"></div><span
+              style="font-size:13px;color:var(--muted);">Stream hypothesis: <strong style="color:var(--text);">PCM +
+                CS</strong> or <strong style="color:var(--text);">PCM</strong></span>
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="show('quiz')">Start My
+              Personalised Quiz (20 Questions) →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>

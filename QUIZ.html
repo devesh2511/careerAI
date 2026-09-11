@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Aptitude Quiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="quiz">
+
+  <!-- ════════════════════════════════════════
+     APTITUDE QUIZ SCREEN
+════════════════════════════════════════ -->
+  <div id="quiz" class="screen active">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+      <div class="quiz-wrap">
+        <div class="quiz-header">
+          <span class="quiz-num" id="quiz-num">Question 1 of 20</span>
+          <span class="quiz-area" id="quiz-area">⚡ Logical Reasoning</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="quiz-bar" style="width:5%"></div>
+        </div>
+
+        <div class="quiz-card">
+          <div class="quiz-q" id="quiz-q">A pattern shows: 2, 6, 12, 20, 30… What comes next?</div>
+          <div class="quiz-options" id="quiz-opts">
+            <div class="quiz-option" onclick="selectOpt(this)">
+              <div class="opt-letter">A</div>38
+            </div>
+            <div class="quiz-option" onclick="selectOpt(this)">
+              <div class="opt-letter">B</div>40
+            </div>
+            <div class="quiz-option" onclick="selectOpt(this)">
+              <div class="opt-letter">C</div>42
+            </div>
+            <div class="quiz-option" onclick="selectOpt(this)">
+              <div class="opt-letter">D</div>44
+            </div>
+          </div>
+          <div class="quiz-footer">
+            <button class="btn btn-ghost btn-sm" onclick="quizPrev()">← Back</button>
+            <button class="btn btn-primary btn-sm" onclick="quizNext()">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>

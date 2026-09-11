@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Career Interest Quiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="careerquiz">
+
+  <!-- ════════════════════════════════════════
+     CAREER INTEREST QUIZ SCREEN
+════════════════════════════════════════ -->
+  <div id="careerquiz" class="screen active">
+    <div style="display:flex;align-items:flex-start;justify-content:center;min-height:100vh;padding:28px 20px 48px;">
+      <div class="cq-wrap">
+
+        <!-- Header -->
+        <div class="cq-header">
+          <div class="cq-meta">
+            <button id="cq-back-btn" class="back-btn" onclick="cqPrev()" style="margin:0;visibility:hidden;">←
+              Back</button>
+            <span id="cq-num" class="cq-num-label">Question 1 of 20</span>
+            <span id="cq-area" class="cq-area-tag">🌅 Free Time</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="cq-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Question + Options (animated wrap) -->
+        <div id="cq-question-wrap">
+          <div class="cq-q" id="cq-q"></div>
+          <div class="cq-opts" id="cq-opts"></div>
+          <!-- "Something else" text input (Q1 & Q2 only) -->
+          <div class="cq-other-wrap" id="cq-other-wrap" style="display:none;">
+            <input class="cq-other-input" id="cq-other-input" placeholder="Type your answer here…" />
+          </div>
+        </div>
+
+        <div class="cq-footer">
+          <p class="cq-hint" style="margin:0;">Select one or more &nbsp;·&nbsp; ← to go back</p>
+          <button id="cq-next-btn" class="btn btn-primary btn-sm" onclick="cqNextQ()">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>

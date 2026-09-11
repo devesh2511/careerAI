@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Onboarding</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="onboarding">
+
+  <!-- ════════════════════════════════════════
+     ONBOARDING SCREEN
+════════════════════════════════════════ -->
+  <div id="onboarding" class="screen active">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+      <div class="onboard-wrap">
+        <div class="onboard-header">
+          <div class="onboard-step-count" id="ob-count">Step 1 of 4</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="ob-bar" style="width:25%"></div>
+          </div>
+          <div style="margin-top:16px;">
+            <div class="onboard-title" id="ob-title">Tell us about yourself</div>
+            <div class="onboard-sub" id="ob-sub">Basic academic details so we can personalise everything.</div>
+          </div>
+        </div>
+        <div class="onboard-card">
+          <!-- Step 1 -->
+          <div id="ob-step-1">
+            <div class="form-group">
+              <label class="form-label">Current Class</label>
+              <select class="form-input">
+                <option>Class 8</option>
+                <option>Class 9</option>
+                <option selected>Class 10</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">School Board</label>
+              <select class="form-input">
+                <option selected>CBSE</option>
+                <option>ICSE</option>
+                <option>State Board</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Medium of Instruction</label>
+              <select class="form-input">
+                <option selected>English</option>
+                <option>Hindi</option>
+                <option>Regional Language</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">City</label>
+              <input class="form-input" placeholder="e.g. Mumbai, Delhi, Bangalore" />
+            </div>
+          </div>
+          <!-- Step 2 -->
+          <div id="ob-step-2" style="display:none;">
+            <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">This step is optional but improves
+              accuracy. Enter your last exam marks (%).</p>
+            <div class="form-group"><label class="form-label">Mathematics</label><input class="form-input"
+                placeholder="e.g. 87" type="number" /></div>
+            <div class="form-group"><label class="form-label">Science</label><input class="form-input"
+                placeholder="e.g. 79" type="number" /></div>
+            <div class="form-group"><label class="form-label">English</label><input class="form-input"
+                placeholder="e.g. 82" type="number" /></div>
+            <div class="form-group"><label class="form-label">Social Studies</label><input class="form-input"
+                placeholder="e.g. 74" type="number" /></div>
+          </div>
+          <!-- Step 3 -->
+          <div id="ob-step-3" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Favourite Subjects (pick all you like)</label>
+              <div class="chip-grid" style="margin-top:8px;">
+                <div class="chip selected" onclick="this.classList.toggle('selected')">Mathematics</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Science</div>
+                <div class="chip selected" onclick="this.classList.toggle('selected')">Computer</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">English</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Art &amp; Design</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Social Studies</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Economics</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Music</div>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+              <label class="form-label">Hobbies &amp; Interests</label>
+              <div class="chip-grid" style="margin-top:8px;">
+                <div class="chip selected" onclick="this.classList.toggle('selected')">Drawing / Design</div>
+                <div class="chip selected" onclick="this.classList.toggle('selected')">Coding</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Sports</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Music</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Reading</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Gaming</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Debating</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Cooking</div>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+              <label class="form-label">Dream Job / Role Model (optional)</label>
+              <input class="form-input" placeholder="e.g. I want to design apps like Instagram" />
+            </div>
+          </div>
+          <!-- Step 4 -->
+          <div id="ob-step-4" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Career Preference</label>
+              <div class="chip-grid" style="margin-top:8px;">
+                <div class="chip selected" onclick="chipOne(this,'pref')">Private Sector</div>
+                <div class="chip" onclick="chipOne(this,'pref')">Government Job</div>
+                <div class="chip" onclick="chipOne(this,'pref')">Entrepreneur</div>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+              <label class="form-label">Open to studying outside your city?</label>
+              <div class="chip-grid" style="margin-top:8px;">
+                <div class="chip selected" onclick="chipOne(this,'loc')">Yes, anywhere</div>
+                <div class="chip" onclick="chipOne(this,'loc')">Same state only</div>
+                <div class="chip" onclick="chipOne(this,'loc')">Prefer home city</div>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+              <label class="form-label">Annual Family Income (helps match scholarships)</label>
+              <select class="form-input">
+                <option>Prefer not to say</option>
+                <option>Below ₹3 LPA</option>
+                <option selected>₹3 – ₹10 LPA</option>
+                <option>₹10 – ₹25 LPA</option>
+                <option>Above ₹25 LPA</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="onboard-nav">
+            <button class="btn btn-ghost btn-sm" id="ob-back" onclick="obStep(-1)" style="visibility:hidden;">←
+              Back</button>
+            <div class="step-dots" id="ob-dots">
+              <div class="dot active"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="ob-next" onclick="obStep(1)">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>
