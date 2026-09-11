@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="app">
+
+  <!-- ════════════════════════════════════════
+     APP LAYOUT (sidebar + pages)
+════════════════════════════════════════ -->
+  <div id="app" class="screen active">
+    <div class="app-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-text">Career<span>AI</span></div>
+          <div class="logo-sub">Class 10 · CBSE · Mumbai</div>
+        </div>
+        <nav class="nav">
+          <button class="nav-item active" data-page="dashboard" onclick="navTo('dashboard',this)"><span
+              class="icon">🏠</span>Dashboard</button>
+          <button class="nav-item" data-page="results" onclick="navTo('results',this)"><span
+              class="icon">📊</span>Career Matches</button>
+          <button class="nav-item" data-page="explorer" onclick="navTo('explorer',this)"><span
+              class="icon">🌍</span>Explore Careers</button>
+          <div class="nav-divider"></div>
+          <button class="nav-item" data-page="stream" onclick="navTo('stream',this)"><span
+              class="icon">🛤️</span>Stream Guide</button>
+          <button class="nav-item" data-page="roadmap" onclick="navTo('roadmap',this)"><span
+              class="icon">🗺️</span>Roadmap</button>
+          <div class="nav-divider"></div>
+          <button class="nav-item" data-page="chat" onclick="navTo('chat',this)"><span class="icon">💬</span>AI
+            Chat</button>
+          <button class="nav-item" data-page="progress" onclick="navTo('progress',this)"><span
+              class="icon">📈</span>Progress</button>
+          <button class="nav-item" data-page="settings" onclick="navTo('settings',this)"><span
+              class="icon">⚙️</span>Settings</button>
+        </nav>
+        <div class="sidebar-user">
+          <div class="user-row">
+            <div class="user-avatar">A</div>
+            <div class="user-info">
+              <div class="user-name">Arjun Sharma</div>
+              <div class="user-class">Class 10 · CBSE</div>
+            </div>
+            <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <div class="main-content">
+
+        <!-- ── DASHBOARD ── -->
+        <div id="dashboard" class="page active">
+          <!-- topbar -->
+          <div class="topbar">
+            <div>
+              <div class="page-title" id="db-title">Welcome to CareerAI 👋</div>
+              <div class="page-sub" id="db-sub">Take the 20-question quiz to discover careers that fit you.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="db-cta-btn" onclick="cqStart()">Take Career Quiz →</button>
+          </div>
+
+          <!-- dynamic: welcome banner + career strip (empty until quiz taken) -->
+          <div id="db-main"></div>
+
+          <!-- quick actions (always visible) -->
+          <div
+            style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
+            Quick Actions</div>
+          <div class="quick-actions">
+            <div class="qa-card" onclick="navTo('stream')">
+              <div class="qa-icon">🛤️</div>
+              <div class="qa-label">Stream Guide</div>
+            </div>
+            <div class="qa-card" onclick="navTo('roadmap')">
+              <div class="qa-icon">🗺️</div>
+              <div class="qa-label">My Roadmap</div>
+            </div>
+            <div class="qa-card" onclick="navTo('chat')">
+              <div class="qa-icon">💬</div>
+              <div class="qa-label">Ask AI</div>
+            </div>
+            <div class="qa-card" onclick="navTo('explorer')">
+              <div class="qa-icon">🌍</div>
+              <div class="qa-label">Explore Careers</div>
+            </div>
+            <div class="qa-card" onclick="cqStart()">
+              <div class="qa-icon">🧠</div>
+              <div class="qa-label">Career Quiz</div>
+            </div>
+          </div>
+
+          <!-- dynamic: stat cards (empty until quiz taken) -->
+          <div class="card-grid g2" id="db-stats"></div>
+        </div>
+
+        <!-- ── CAREER MATCH RESULTS ── -->
+        <div id="results" class="page">
+          <div class="topbar">
+            <div>
+              <div class="page-title">Career Matches</div>
+              <div class="page-sub">100+ careers scored for your profile · Updated 2 days ago</div>
+            </div>
+            <button class="btn btn-secondary btn-sm">📥 Download Report</button>
+          </div>
+          <div class="stream-banner" onclick="navTo('stream')">
+            <div class="stream-banner-left">
+              <span style="font-size:24px;">🛤️</span>
+              <div>
+                <div class="stream-label">Recommended Stream for Class 11</div>
+                <div class="stream-val" id="results-stream-val">—</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;"><span id="results-stream-badge"
+                style="font-size:13px;color:var(--muted);">Take the quiz to unlock</span><span
+                style="color:var(--muted);">→</span></div>
+          </div>
+          <div class="results-filter">
+            <div class="filter-chip active" onclick="filterChip(this)">All</div>
+            <div class="filter-chip" onclick="filterChip(this)">Technology</div>
+            <div class="filter-chip" onclick="filterChip(this)">Design</div>
+            <div class="filter-chip" onclick="filterChip(this)">Science</div>
+            <div class="filter-chip" onclick="filterChip(this)">Business</div>
+            <div class="filter-chip" onclick="filterChip(this)">Medical</div>
+            <div class="filter-chip" onclick="filterChip(this)">Arts &amp; Law</div>
+          </div>
+          <div id="career-list">
+            <div class="career-card" onclick="navTo('careerdetail',null)">
+              <div class="career-rank top">1</div>
+              <div class="career-icon-wrap" style="background:rgba(108,99,255,.12);">🎨</div>
+              <div class="career-info">
+                <div class="career-name">UX / Product Designer</div>
+                <div class="career-field">Design · Technology</div>
+                <div class="career-reason">"Your spatial reasoning (91st %) and Drawing hobby align perfectly with
+                  design thinking."</div>
+              </div>
+              <div class="career-score-wrap">
+                <div class="career-pct" style="color:#a8a3ff;">92%</div>
+                <div class="pct-mini-bar">
+                  <div class="pct-mini-fill" style="width:92%;background:var(--accent);"></div>
+                </div>
+              </div>
+            </div>
+            <div class="career-card">
+              <div class="career-rank top">2</div>
+              <div class="career-icon-wrap" style="background:rgba(0,212,170,.1);">🏛️</div>
+              <div class="career-info">
+                <div class="career-name">Architect</div>
+                <div class="career-field">Design · Engineering</div>
+                <div class="career-reason">"Strong Maths + spatial skills. Architecture blends both with creativity."
+                </div>
+              </div>
+              <div class="career-score-wrap">
+                <div class="career-pct" style="color:var(--accent2);">85%</div>
+                <div class="pct-mini-bar">
+                  <div class="pct-mini-fill" style="width:85%;background:var(--accent2);"></div>
+                </div>
+              </div>
+            </div>
+            <div class="career-card">
+              <div class="career-rank">3</div>
+              <div class="career-icon-wrap" style="background:rgba(56,189,248,.1);">💻</div>
+              <div class="career-info">
+                <div class="career-name">Software Engineer</div>
+                <div class="career-field">Technology · Computer Science</div>
+                <div class="career-reason">"Coding hobby + Maths strength = strong foundation for CS."</div>
+              </div>
+              <div class="career-score-wrap">
+                <div class="career-pct" style="color:#38bdf8;">79%</div>
+                <div class="pct-mini-bar">
+                  <div class="pct-mini-fill" style="width:79%;background:#38bdf8;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="career-card">
+              <div class="career-rank">4</div>
+              <div class="career-icon-wrap" style="background:rgba(245,158,11,.1);">📊</div>
+              <div class="career-info">
+                <div class="career-name">Data Scientist</div>
+                <div class="career-field">Technology · Analytics</div>
+                <div class="career-reason">"Logical reasoning score in top 20% — ideal for data-heavy careers."</div>
+              </div>
+              <div class="career-score-wrap">
+                <div class="career-pct" style="color:#fcd34d;">71%</div>
+                <div class="pct-mini-bar">
+                  <div class="pct-mini-fill" style="width:71%;background:#fcd34d;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="career-card">
+              <div class="career-rank">5</div>
+              <div class="career-icon-wrap" style="background:rgba(251,146,60,.1);">🎮</div>
+              <div class="career-info">
+                <div class="career-name">Game Designer</div>
+                <div class="career-field">Design · Technology · Gaming</div>
+                <div class="career-reason">"Gaming hobby + design interest + coding skills form a rare combination."
+                </div>
+              </div>
+              <div class="career-score-wrap">
+                <div class="career-pct" style="color:#fb923c;">68%</div>
+                <div class="pct-mini-bar">
+                  <div class="pct-mini-fill" style="width:68%;background:#fb923c;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="career-card">
+              <div class="career-rank">6</div>
+              <div class="career-icon-wrap" style="background:rgba(167,139,250,.1);">📱</div>
+              <div class="career-info">
+                <div class="career-name">Product Manager</div>
+                <div class="career-field">Technology · Business</div>
+                <div class="career-reason">"Curiosity score of 88% suggests you'll thrive in problem-definition roles."
+                </div>
+              </div>
+              <div class="career-score-wrap">
+                <div class="career-pct" style="color:#a78bfa;">64%</div>
+                <div class="pct-mini-bar">
+                  <div class="pct-mini-fill" style="width:64%;background:#a78bfa;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="career-card">
+              <div class="career-rank">7</div>
+              <div class="career-icon-wrap" style="background:rgba(255,101,132,.1);">🔬</div>
+              <div class="career-info">
+                <div class="career-name">Research Scientist</div>
+                <div class="career-field">Science · Academia</div>
+                <div class="career-reason">"High curiosity + logical aptitude suits research environments."</div>
+              </div>
+              <div class="career-score-wrap">
+                <div class="career-pct" style="color:var(--accent3);">58%</div>
+                <div class="pct-mini-bar">
+                  <div class="pct-mini-fill" style="width:58%;background:var(--accent3);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CAREER EXPLORER ── -->
+        <div id="explorer" class="page">
+          <div class="topbar">
+            <div>
+              <div class="page-title">Explore Careers</div>
+              <div class="page-sub">Browse 100+ career paths · Sorted by your fit %</div>
+            </div>
+          </div>
+          <div class="search-bar"><span style="color:var(--muted);">🔍</span><input
+              placeholder="Search careers — e.g. doctor, animation, finance…" /></div>
+          <div class="results-filter" style="margin-bottom:20px;">
+            <div class="filter-chip active" onclick="filterChip(this)">All</div>
+            <div class="filter-chip" onclick="filterChip(this)">Technology</div>
+            <div class="filter-chip" onclick="filterChip(this)">Design</div>
+            <div class="filter-chip" onclick="filterChip(this)">Medical</div>
+            <div class="filter-chip" onclick="filterChip(this)">Business</div>
+            <div class="filter-chip" onclick="filterChip(this)">Science</div>
+            <div class="filter-chip" onclick="filterChip(this)">Arts &amp; Law</div>
+          </div>
+          <div class="explore-grid">
+            <div class="explore-card" onclick="navTo('careerdetail',null)">
+              <div class="explore-icon" style="background:rgba(108,99,255,.12);">🎨</div>
+              <h4>UX Designer</h4>
+              <div class="field">Design · Technology</div><span class="badge badge-purple"
+                style="margin-bottom:10px;">PCM + CS</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:92%;background:var(--accent);"></div>
+                </div><span style="color:#a8a3ff;">92%</span>
+              </div>
+            </div>
+            <div class="explore-card">
+              <div class="explore-icon" style="background:rgba(0,212,170,.1);">🏛️</div>
+              <h4>Architect</h4>
+              <div class="field">Design · Engineering</div><span class="badge badge-green"
+                style="margin-bottom:10px;">PCM</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:85%;background:var(--accent2);"></div>
+                </div><span style="color:var(--accent2);">85%</span>
+              </div>
+            </div>
+            <div class="explore-card">
+              <div class="explore-icon" style="background:rgba(56,189,248,.1);">💻</div>
+              <h4>Software Engineer</h4>
+              <div class="field">Technology</div><span class="badge badge-blue" style="margin-bottom:10px;">PCM +
+                CS</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:79%;background:#38bdf8;"></div>
+                </div><span style="color:#38bdf8;">79%</span>
+              </div>
+            </div>
+            <div class="explore-card">
+              <div class="explore-icon" style="background:rgba(245,158,11,.1);">📊</div>
+              <h4>Data Scientist</h4>
+              <div class="field">Technology · Analytics</div><span class="badge badge-blue"
+                style="margin-bottom:10px;">PCM + CS</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:71%;background:#fcd34d;"></div>
+                </div><span style="color:#fcd34d;">71%</span>
+              </div>
+            </div>
+            <div class="explore-card">
+              <div class="explore-icon" style="background:rgba(251,146,60,.1);">🎮</div>
+              <h4>Game Designer</h4>
+              <div class="field">Design · Gaming</div><span class="badge badge-orange" style="margin-bottom:10px;">PCM /
+                Arts</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:68%;background:#fb923c;"></div>
+                </div><span style="color:#fb923c;">68%</span>
+              </div>
+            </div>
+            <div class="explore-card">
+              <div class="explore-icon" style="background:rgba(255,101,132,.1);">🩺</div>
+              <h4>Doctor (MBBS)</h4>
+              <div class="field">Medical · Science</div><span class="badge badge-green"
+                style="margin-bottom:10px;">PCB</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:34%;background:var(--accent3);"></div>
+                </div><span style="color:var(--accent3);">34%</span>
+              </div>
+            </div>
+            <div class="explore-card">
+              <div class="explore-icon" style="background:rgba(167,139,250,.1);">⚖️</div>
+              <h4>Lawyer</h4>
+              <div class="field">Law · Humanities</div><span class="badge badge-red" style="margin-bottom:10px;">Arts /
+                Commerce</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:42%;background:#a78bfa;"></div>
+                </div><span style="color:#a78bfa;">42%</span>
+              </div>
+            </div>
+            <div class="explore-card">
+              <div class="explore-icon" style="background:rgba(52,211,153,.1);">🌿</div>
+              <h4>Environmental Scientist</h4>
+              <div class="field">Science · Environment</div><span class="badge badge-green"
+                style="margin-bottom:10px;">PCB / PCM</span>
+              <div class="fit">
+                <div class="fit-bar">
+                  <div class="fit-fill" style="width:55%;background:#34d399;"></div>
+                </div><span style="color:#34d399;">55%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CAREER DETAIL ── -->
+        <div id="careerdetail" class="page">
+          <button class="back-btn"
+            onclick="history.back();navTo('results',document.querySelector('.nav-item:nth-child(2)'))">← Back to
+            Matches</button>
+          <div class="cd-hero">
+            <div>
+              <div class="cd-icon" style="background:rgba(108,99,255,.12);margin-bottom:12px;">🎨</div>
+              <div class="cd-name">UX / Product Designer</div>
+              <div class="cd-badges">
+                <span class="badge badge-purple">Design</span>
+                <span class="badge badge-blue">Technology</span>
+                <span class="badge badge-green">PCM + CS</span>
+              </div>
+              <p style="font-size:13px;color:var(--muted);">Spatial reasoning + creative problem-solving = your natural
+                domain</p>
+            </div>
+            <div style="text-align:right;">
+              <div class="cd-fit" style="color:#a8a3ff;">92%</div>
+              <div class="cd-fit-label">Career Fit Score</div>
+              <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-primary btn-sm"
+                  onclick="navTo('roadmap',document.querySelector('.nav-item:nth-child(7)'))">Generate Roadmap</button>
+                <button class="btn btn-secondary btn-sm"
+                  onclick="navTo('chat',document.querySelector('.nav-item:nth-child(9)'))">Ask AI</button>
+              </div>
+            </div>
+          </div>
+          <div class="cd-section">
+            <h3>A Day in the Life</h3>
+            <div class="day-story">"You start your morning reviewing user research findings from interviews conducted
+              last week. By 10am you're sketching wireframes for a new onboarding flow. After lunch, you present
+              prototypes in Figma to the product team — debating whether the checkout button should be green or purple.
+              Late afternoon is spent running a usability test with real users, watching them struggle with a menu you
+              thought was obvious. You go back to the drawing board. Tomorrow you'll have a better answer."</div>
+          </div>
+          <div class="cd-section">
+            <h3>Salary Range in India</h3>
+            <div class="salary-grid">
+              <div class="salary-card">
+                <div class="salary-stage">Entry (0–2 yrs)</div>
+                <div class="salary-val" style="color:var(--accent2);">₹4–7 LPA</div>
+              </div>
+              <div class="salary-card">
+                <div class="salary-stage">Mid (3–6 yrs)</div>
+                <div class="salary-val" style="color:var(--accent);">₹10–18 LPA</div>
+              </div>
+              <div class="salary-card">
+                <div class="salary-stage">Senior (7+ yrs)</div>
+                <div class="salary-val" style="color:#fcd34d;">₹22–40 LPA</div>
+              </div>
+            </div>
+          </div>
+          <div class="cd-section">
+            <h3>Top Colleges in India</h3>
+            <div class="college-list">
+              <div class="college-row"><span class="college-row-name">NID Ahmedabad</span><span
+                  class="badge badge-purple">Design</span><span class="college-row-city">Ahmedabad</span></div>
+              <div class="college-row"><span class="college-row-name">Symbiosis Design School</span><span
+                  class="badge badge-green">Design</span><span class="college-row-city">Pune</span></div>
+              <div class="college-row"><span class="college-row-name">Srishti Institute of Art &amp; Design</span><span
+                  class="badge badge-blue">Design + Tech</span><span class="college-row-city">Bangalore</span></div>
+              <div class="college-row"><span class="college-row-name">NIFT Mumbai</span><span
+                  class="badge badge-orange">Design</span><span class="college-row-city">Mumbai</span></div>
+            </div>
+          </div>
+          <div class="cd-section">
+            <h3>Entrance Exams to Target</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <span class="badge badge-purple">UCEED</span>
+              <span class="badge badge-blue">NATA</span>
+              <span class="badge badge-green">NID DAT</span>
+              <span class="badge badge-orange">CEED (PG)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── STREAM RECOMMENDATION ── -->
+        <div id="stream" class="page">
+          <div class="topbar">
+            <div>
+              <div class="page-title">Stream Guide</div>
+              <div class="page-sub">Your Class 11 stream recommendation based on aptitude + interests</div>
+            </div>
+            <button class="btn btn-secondary btn-sm">📥 Download PDF</button>
+          </div>
+          <div class="stream-hero">
+            <div class="stream-rec-label">We recommend for Class 11</div>
+            <div class="stream-rec-name">PCM + Computer Science</div>
+            <div class="stream-rec-pct">89% suitability · High confidence</div>
+            <div class="stream-reason">"Your spatial reasoning scored in the top 15% and you enjoy coding + maths. PCM
+              with Computer Science gives you the widest range of tech careers — including UX Design, your #1 match —
+              while keeping all engineering doors open."</div>
+          </div>
+          <div
+            style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">
+            All Streams Scored</div>
+          <div class="stream-cards">
+            <div class="stream-opt" style="background:rgba(108,99,255,.08);border-color:var(--accent);">
+              <div class="pct" style="color:#a8a3ff;">89%</div>
+              <h4 style="color:#a8a3ff;">PCM + CS ✦</h4>
+              <p style="color:var(--muted);">Engineering, Architecture, Data Science, UX, Software, Game Dev</p>
+            </div>
+            <div class="stream-opt" style="background:rgba(56,189,248,.05);border-color:rgba(56,189,248,.3);">
+              <div class="pct" style="color:#38bdf8;">76%</div>
+              <h4 style="color:#38bdf8;">PCM</h4>
+              <p style="color:var(--muted);">Engineering, Architecture, Defence, Pilot, Civil Services</p>
+            </div>
+            <div class="stream-opt" style="background:rgba(251,146,60,.05);border-color:rgba(251,146,60,.3);">
+              <div class="pct" style="color:#fb923c;">44%</div>
+              <h4 style="color:#fb923c;">Commerce</h4>
+              <p style="color:var(--muted);">CA, Finance, Business, Marketing, Economics</p>
+            </div>
+            <div class="stream-opt" style="background:rgba(255,101,132,.05);border-color:rgba(255,101,132,.25);">
+              <div class="pct" style="color:var(--accent3);">31%</div>
+              <h4 style="color:var(--accent3);">Arts</h4>
+              <p style="color:var(--muted);">Journalism, Psychology, Design, Civil Services, Law</p>
+            </div>
+            <div class="stream-opt" style="background:rgba(0,212,170,.05);border-color:rgba(0,212,170,.25);">
+              <div class="pct" style="color:var(--accent2);">28%</div>
+              <h4 style="color:var(--accent2);">PCB</h4>
+              <p style="color:var(--muted);">MBBS, Pharmacy, Biotechnology, Physiotherapy</p>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Subject Focus Plan — What to strengthen now
+            </div>
+            <div class="meter">
+              <div class="meter-label">Mathematics</div>
+              <div class="meter-track">
+                <div class="meter-fill" style="width:90%;background:linear-gradient(90deg,var(--accent),#a8a3ff);">
+                </div>
+              </div>
+              <div class="meter-pct" style="color:#a8a3ff;">High priority</div>
+            </div>
+            <div class="meter">
+              <div class="meter-label">Computer Science</div>
+              <div class="meter-track">
+                <div class="meter-fill" style="width:95%;background:linear-gradient(90deg,var(--accent2),#6ee7d4);">
+                </div>
+              </div>
+              <div class="meter-pct" style="color:var(--accent2);">High priority</div>
+            </div>
+            <div class="meter">
+              <div class="meter-label">Physics</div>
+              <div class="meter-track">
+                <div class="meter-fill" style="width:75%;background:linear-gradient(90deg,#38bdf8,#7dd3fc);"></div>
+              </div>
+              <div class="meter-pct" style="color:#38bdf8;">Medium</div>
+            </div>
+            <div class="meter">
+              <div class="meter-label">English</div>
+              <div class="meter-track">
+                <div class="meter-fill" style="width:55%;background:linear-gradient(90deg,#fb923c,#fdba74);"></div>
+              </div>
+              <div class="meter-pct" style="color:#fb923c;">Medium</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ROADMAP ── -->
+        <div id="roadmap" class="page">
+          <div class="topbar">
+            <div>
+              <div class="page-title">5-Year Roadmap</div>
+              <div class="page-sub">Your personalised career path — Class 10 to first job</div>
+            </div><button class="btn btn-secondary btn-sm">📥 Export PDF</button>
+          </div>
+          <div class="roadmap-target">
+            <div>
+              <div class="rm-label">Target Career</div>
+              <div class="rm-career">🎨 UX / Product Designer</div>
+            </div>
+            <select class="form-input" style="width:auto;">
+              <option>UX / Product Designer</option>
+              <option>Architect</option>
+              <option>Software Engineer</option>
+            </select>
+          </div>
+          <div class="timeline">
+            <div class="tl-item done">
+              <div class="tl-dot"></div>
+              <div class="tl-card">
+                <div class="tl-year">Now · Class 10</div>
+                <div class="tl-title">Build your foundation</div>
+                <div class="tl-actions">
+                  <div class="tl-action">Score well in Maths &amp; Computer Science in boards</div>
+                  <div class="tl-action">Start using Figma (free) — watch beginner tutorials</div>
+                  <div class="tl-action">Build a small drawing portfolio (sketches, doodles)</div>
+                  <div class="tl-action">Explore UCEED exam pattern</div>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-card">
+                <div class="tl-year">Class 11–12</div>
+                <div class="tl-title">Choose PCM + Computer Science · Build skills</div>
+                <div class="tl-actions">
+                  <div class="tl-action">Focus on Physics, Maths, CS — target 85%+</div>
+                  <div class="tl-action">Take online design courses (Coursera, YouTube)</div>
+                  <div class="tl-action">Enter school / inter-school design contests</div>
+                  <div class="tl-action">Prepare for UCEED &amp; NID DAT entrance exams</div>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-card">
+                <div class="tl-year">After Boards · Gap / Entrance Prep</div>
+                <div class="tl-title">Target design college entrances</div>
+                <div class="tl-actions">
+                  <div class="tl-action">Appear for UCEED (IITs), NID DAT, CEPT entrance</div>
+                  <div class="tl-action">Build a polished digital portfolio (Behance / Dribbble)</div>
+                  <div class="tl-action">Take a short UI/UX bootcamp if time permits</div>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-card">
+                <div class="tl-year">College · B.Des (4 years)</div>
+                <div class="tl-title">NID · Symbiosis · Srishti · NIFT or B.Tech + Design Minor</div>
+                <div class="tl-actions">
+                  <div class="tl-action">Intern at a design studio after Year 2</div>
+                  <div class="tl-action">Freelance small projects for experience &amp; income</div>
+                  <div class="tl-action">Build industry network via design meetups</div>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-card">
+                <div class="tl-year">First Job</div>
+                <div class="tl-title">Junior UX Designer — ₹4–7 LPA starting</div>
+                <div class="tl-actions">
+                  <div class="tl-action">Apply to startups, design studios, product companies</div>
+                  <div class="tl-action">Top recruiters: Swiggy, Zomato, PhonePe, ThoughtWorks</div>
+                  <div class="tl-action">Senior Designer at ₹15–25 LPA in 4–5 years</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── AI CHAT ── -->
+        <div id="chat" class="page" style="height:calc(100vh - 64px);display:none;flex-direction:column;">
+          <div class="topbar" style="margin-bottom:16px;">
+            <div>
+              <div class="page-title">AI Chat Counsellor</div>
+              <div class="page-sub">Ask anything about careers, streams, college — I know your full profile.</div>
+            </div>
+          </div>
+          <div class="chat-suggestions">
+            <div class="chat-sug" onclick="sendSug(this)">Is data science good for me?</div>
+            <div class="chat-sug" onclick="sendSug(this)">What do UX designers do daily?</div>
+            <div class="chat-sug" onclick="sendSug(this)">Which stream for architecture?</div>
+            <div class="chat-sug" onclick="sendSug(this)">Top colleges for design in India?</div>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <div class="msg">
+              <div class="msg-avatar msg-ai-avatar">AI</div>
+              <div>
+                <div class="msg-bubble">Hey Arjun! 👋 I'm your CareerAI counsellor. I can see your top match is
+                  <strong>UX Designer (92%)</strong> and you're recommended for <strong>PCM + CS</strong>. Ask me
+                  anything — careers, streams, colleges, or what a day in the life of a UX designer actually looks like!
+                </div>
+                <div class="msg-time">Just now</div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-wrap">
+            <input class="chat-input" id="chat-input" placeholder="Ask anything about your career…"
+              onkeydown="if(event.key==='Enter')sendChat()" />
+            <button class="chat-send" onclick="sendChat()">→</button>
+          </div>
+        </div>
+
+        <!-- ── PROGRESS ── -->
+        <div id="progress" class="page">
+          <div class="topbar">
+            <div>
+              <div class="page-title">Progress Tracker</div>
+              <div class="page-sub">Your career clarity journey — Class 8 to Class 10</div>
+            </div><button class="btn btn-primary btn-sm" onclick="show('quiz')">Retake Quiz</button>
+          </div>
+          <div class="progress-timeline">
+            <div class="pt-node done">
+              <div class="pt-circle">✅</div>
+              <div class="pt-class">Class 8</div>
+              <div class="pt-date">Jun 2024</div>
+            </div>
+            <div class="pt-node done">
+              <div class="pt-circle">✅</div>
+              <div class="pt-class">Class 9</div>
+              <div class="pt-date">Jun 2025</div>
+            </div>
+            <div class="pt-node active">
+              <div class="pt-circle">📍</div>
+              <div class="pt-class">Class 10</div>
+              <div class="pt-date">Aug 2026</div>
+            </div>
+          </div>
+          <div class="apt-chart">
+            <div style="font-size:14px;font-weight:700;margin-bottom:20px;">Aptitude Score History</div>
+            <div class="apt-row">
+              <div class="apt-label">Logical</div>
+              <div class="apt-bars">
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:60%;background:rgba(108,99,255,.3);"></div>
+                  <div class="apt-bar-label">Cl.8</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:72%;background:rgba(108,99,255,.5);"></div>
+                  <div class="apt-bar-label">Cl.9</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:82%;background:var(--accent);"></div>
+                  <div class="apt-bar-label">Cl.10</div>
+                </div>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:#a8a3ff;margin-left:10px;">82 ↑</span>
+            </div>
+            <div class="apt-row">
+              <div class="apt-label">Spatial</div>
+              <div class="apt-bars">
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:70%;background:rgba(0,212,170,.3);"></div>
+                  <div class="apt-bar-label">Cl.8</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:82%;background:rgba(0,212,170,.5);"></div>
+                  <div class="apt-bar-label">Cl.9</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:91%;background:var(--accent2);"></div>
+                  <div class="apt-bar-label">Cl.10</div>
+                </div>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:var(--accent2);margin-left:10px;">91 ↑</span>
+            </div>
+            <div class="apt-row">
+              <div class="apt-label">Verbal</div>
+              <div class="apt-bars">
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:65%;background:rgba(56,189,248,.3);"></div>
+                  <div class="apt-bar-label">Cl.8</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:62%;background:rgba(56,189,248,.4);"></div>
+                  <div class="apt-bar-label">Cl.9</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:68%;background:#38bdf8;"></div>
+                  <div class="apt-bar-label">Cl.10</div>
+                </div>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:#38bdf8;margin-left:10px;">68 →</span>
+            </div>
+            <div class="apt-row">
+              <div class="apt-label">Curiosity</div>
+              <div class="apt-bars">
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:75%;background:rgba(245,158,11,.3);"></div>
+                  <div class="apt-bar-label">Cl.8</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:80%;background:rgba(245,158,11,.5);"></div>
+                  <div class="apt-bar-label">Cl.9</div>
+                </div>
+                <div class="apt-bar-wrap">
+                  <div class="apt-bar" style="height:88%;background:#f59e0b;"></div>
+                  <div class="apt-bar-label">Cl.10</div>
+                </div>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:#fcd34d;margin-left:10px;">88 ↑</span>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:16px;">
+            <div
+              style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">
+              Top Match Evolution</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;align-items:center;gap:16px;font-size:13px;"><span
+                  style="color:var(--muted);width:60px;">Class 8</span><span style="font-weight:600;">🎮 Game
+                  Designer</span><span style="color:#fb923c;font-weight:700;margin-left:auto;">78%</span></div>
+              <div style="display:flex;align-items:center;gap:16px;font-size:13px;"><span
+                  style="color:var(--muted);width:60px;">Class 9</span><span style="font-weight:600;">🎨 UX
+                  Designer</span><span style="color:#a8a3ff;font-weight:700;margin-left:auto;">85%</span></div>
+              <div style="display:flex;align-items:center;gap:16px;font-size:13px;"><span
+                  style="color:var(--accent2);width:60px;font-weight:700;">Class 10</span><span
+                  style="font-weight:700;">🎨 UX Designer</span><span
+                  style="color:var(--accent2);font-weight:800;margin-left:auto;">92% ✦</span></div>
+            </div>
+          </div>
+          <div
+            style="background:rgba(108,99,255,.06);border:1px solid rgba(108,99,255,.2);border-radius:12px;padding:18px 20px;">
+            <div style="font-size:12px;font-weight:700;color:#a8a3ff;margin-bottom:6px;">AI Note on Your Progress</div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">"Your interest in design has consistently
+              strengthened over 3 years. UX Designer is now a clear top match. Your spatial reasoning grew from 70 → 91
+              — exceptional for your age. Stick with PCM + CS."</div>
+          </div>
+        </div>
+
+        <!-- ── SETTINGS ── -->
+        <div id="settings" class="page">
+          <div class="topbar">
+            <div>
+              <div class="page-title">Settings</div>
+              <div class="page-sub">Manage your account and preferences</div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">Profile</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Full Name</div>
+                <div class="settings-row-sub">Arjun Sharma</div>
+              </div><button class="btn btn-ghost btn-sm">Edit</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Email</div>
+                <div class="settings-row-sub">arjun@gmail.com</div>
+              </div><button class="btn btn-ghost btn-sm">Edit</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Current Class</div>
+                <div class="settings-row-sub">Class 10 · CBSE · Mumbai</div>
+              </div><button class="btn btn-ghost btn-sm">Edit</button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">Notifications</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Annual Quiz Reminder</div>
+                <div class="settings-row-sub">Remind me each June to retake the quiz</div>
+              </div><button class="toggle on" onclick="toggleBtn(this)"></button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Career Match Updates</div>
+                <div class="settings-row-sub">Notify when new careers are added</div>
+              </div><button class="toggle on" onclick="toggleBtn(this)"></button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Weekly Tip Emails</div>
+                <div class="settings-row-sub">Career tips for Class 10 students</div>
+              </div><button class="toggle off" onclick="toggleBtn(this)"></button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">Quiz &amp; Data</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Retake Career Interest Quiz</div>
+                <div class="settings-row-sub">Answer 20 questions again and get updated AI career results</div>
+              </div><button class="btn btn-primary btn-sm" onclick="cqStart()">Start Quiz →</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Edit Interests &amp; Hobbies</div>
+                <div class="settings-row-sub">Update will refresh career scores</div>
+              </div><button class="btn btn-secondary btn-sm" onclick="show('onboarding')">Edit</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Clear Chat History</div>
+                <div class="settings-row-sub">Remove all AI chat messages</div>
+              </div><button class="btn btn-ghost btn-sm" style="color:var(--accent3);">Clear</button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">OpenAI Integration</div>
+            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+              <div>
+                <div class="settings-row-label">OpenAI API Key</div>
+                <div class="settings-row-sub">Add your key so the career quiz calls GPT-4o with your real answers. Key
+                  is stored locally in your browser only.</div>
+              </div>
+              <div style="display:flex;gap:10px;width:100%;">
+                <input id="settings-api-key" class="form-input" type="password" placeholder="sk-…"
+                  style="flex:1;font-family:monospace;font-size:13px;" />
+                <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save Key</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title" style="color:var(--accent3);">Danger Zone</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-label">Delete Account</div>
+                <div class="settings-row-sub">Permanently delete all your data. Cannot be undone.</div>
+              </div><button class="btn btn-sm"
+                style="background:rgba(255,101,132,.12);color:var(--accent3);border:1px solid rgba(255,101,132,.3);">Delete</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /main-content -->
+    </div><!-- /app-layout -->
+  </div><!-- /app -->
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>

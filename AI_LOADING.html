@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Analysing</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="ailoading">
+
+  <!-- ════════════════════════════════════════
+     AI LOADING SCREEN
+════════════════════════════════════════ -->
+  <div id="ailoading" class="screen active">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+      <div class="al-wrap">
+        <div class="al-spinner"></div>
+        <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;">Analysing your answers…</h2>
+        <p style="font-size:14px;color:var(--muted);">Our AI is matching your profile to 100+ career paths. Takes about
+          5 seconds.</p>
+        <div class="al-steps">
+          <div class="al-step loading" id="al-step1">
+            <div class="al-step-icon">🔄</div>
+            <span>Reading your 20 responses</span>
+          </div>
+          <div class="al-step pending" id="al-step2">
+            <div class="al-step-icon">⏳</div>
+            <span>Matching to 100+ career profiles</span>
+          </div>
+          <div class="al-step pending" id="al-step3">
+            <div class="al-step-icon">⏳</div>
+            <span>Generating your personalised report</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>

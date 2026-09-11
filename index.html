@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Home</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="landing">
+
+  <!-- ════════════════════════════════════════
+     LANDING PAGE
+════════════════════════════════════════ -->
+  <div id="landing" class="screen active">
+    <nav class="land-nav">
+      <div class="land-logo">Career<span>AI</span></div>
+      <div class="land-nav-links">
+        <button class="btn btn-ghost btn-sm" onclick="show('auth')">Login</button>
+        <button class="btn btn-primary btn-sm" onclick="show('auth')">Get Started Free</button>
+      </div>
+    </nav>
+
+    <div class="land-hero">
+      <div class="land-eyebrow">For Class 8, 9 &amp; 10 Students</div>
+      <h1 class="land-h1">Discover the Career<br /><span>You Were Born For</span></h1>
+      <p class="land-p">AI-powered career discovery. Answer a few questions, take a personalised aptitude quiz, and get
+        your top career matches with a step-by-step roadmap.</p>
+      <div class="land-cta">
+        <button class="btn btn-primary btn-lg" onclick="cqStart()">Take the Career Quiz →</button>
+        <button class="btn btn-secondary btn-lg" onclick="show('auth')">Create Account</button>
+      </div>
+    </div>
+
+    <div class="land-features">
+      <h2 class="land-feat-title">Everything you need to choose right</h2>
+      <p class="land-feat-sub">From "I have no idea" to "I have a plan" — in under 15 minutes.</p>
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(108,99,255,.12);">🎯</div>
+          <h3>Career Match Score</h3>
+          <p>100+ careers ranked by how well they fit your interests, aptitude, and academics. Every score comes with a
+            plain-English reason.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(0,212,170,.1);">🧠</div>
+          <h3>Adaptive Aptitude Quiz</h3>
+          <p>20 personalised questions across logical, spatial, verbal &amp; domain areas. Questions adapt based on your
+            answers in real time.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(56,189,248,.1);">🛤️</div>
+          <h3>Stream Recommendation</h3>
+          <p>Get a clear recommendation for PCM, PCB, Commerce, or Arts — with the reasoning and subject plan to back it
+            up.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(255,101,132,.1);">🗺️</div>
+          <h3>5-Year Roadmap</h3>
+          <p>A personalised timeline from your current class to your first job. Milestones, exams, college types — all
+            in one place.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(251,146,60,.1);">💬</div>
+          <h3>AI Chat Counsellor</h3>
+          <p>Ask anything — "Is data science good for me?", "What do architects earn?" — and get honest, data-backed
+            answers instantly.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(167,139,250,.12);">📈</div>
+          <h3>Progress Tracker</h3>
+          <p>Retake the quiz each year (Class 8 → 9 → 10) and watch your career clarity grow as your interests develop.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="land-steps">
+      <h2 class="land-feat-title" style="margin-bottom:8px;">How it works</h2>
+      <p class="land-feat-sub">Four steps. 15 minutes. A career plan for life.</p>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h4>Build Your Profile</h4>
+          <p>Tell us your class, marks, favourite subjects, and hobbies in 5 minutes.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h4>AI Evaluates You</h4>
+          <p>Our AI reads your profile and prepares a personalised aptitude quiz just for you.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h4>Take the Quiz</h4>
+          <p>20 adaptive questions covering logical, creative, verbal, and curiosity areas.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h4>Get Your Plan</h4>
+          <p>Career matches, stream recommendation, and a full 5-year roadmap — instantly.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="land-footer">
+      CareerAI · Built for Class 8, 9 &amp; 10 students in India · Powered by OpenAI GPT-4o · Free forever
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>
