@@ -4074,6 +4074,29 @@ select.form-input option {
   color: var(--text);
 }
 
+/* Masthead for the PDF only — the @media print block reveals it */
+.air-print-head {
+  display: none;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--accent);
+}
+
+.air-print-brand {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  color: var(--accent-text);
+}
+
+.air-print-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .air-footer-hint {
   margin-top: 20px;
   padding: 15px 18px;
@@ -4863,5 +4886,101 @@ body.nav-open .sidebar-overlay {
   .al-spinner {
     animation-duration: .8s !important;
     animation-iteration-count: infinite !important;
+  }
+}
+
+/* ─────────────  PRINT / SAVE AS PDF  ─────────────
+   Drives the "Save PDF" button on the career results screen, which is just
+   window.print() — the browser's own PDF export. No PDF library is fetched,
+   the text stays selectable and searchable, and the screen's promise that
+   nothing leaves the device still holds. cqInitPrint() in scripts/script.js
+   swaps to the light palette for the duration, so only layout is handled
+   here. Ctrl+P / ⌘P produces the same document as the button. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm;
+  }
+
+  /* The bar fills, rank chips and match colours carry meaning on this page,
+     so opt out of the browser's default background-stripping. */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  html,
+  body {
+    background-image: none !important;
+    background-color: #fff !important;
+    min-height: 0;
+  }
+
+  /* Viewport-height and scroll-container rules clip the output to a single
+     page in some print engines. */
+  .screen {
+    min-height: 0;
+  }
+
+  #airesults {
+    overflow: visible;
+  }
+
+  /* The 760px reading column is narrower than the printable width */
+  .air-wrap {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Nothing clickable survives on paper */
+  .no-print,
+  .theme-toggle {
+    display: none !important;
+  }
+
+  .air-print-head {
+    display: flex;
+  }
+
+  /* Gradient-clipped headings print as blank space wherever
+     background-clip:text is unsupported. */
+  .air-personality-type {
+    background: none;
+    -webkit-text-fill-color: var(--text);
+    color: var(--text);
+  }
+
+  /* Never split a card across a page boundary */
+  .air-hero,
+  .air-stream-box,
+  .air-riasec-box,
+  .air-career-card,
+  .air-enjoy-wrap,
+  .air-footer-hint {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Tighter than the screen: paper has no hover affordances to leave room for */
+  .air-hero {
+    padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+
+  .air-career-card {
+    padding: 14px 16px;
+    margin-bottom: 8px;
+  }
+
+  .air-riasec-box,
+  .air-stream-box {
+    padding: 16px 18px;
+    margin-bottom: 16px;
   }
 }

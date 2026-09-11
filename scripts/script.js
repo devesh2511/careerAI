@@ -562,6 +562,63 @@
       const s = loadState();
       if (!s.appResults) { show('careerquiz'); return; }  // no run to show
       cqRenderResults(s.appResults, s.isDemo !== false);
+      cqInitPrint();
+    }
+
+    // ── Save the report as a PDF ───────────────────────────────────────────
+    // Deliberately the browser's own print-to-PDF rather than a canvas/PDF
+    // library: no third-party script has to be fetched (so the page's "nothing
+    // is sent anywhere" promise still holds offline), the text in the PDF stays
+    // selectable and searchable, and it costs one function. The layout rules
+    // live in the @media print block in style.css.
+    function cqSavePdf() {
+      if (typeof window.print !== 'function') return;
+      window.print();  // the user picks "Save as PDF" as the destination
+    }
+
+    function cqDateStamp(sep) {
+      const d = new Date(), p = n => String(n).padStart(2, '0');
+      return [d.getFullYear(), p(d.getMonth() + 1), p(d.getDate())].join(sep || '-');
+    }
+
+    // Wired once when the results page renders, so Ctrl+P / ⌘P and the
+    // button produce the same document.
+    function cqInitPrint() {
+      const dateEl = document.getElementById('air-print-date');
+      if (dateEl) {
+        dateEl.textContent = new Date().toLocaleDateString(undefined,
+          { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+
+      let prevTheme = null, prevTitle = null;
+
+      function before() {
+        if (prevTheme === null) {
+          prevTheme = document.documentElement.getAttribute('data-theme') || 'light';
+          prevTitle = document.title;
+        }
+        // The dark palette prints as a wall of ink and eats a cartridge, so
+        // borrow the light one while the dialog is open.
+        document.documentElement.setAttribute('data-theme', 'light');
+        // Chrome and Edge seed the "Save as PDF" filename from the title.
+        document.title = 'CareerAI-Career-Report-' + cqDateStamp();
+      }
+
+      function restore() {
+        if (prevTheme === null) return;
+        document.documentElement.setAttribute('data-theme', prevTheme);
+        document.title = prevTitle;
+        prevTheme = prevTitle = null;
+      }
+
+      window.addEventListener('beforeprint', before);
+      window.addEventListener('afterprint', restore);
+      // Safari does not fire afterprint on every path; there the print media
+      // query turning false is the reliable signal.
+      const mq = window.matchMedia && window.matchMedia('print');
+      if (mq && mq.addEventListener) {
+        mq.addEventListener('change', e => { if (e.matches) before(); else restore(); });
+      }
     }
 
     function cqRenderResults(data, isDemo) {

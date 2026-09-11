@@ -27,6 +27,14 @@
   <div id="airesults" class="screen active">
     <div class="air-wrap">
 
+      <!-- Print-only masthead: the on-screen top bar is mostly buttons, which
+           are dropped from the PDF, so the paper copy needs its own title and
+           a date stamp saying when the report was generated. -->
+      <div class="air-print-head">
+        <div class="air-print-brand">CareerAI</div>
+        <div class="air-print-meta">Career Report · generated <span id="air-print-date">—</span></div>
+      </div>
+
       <!-- Top bar -->
       <div class="air-topbar">
         <div>
@@ -38,7 +46,9 @@
             <span id="air-demo-badge" class="air-demo-badge">Demo Mode</span>
           </h2>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="no-print" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="cqSavePdf()" title="Save this report as a PDF">⬇ Save
+            PDF</button>
           <button class="btn btn-ghost btn-sm" onclick="cqStart()">🔄 Retake</button>
           <button class="btn btn-secondary btn-sm" onclick="show('landing')">← Home</button>
           <button class="btn btn-primary btn-sm" onclick="show('dashboard')">Open Full App →</button>
@@ -60,7 +70,7 @@
           <div class="air-stream-val" id="air-stream-val">PCM+CS</div>
           <div class="air-stream-reason" id="air-stream-reason">Loading…</div>
         </div>
-        <button class="btn btn-secondary btn-sm" style="align-self:center;flex-shrink:0;"
+        <button class="btn btn-secondary btn-sm no-print" style="align-self:center;flex-shrink:0;"
           onclick="show('dashboard')">Full Stream Guide →</button>
       </div>
 
@@ -95,9 +105,10 @@
       <div id="air-careers"></div>
 
       <!-- CTAs -->
-      <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+      <div class="no-print" style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="show('dashboard')"
           style="flex:1;min-width:160px;justify-content:center;">🏠 Explore Full Dashboard</button>
+        <button class="btn btn-secondary" onclick="cqSavePdf()" style="justify-content:center;">⬇ Save as PDF</button>
         <button class="btn btn-secondary" onclick="cqStart()" style="justify-content:center;">🔄 Retake Quiz</button>
       </div>
 
