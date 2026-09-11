@@ -41,7 +41,7 @@
     function show(id) {
       if (APP_PAGES.includes(id)) {
         if (CURRENT_PAGE === 'app') { navTo(id); return; }  // already inside the shell
-        location.href = ROUTES.app + '#' + id;
+        location.href = ROUTES.app + '#/' + id;
         return;
       }
       const file = ROUTES[id];
@@ -53,9 +53,13 @@
       location.href = ROUTES.landing;
     }
 
+    // ── Mobile sidebar drawer (phone breakpoint only) ──
+    function toggleSidebar() { document.body.classList.toggle('nav-open'); }
+    function closeSidebar() { document.body.classList.remove('nav-open'); }
+
     // ── App nav (only meaningful on APP.html) ──
     function navTo(pageId, btn) {
-      if (CURRENT_PAGE !== 'app') { location.href = ROUTES.app + '#' + pageId; return; }
+      if (CURRENT_PAGE !== 'app') { location.href = ROUTES.app + '#/' + pageId; return; }
       document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
       const pg = document.getElementById(pageId);
       if (pg) {
@@ -65,8 +69,11 @@
       // btn is passed by the sidebar onclick; on a fresh load we look it up by data-page
       const navBtn = btn || document.querySelector('.nav-item[data-page="' + pageId + '"]');
       if (navBtn) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); navBtn.classList.add('active'); }
-      // Keep the hash in sync so a reload lands on the same page (throws on file://)
-      try { history.replaceState(null, '', '#' + pageId); } catch (e) { }
+      // Keep the hash in sync so a reload lands on the same page. The '#/' prefix
+      // matters: a bare '#dashboard' matches a real element id, and the browser
+      // scroll-anchors to it on load, shoving the page down under the sticky header.
+      try { history.replaceState(null, '', '#/' + pageId); } catch (e) { }
+      document.body.classList.remove('nav-open'); // collapse the mobile drawer
       window.scrollTo(0, 0);
       // Sync quiz results into the page just revealed
       if (pageId === 'dashboard') syncDashboard();
@@ -80,7 +87,7 @@
       loadSavedKey();
       switch (CURRENT_PAGE) {
         case 'app': {
-          const hash = (location.hash || '').replace('#', '');
+          const hash = (location.hash || '').replace(/^#\/?/, '');
           navTo(APP_PAGES.includes(hash) ? hash : 'dashboard');
           break;
         }
