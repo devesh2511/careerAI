@@ -216,12 +216,6 @@ body {
   margin-top: 4px;
 }
 
-.topbar-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
 /* ── BUTTONS ── */
 .btn {
   display: inline-flex;
@@ -268,15 +262,6 @@ body {
   border-color: var(--text);
 }
 
-.btn-green {
-  background: var(--accent2);
-  color: #0a0a0f;
-}
-
-.btn-green:hover {
-  background: #00e6b8;
-}
-
 .btn-sm {
   padding: 7px 14px;
   font-size: 12px;
@@ -307,14 +292,6 @@ body {
 
 .g2 {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-
-.g3 {
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-
-.g4 {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 /* ── STAT CARDS ── */
@@ -1782,12 +1759,6 @@ select.form-input option {
 }
 
 /* ─────────────────────────────── CHAT ─────────────────────────────── */
-.chat-layout {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 140px);
-}
-
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -2166,34 +2137,6 @@ select.form-input option {
 }
 
 /* ── MISC ── */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.section-title-sm {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 48px;
-  color: var(--muted);
-}
-
-.empty-state .e-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
-}
-
-.tooltip {
-  position: relative;
-  display: inline-block;
-}
-
 .back-btn {
   display: flex;
   align-items: center;
@@ -2314,30 +2257,6 @@ select.form-input option {
 .cq-opt.selected .cq-letter {
   background: var(--accent);
   color: #fff;
-}
-
-.cq-other-wrap {
-  margin-top: 12px;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.cq-other-input {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 14px;
-  color: var(--text);
-  outline: none;
-  font-family: inherit;
-  transition: border-color .15s;
-}
-
-.cq-other-input:focus {
-  border-color: var(--accent);
 }
 
 .cq-hint {
@@ -2641,6 +2560,130 @@ select.form-input option {
   display: none;
 }
 
+/* ── RIASEC interest profile (career results screen) ──────────────────────
+   Six bars, strongest first, named in plain language. The RIASEC letters
+   themselves only ever appear as the code chip. */
+.air-riasec-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+}
+
+.air-riasec-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.air-riasec-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.2px;
+}
+
+.air-riasec-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.air-riasec-code-wrap {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.air-riasec-code-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.air-riasec-code {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--accent2);
+  line-height: 1.1;
+}
+
+.air-riasec-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.air-riasec-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 210px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.air-riasec-emoji {
+  font-size: 15px;
+}
+
+.air-riasec-name {
+  font-weight: 600;
+}
+
+.air-riasec-track {
+  flex: 1;
+  height: 8px;
+  min-width: 60px;
+  background: rgba(0, 0, 0, .28);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.air-riasec-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .5s ease;
+}
+
+.air-riasec-pct {
+  width: 46px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.air-enjoy-wrap {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.air-enjoy-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.air-enjoy {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--text);
+}
+
 .air-footer-hint {
   margin-top: 20px;
   padding: 14px 18px;
@@ -2742,10 +2785,6 @@ body.nav-open .sidebar-overlay {
     max-width: 90%;
   }
 
-  .chat-layout {
-    height: calc(100vh - 120px);
-  }
-
   .quiz-card,
   .onboard-card {
     padding: 28px 24px;
@@ -2786,12 +2825,6 @@ body.nav-open .sidebar-overlay {
     height: calc(100vh - 120px) !important;
   }
 
-  .chat-layout {
-    height: auto;
-    flex: 1;
-    min-height: 0;
-  }
-
   /* ── Page chrome ── */
   .page {
     padding: 12px 14px 36px;
@@ -2812,21 +2845,9 @@ body.nav-open .sidebar-overlay {
     margin-bottom: 22px;
   }
 
-  .topbar .btn,
-  .topbar-actions .btn {
+  .topbar .btn {
     width: 100%;
     justify-content: center;
-  }
-
-  .topbar-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
   }
 
   /* ── Landing page ── */
@@ -2953,6 +2974,21 @@ body.nav-open .sidebar-overlay {
     text-align: center;
   }
 
+
+  /* RIASEC bars: the label column is too wide to sit beside the bar here */
+  .air-riasec-label {
+    width: 150px;
+    font-size: 12px;
+  }
+
+  .air-riasec-pct {
+    width: 38px;
+    font-size: 12px;
+  }
+
+  .air-riasec-code {
+    font-size: 22px;
+  }
   /* ── AI results screen ── */
   .air-wrap {
     padding: 18px 14px 44px;

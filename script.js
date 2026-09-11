@@ -97,7 +97,6 @@
 
     // ── Per-page init: replaces the old single-page bootstrap ──
     document.addEventListener('DOMContentLoaded', () => {
-      loadSavedKey();
       switch (CURRENT_PAGE) {
         case 'app': {
           const hash = (location.hash || '').replace(/^#\/?/, '');
@@ -274,48 +273,39 @@
     //  here would throw on every other page and abort this script.)
 
     // ══════════════════════════════════════════════════════════════
-    // CAREER INTEREST QUIZ  —  20 questions from PDF
+    // CAREER INTEREST QUIZ  (RIASEC)
+    //
+    // The questions, scoring, career matching and result assembly all live
+    // in riasec_engine.js / riasec_careers.js, which every page loads before
+    // this file. Keeping them there means the Node test harness in tests/
+    // scores answers with exactly the same code the browser runs.
+    //
+    // Function names are unchanged from the previous five-trait version so
+    // the router in show() and the onclick handlers in the page markup did
+    // not have to change.
     // ══════════════════════════════════════════════════════════════
-    const CQ_QUESTIONS = [
-      // Q1 shortened
-      {
-        q: "On a free Saturday with no plans, what would you naturally spend hours doing?",
-        opts: ["Puzzles, science, coding, or figuring how things work", "Business ideas, buying/selling, or managing money", "Reading, writing, debating, or learning about people & society", "Building, repairing, or designing something", "Sports, performing, music, or creating content"],
-        hasOther: true, area: "🌅 Free Time"
-      },
-      // Q2 shortened
-      {
-        q: "Which type of question would you most enjoy investigating?",
-        opts: ["Why does a scientific phenomenon happen?", "Why do some businesses succeed while others fail?", "Why do people think and behave differently?", "How can we build or fix something practical?", "How can ideas be expressed through art, music, or design?"],
-        hasOther: true, area: "🔍 Curiosity"
-      },
-      { q: "What do you enjoy doing most?", opts: ["Solving difficult problems", "Making useful plans", "Understanding different people", "Making things yourself"], area: "⚡ Strengths" },
-      { q: "Which school activity would you enjoy most?", opts: ["Science experiments", "Business projects", "Debates and discussions", "Building useful things"], area: "🏫 School" },
-      { q: "Which subjects do you enjoy most?", opts: ["Maths and Science", "Business and Numbers", "History and Languages", "Computers and Practical Work", "Arts and Creativity"], area: "📚 Subjects" },
-      { q: "What do you enjoy learning about?", opts: ["Space and technology", "Money and business", "People and society", "Machines and tools"], area: "🌍 Learning" },
-      { q: "When learning something new, what do you prefer?", opts: ["Understand how it works", "See real-life examples", "Discuss it with others", "Try it yourself"], area: "🧠 Learning Style" },
-      { q: "Which activity would you enjoy most?", opts: ["Solving a tough puzzle", "Planning a small business", "Helping someone", "Building a model"], area: "🎯 Activities" },
-      { q: "What are you naturally good at?", opts: ["Logical thinking", "Managing things", "Understanding people", "Making things"], area: "💪 Natural Skills" },
-      { q: "Which activity sounds most interesting?", opts: ["Conducting science experiments", "Managing money", "Understanding people", "Building a machine"], area: "🔭 Interests" },
-      { q: "What do you enjoy solving?", opts: ["Maths problems", "Money problems", "People problems", "Practical problems"], area: "🧩 Problem Solving" },
-      { q: "Which future workplace sounds best?", opts: ["Lab or research centre", "Company or bank", "School or court", "Workshop or factory"], area: "🏢 Workplace" },
-      { q: "Which describes you best?", opts: ["I ask many questions", "I like achieving goals", "I understand people well", "I learn by doing"], area: "🪞 Personality" },
-      { q: "What would you enjoy doing?", opts: ["Finding new answers", "Managing a project", "Helping other people", "Fixing something broken"], area: "✨ Enjoyment" },
-      { q: "Which sounds most interesting?", opts: ["Discovering new things", "Starting a business", "Understanding human behaviour", "Designing new products"], area: "💡 Interests" },
-      { q: "How do you prefer working?", opts: ["Working with numbers", "Working with people", "Working with ideas", "Working with machines"], area: "⚙️ Work Style" },
-      { q: "What kind of career sounds best?", opts: ["Solving complex problems", "Running a business", "Helping people", "Building new things"], area: "🎓 Career" },
-      { q: "How much do you know about careers?", opts: ["I know many careers", "I know some careers", "I know few careers", "I know almost none"], area: "📖 Awareness" },
-      { q: "What influences your career choice most?", opts: ["My own interests", "Family expectations", "Job opportunities", "Salary and stability"], area: "🌟 Values" },
-      { q: "What matters most in your future career?", opts: ["Solving interesting problems", "Earning good money", "Helping other people", "Creating new things", "Having a stable career"], area: "🏆 Goals" },
-    ];
 
-    let cqIdx = 0, cqAnswers = [];
+    // cqOrder holds the shuffled question/option layout for this run
+    // (product rules 2 & 3). It is seeded and saved with the session so
+    // going Back re-renders the exact layout the student answered on.
+    let cqIdx = 0, cqAnswers = [], cqOrder = null;
+
+    // Display step → original question index.
+    function cqQuestionAt(step) {
+      const qi = cqOrder ? cqOrder.questionOrder[step] : step;
+      return { qi: qi, q: RS_QUESTIONS[qi] };
+    }
 
     // Called from any page ("Take the quiz" / "Retake") — clears the old run
-    // and hands off to career_quiz.html, which renders Q1 on load.
+    // and hands off to career_quiz.html, which renders the first question.
     function cqStart() {
-      cqIdx = 0; cqAnswers = [];
-      saveState({ cqIdx: 0, cqAnswers: [], appResults: null, isDemo: true });
+      cqIdx = 0;
+      cqAnswers = [];
+      cqOrder = rsBuildOrder();
+      saveState({
+        cqIdx: 0, cqAnswers: [], cqOrder: cqOrder,
+        appResults: null, isDemo: true
+      });
       show('careerquiz');
     }
 
@@ -323,113 +313,115 @@
     function cqResume() {
       const s = loadState();
       cqAnswers = Array.isArray(s.cqAnswers) ? s.cqAnswers : [];
+      // Rebuild from the saved seed rather than trusting the saved arrays,
+      // so a stale or hand-edited session can never map answers onto the
+      // wrong options.
+      cqOrder = s.cqOrder && typeof s.cqOrder.seed === 'number'
+        ? rsBuildOrder(s.cqOrder.seed)
+        : rsBuildOrder();
       cqIdx = typeof s.cqIdx === 'number' ? s.cqIdx : 0;
-      if (cqIdx < 0 || cqIdx >= CQ_QUESTIONS.length) cqIdx = 0;
+      if (cqIdx < 0 || cqIdx >= RS_QUESTIONS.length) cqIdx = 0;
       cqRender();
     }
 
     function cqRender() {
-      const q = CQ_QUESTIONS[cqIdx];
+      const { qi, q } = cqQuestionAt(cqIdx);
+      const order = cqOrder.optionOrder[qi];
       const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
-      document.getElementById('cq-num').textContent = 'Question ' + (cqIdx + 1) + ' of ' + CQ_QUESTIONS.length;
+      const total = RS_QUESTIONS.length;
+
+      document.getElementById('cq-num').textContent = 'Question ' + (cqIdx + 1) + ' of ' + total;
+      // The area tag is a neutral topic label — it never names the RIASEC
+      // dimension being measured (product rule 1).
       document.getElementById('cq-area').textContent = q.area;
-      document.getElementById('cq-bar').style.width = ((cqIdx / CQ_QUESTIONS.length) * 100) + '%';
+      document.getElementById('cq-bar').style.width = ((cqIdx / total) * 100) + '%';
       document.getElementById('cq-back-btn').style.visibility = cqIdx > 0 ? 'visible' : 'hidden';
       document.getElementById('cq-q').textContent = q.q;
+
+      // How many answers this question accepts (doc section 3).
+      document.getElementById('cq-hint').textContent = q.maxSelect > 1
+        ? 'Select up to ' + q.maxSelect + '  ·  ← to go back'
+        : 'Choose 1  ·  ← to go back';
 
       const optsEl = document.getElementById('cq-opts');
       optsEl.innerHTML = '';
 
-      // Regular options — each is a toggle
-      q.opts.forEach((opt, i) => {
+      // Options are rendered in shuffled order; dataset.orig carries the
+      // ORIGINAL index so scoring never depends on display position.
+      order.forEach((origIdx, pos) => {
+        const opt = q.opts[origIdx];
         const d = document.createElement('div');
         d.className = 'cq-opt';
-        d.dataset.idx = i;
-        d.innerHTML = '<div class="cq-letter" data-letter="' + letters[i] + '">' + letters[i] + '</div><span>' + opt + '</span>';
-        d.onclick = () => cqToggle(d);
+        d.dataset.orig = origIdx;
+        d.innerHTML = '<div class="cq-letter" data-letter="' + letters[pos] + '">' + letters[pos] +
+          '</div><span></span>';
+        // textContent, not innerHTML — option text contains quotes and
+        // question marks and should never be parsed as markup.
+        d.querySelector('span').textContent = opt.text;
+        d.onclick = () => cqToggle(d, q.maxSelect);
         optsEl.appendChild(d);
       });
 
-      // "Something else" option (Q1 & Q2 only) — toggles the free-text input
-      if (q.hasOther) {
-        const otherIdx = q.opts.length;
-        const d = document.createElement('div');
-        d.className = 'cq-opt';
-        d.dataset.idx = otherIdx;
-        d.innerHTML = '<div class="cq-letter" data-letter="' + letters[otherIdx] + '">' + letters[otherIdx] + '</div><span>Something else — tell me</span>';
-        d.onclick = () => {
-          cqToggle(d);
-          const isOn = d.classList.contains('selected');
-          const ow = document.getElementById('cq-other-wrap');
-          ow.style.display = isOn ? 'flex' : 'none';
-          if (isOn) document.getElementById('cq-other-input').focus();
-        };
-        optsEl.appendChild(d);
-      }
-
-      document.getElementById('cq-other-wrap').style.display = 'none';
-      document.getElementById('cq-other-input').value = '';
-
-      // Restore previously selected options when going back
-      const prev = cqAnswers[cqIdx];
-      if (prev && prev.indices) {
-        const allOpts = optsEl.querySelectorAll('.cq-opt');
-        prev.indices.forEach(idx => {
-          const opt = allOpts[idx];
-          if (!opt) return;
-          opt.classList.add('selected');
-          const l = opt.querySelector('.cq-letter');
-          l.textContent = '✓'; l.style.background = 'var(--accent)'; l.style.color = '#fff';
-          // Restore "something else" text input
-          if (q.hasOther && idx === q.opts.length && prev.otherText) {
-            document.getElementById('cq-other-wrap').style.display = 'flex';
-            document.getElementById('cq-other-input').value = prev.otherText;
-          }
+      // Restore previous selections when going back.
+      const prev = cqAnswers[qi];
+      if (prev && Array.isArray(prev.indices)) {
+        [...optsEl.querySelectorAll('.cq-opt')].forEach(el => {
+          if (prev.indices.indexOf(parseInt(el.dataset.orig, 10)) !== -1) cqSelect(el, true);
         });
       }
     }
 
-    // Toggle an option on/off — letter shows ✓ when selected
-    function cqToggle(el) {
+    function cqSelect(el, on) {
       const l = el.querySelector('.cq-letter');
-      if (el.classList.contains('selected')) {
-        el.classList.remove('selected');
-        l.textContent = l.dataset.letter;
-        l.style.background = ''; l.style.color = '';
-      } else {
+      if (on) {
         el.classList.add('selected');
         l.textContent = '✓';
-        l.style.background = 'var(--accent)'; l.style.color = '#fff';
+        l.style.background = 'var(--accent)';
+        l.style.color = '#fff';
+      } else {
+        el.classList.remove('selected');
+        l.textContent = l.dataset.letter;
+        l.style.background = '';
+        l.style.color = '';
       }
     }
 
-    // "Next →" button handler — collects all selected options then advances
-    function cqNextQ() {
-      const selectedEls = [...document.querySelectorAll('#cq-opts .cq-opt.selected')];
-      const indices = selectedEls.map(el => parseInt(el.dataset.idx));
-      const texts = selectedEls
-        .map(el => el.querySelector('span').textContent)
-        .filter(t => t !== 'Something else — tell me');
+    // Toggle an option, enforcing the per-question cap. At the cap the
+    // oldest selection drops out, so tapping a third option feels
+    // responsive instead of silently doing nothing.
+    function cqToggle(el, maxSelect) {
+      if (el.classList.contains('selected')) { cqSelect(el, false); return; }
+      const chosen = [...document.querySelectorAll('#cq-opts .cq-opt.selected')];
+      if (chosen.length >= maxSelect) cqSelect(chosen[0], false);
+      cqSelect(el, true);
+    }
 
-      // Collect free-text "other" entry if visible
-      const otherInput = document.getElementById('cq-other-input');
-      const otherVisible = document.getElementById('cq-other-wrap').style.display !== 'none';
-      const otherText = otherVisible ? otherInput.value.trim() : '';
-      if (otherText) texts.push(otherText);
+    // "Next →" — collects the selected options then advances
+    function cqNextQ() {
+      const { qi, q } = cqQuestionAt(cqIdx);
+      const selected = [...document.querySelectorAll('#cq-opts .cq-opt.selected')];
 
       // Require at least one selection
-      if (indices.length === 0 && !otherText) {
+      if (!selected.length) {
         const btn = document.getElementById('cq-next-btn');
         btn.style.animation = 'none';
         requestAnimationFrame(() => { btn.style.animation = 'shake .35s ease'; });
         return;
       }
 
-      cqAnswers[cqIdx] = { q: CQ_QUESTIONS[cqIdx].q, indices, answers: texts, otherText };
+      const indices = selected.map(el => parseInt(el.dataset.orig, 10));
+      // Stored against the ORIGINAL question index, so cqAnswers stays
+      // parallel to RS_QUESTIONS whatever order they were shown in.
+      cqAnswers[qi] = {
+        q: q.q,
+        indices: indices,
+        answers: indices.map(i => q.opts[i].text)
+      };
+
       cqIdx++;
       saveState({ cqIdx: cqIdx, cqAnswers: cqAnswers });
       // Last question → hand off to ai_loading.html, which runs the analysis
-      if (cqIdx >= CQ_QUESTIONS.length) { show('ailoading'); return; }
+      if (cqIdx >= RS_QUESTIONS.length) { show('ailoading'); return; }
       cqSlide('next');
     }
 
@@ -458,8 +450,10 @@
       const s = loadState();
       cqAnswers = Array.isArray(s.cqAnswers) ? s.cqAnswers : [];
       if (!cqAnswers.length) { show('careerquiz'); return; }  // landed here directly
-      // reset steps
-      document.querySelectorAll('.al-step').forEach(s => { s.className = 'al-step pending'; s.querySelector('.al-step-icon').textContent = '⏳'; });
+      document.querySelectorAll('.al-step').forEach(el => {
+        el.className = 'al-step pending';
+        el.querySelector('.al-step-icon').textContent = '⏳';
+      });
       document.getElementById('al-step1').className = 'al-step loading';
       document.getElementById('al-step1').querySelector('.al-step-icon').textContent = '🔄';
       await cqRunAI();
@@ -481,70 +475,36 @@
         }
       }
       await cqDelay(500);
-      const apiKey = localStorage.getItem('openai_key');
-      let results, isDemo = true;
-      try {
-        if (apiKey) { results = await cqCallOpenAI(apiKey); isDemo = false; }
-        else { results = cqMockResults(); }
-      } catch (e) { results = cqMockResults(); }
-      // Persist, then hand off to career_results.html to render
-      saveState({ appResults: results, isDemo: isDemo });
+
+      // ── DEMO MODE ONLY ──────────────────────────────────────────
+      // The RIASEC engine produces every result on device. No network call
+      // is made and no API key is read.
+      const scoring = rsScore(cqAnswers, RS_QUESTIONS);
+      const results = rsBuildResults(scoring, RIASEC_CAREERS);
+
+      saveState({
+        appResults: results,
+        isDemo: true,
+        riasecScores: {
+          pct: scoring.pct,
+          code: scoring.code,
+          confidence: scoring.confidence
+        }
+      });
       show('airesults');
     }
 
-    function cqBuildPrompt() {
-      const qa = cqAnswers.map((a, i) => 'Q' + (i + 1) + ': ' + a.q + '\nAnswer: ' + a.answers.join(', ')).join('\n\n');
-      return 'You are an expert career counsellor for Indian students in Class 8-10.\n\nStudent answers:\n' + qa + '\n\nRespond ONLY with valid JSON:\n{"personality_type":"The [Adj] [Noun]","personality_desc":"2 sentences.","stream_recommendation":"PCM+CS","stream_reason":"1-2 sentences.","top_careers":[{"rank":1,"title":"","emoji":"🎨","field":"","match_pct":90,"why":"1-2 sentences specific to their answers.","stream":"PCM+CS","salary":"₹X–Y LPA starting"}]}\nProvide exactly 5 careers. match_pct 55-95.';
+    const CQ_STREAM_BADGE = {
+      'PCM+CS': 'badge-purple', 'PCM': 'badge-blue', 'PCB': 'badge-green',
+      'Commerce': 'badge-orange', 'Arts': 'badge-red', 'Any': 'badge-green'
+    };
+
+    // Streams in the career database are slash-separated ("PCB / PCM"), so
+    // colour the badge by the first token and fall back to purple.
+    function cqStreamBadge(stream) {
+      const first = String(stream || '').split('/')[0].trim();
+      return CQ_STREAM_BADGE[first] || 'badge-purple';
     }
-
-    async function cqCallOpenAI(apiKey) {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [{ role: 'system', content: 'Career counsellor. JSON only, no markdown.' }, { role: 'user', content: cqBuildPrompt() }],
-          response_format: { type: 'json_object' },
-          temperature: 0.7
-        })
-      });
-      if (!res.ok) throw new Error('API ' + res.status);
-      const data = await res.json();
-      return JSON.parse(data.choices[0].message.content);
-    }
-
-    function cqMockResults() {
-      // Score each answer by its letter index (A=0, B=1, C=2, D=3, E=4)
-      const score = { A: 0, B: 0, C: 0, D: 0, E: 0 };
-      cqAnswers.forEach(a => {
-        if (a && a.indices) {
-          a.indices.forEach(idx => {
-            const l = String.fromCharCode(65 + idx);
-            if (score[l] !== undefined) score[l]++;
-          });
-        }
-      });
-      const sorted = Object.entries(score).sort((x, y) => y[1] - x[1]);
-      const topScore = sorted[0][1];
-      const g = i => topScore - sorted[i][1]; // gap from top to position i
-
-      // Key selection: 50 possible profiles
-      // A=Analytical B=Business C=People D=Hands-On E=Creative
-      let key;
-      if (g(4) <= 5)       key = 'ABCDE';
-      else if (g(3) <= 4)  key = [sorted[0][0],sorted[1][0],sorted[2][0],sorted[3][0]].sort().join('');
-      else if (g(2) <= 3)  key = [sorted[0][0],sorted[1][0],sorted[2][0]].sort().join('');
-      else if (g(1) <= 2)  key = sorted[0][0] + sorted[1][0]; // ordered: dominant first, no sort
-      else if (g(1) <= 6)  key = sorted[0][0] + '_' + sorted[1][0]; // clear winner with secondary flavour
-      else                  key = sorted[0][0]; // pure dominant
-
-      const P = CAREER_PROFILES;
-
-      // Fallback chain: try ordered key → sorted 2-letter → pure dominant → A
-      return P[key] || P[sorted[0][0]+sorted[1][0]] || P[[sorted[0][0],sorted[1][0]].sort().join('')] || P[sorted[0][0]] || P['A'];
-    }
-
-    const CQ_STREAM_BADGE = { 'PCM+CS': 'badge-purple', 'PCM': 'badge-blue', 'PCB': 'badge-green', 'Commerce': 'badge-orange', 'Arts': 'badge-red', 'Any': 'badge-green', 'Arts / PCB': 'badge-green', 'Arts / PCM+CS': 'badge-purple', 'PCM / Design': 'badge-blue', 'Commerce / Arts': 'badge-orange', 'Business / People': 'badge-orange', 'PCM+CS / Commerce': 'badge-purple', 'PCM+CS / Arts': 'badge-purple', 'Commerce / PCM': 'badge-orange', 'PCM / Commerce': 'badge-blue', 'PCM+CS / PCM': 'badge-purple', 'Arts / Commerce': 'badge-red', 'PCB / Arts': 'badge-green', 'PCM / Arts': 'badge-blue', 'Arts / Any': 'badge-red', 'PCM+CS or Commerce': 'badge-purple', 'PCM or Commerce': 'badge-blue', 'PCM or Arts': 'badge-blue', 'Commerce / PCM+CS': 'badge-orange', 'PCB': 'badge-green' };
 
     // Rehydrated on every page load so the dashboard/results/stream/progress
     // pages in app.html can read the last quiz run.
@@ -564,14 +524,15 @@
       document.getElementById('air-stream-val').textContent = data.stream_recommendation;
       document.getElementById('air-stream-reason').textContent = data.stream_reason;
       const demoBadge = document.getElementById('air-demo-badge');
-      demoBadge.style.display = isDemo ? 'inline-block' : 'none';
+      if (demoBadge) demoBadge.style.display = isDemo ? 'inline-block' : 'none';
+
+      cqRenderRiasec(data.riasec);
 
       const list = document.getElementById('air-careers');
       list.innerHTML = '';
       const pcts = ['#a8a3ff', '#00d4aa', '#38bdf8', '#fcd34d', '#fb923c'];
       (data.top_careers || []).forEach((c, i) => {
         const color = pcts[i] || 'var(--accent)';
-        const badgeCls = CQ_STREAM_BADGE[c.stream] || 'badge-purple';
         const div = document.createElement('div');
         div.className = 'air-career-card';
         div.style.animationDelay = (i * 0.1) + 's';
@@ -579,17 +540,79 @@
           '<div class="air-rank ' + (i === 0 ? 'air-rank-top' : '') + '">' + (i + 1) + '</div>' +
           '<div class="air-career-icon">' + c.emoji + '</div>' +
           '<div class="air-career-info">' +
-          '<div class="air-career-name">' + c.title + '</div>' +
-          '<div class="air-career-field">' + c.field + '</div>' +
-          '<div class="air-career-why">"' + c.why + '"</div>' +
+          '<div class="air-career-name"></div>' +
+          '<div class="air-career-field"></div>' +
+          '<div class="air-career-why"></div>' +
           '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
-          '<span class="badge ' + badgeCls + '">' + c.stream + '</span>' +
-          '<span class="badge" style="background:rgba(0,0,0,.3);color:var(--muted);border:1px solid var(--border);">💰 ' + c.salary + '</span>' +
+          '<span class="badge ' + cqStreamBadge(c.stream) + '"></span>' +
+          '<span class="badge" style="background:rgba(0,0,0,.3);color:var(--muted);border:1px solid var(--border);"></span>' +
           '</div>' +
           '</div>' +
           '<div class="air-pct" style="color:' + color + ';">' + c.match_pct + '%</div>';
+        div.querySelector('.air-career-name').textContent = c.title;
+        div.querySelector('.air-career-field').textContent = c.field;
+        div.querySelector('.air-career-why').textContent = c.why;
+        const badges = div.querySelectorAll('.badge');
+        badges[0].textContent = c.stream;
+        badges[1].textContent = '💰 ' + c.salary;
         list.appendChild(div);
       });
+    }
+
+    // ── The RIASEC profile block (doc section 15) ───────────────────────────
+    // Shows the six areas as bars in plain language, the top-three code, and
+    // the "You may enjoy" list. The RIASEC letters appear only as the code
+    // itself; the areas are always named in student-facing words.
+    function cqRenderRiasec(r) {
+      if (!r) return;
+      const bars = document.getElementById('air-riasec-bars');
+      const codeEl = document.getElementById('air-riasec-code');
+      const enjoyEl = document.getElementById('air-enjoy');
+      if (!bars) return;
+
+      const colors = ['#a8a3ff', '#00d4aa', '#38bdf8', '#fcd34d', '#fb923c', '#f472b6'];
+      bars.innerHTML = '';
+      r.ranked.forEach((d, i) => {
+        const strong = i < 3;
+        const row = document.createElement('div');
+        row.className = 'air-riasec-row';
+        row.innerHTML =
+          '<div class="air-riasec-label"><span class="air-riasec-emoji">' + d.emoji + '</span>' +
+          '<span class="air-riasec-name"></span></div>' +
+          '<div class="air-riasec-track"><div class="air-riasec-fill" style="width:' + d.pct +
+          '%;background:' + colors[i] + ';opacity:' + (strong ? 1 : 0.45) + ';"></div></div>' +
+          '<div class="air-riasec-pct" style="color:' + (strong ? colors[i] : 'var(--muted)') + ';">' +
+          d.pct + '%</div>';
+        row.querySelector('.air-riasec-name').textContent = d.plain;
+        bars.appendChild(row);
+      });
+
+      if (codeEl) codeEl.textContent = r.code;
+
+      // Flag genuinely close scores rather than implying a firm ranking
+      // (doc section 8).
+      const note = document.getElementById('air-riasec-note');
+      if (note) {
+        const tied = (r.close || []).find(g => g.length > 1 && g.indexOf(r.ranked[0].dim) !== -1);
+        note.textContent = tied
+          ? 'Your top areas scored very close together, so treat them as similarly strong.'
+          : 'Your strongest area stands clearly ahead of the rest.';
+      }
+
+      if (enjoyEl) {
+        enjoyEl.innerHTML = '';
+        (r.enjoy || []).forEach(t => {
+          const li = document.createElement('li');
+          li.textContent = t;
+          enjoyEl.appendChild(li);
+        });
+      }
+
+      const matched = document.getElementById('air-match-note');
+      if (matched) {
+        matched.textContent = r.qualifiedCount + ' of ' + r.consideredCount +
+          ' careers scored above the minimum match level.';
+      }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -784,7 +807,6 @@
       if (!appResults) return;
       const d = appResults, top = d.top_careers[0];
       // Update the Class 10 row in "Top Match Evolution"
-      const rows = document.querySelectorAll('#progress .card div[style]');
       const evol = document.querySelector('#progress .card');
       if (!evol) return;
       // Re-render evolution table
@@ -800,16 +822,4 @@
       if (note) note.textContent =
         '"Your profile points strongly toward ' + d.personality_type.replace('The ', '') + '. ' +
         top.title + ' is your top career at ' + top.match_pct + '%. Stream recommendation: ' + d.stream_recommendation + '."';
-    }
-
-    // Settings API key save/load
-    function saveApiKey() {
-      const val = document.getElementById('settings-api-key').value.trim();
-      if (val) { localStorage.setItem('openai_key', val); alert('API key saved! Your next quiz will use GPT-4o.'); }
-      else { localStorage.removeItem('openai_key'); alert('API key cleared.'); }
-    }
-    function loadSavedKey() {
-      const k = localStorage.getItem('openai_key');
-      const el = document.getElementById('settings-api-key');
-      if (el && k) el.value = k;
     }

@@ -838,19 +838,17 @@
               </div><button class="btn btn-ghost btn-sm" style="color:var(--accent3);">Clear</button>
             </div>
           </div>
+          <!-- OpenAI Integration section removed: the app runs in demo mode
+               only, so an API key here would have had no effect. The
+               matching engine row below states what actually happens. -->
           <div class="settings-section">
-            <div class="settings-section-title">OpenAI Integration</div>
-            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+            <div class="settings-section-title">Career Matching</div>
+            <div class="settings-row">
               <div>
-                <div class="settings-row-label">OpenAI API Key</div>
-                <div class="settings-row-sub">Add your key so the career quiz calls GPT-4o with your real answers. Key
-                  is stored locally in your browser only.</div>
-              </div>
-              <div style="display:flex;gap:10px;width:100%;">
-                <input id="settings-api-key" class="form-input" type="password" placeholder="sk-…"
-                  style="flex:1;font-family:monospace;font-size:13px;" />
-                <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save Key</button>
-              </div>
+                <div class="settings-row-label">Matching engine</div>
+                <div class="settings-row-sub">Your results are scored on this device from your quiz answers — nothing
+                  is sent anywhere.</div>
+              </div><span class="badge badge-green">On-device</span>
             </div>
           </div>
           <div class="settings-section">
@@ -869,7 +867,8 @@
     </div><!-- /app-layout -->
   </div><!-- /app -->
 
-  <script src="../career_profiles.js"></script>
+  <script src="../riasec_careers.js"></script>
+  <script src="../riasec_engine.js"></script>
   <script src="../script.js"></script>
 
 </body>

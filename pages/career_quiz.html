@@ -34,21 +34,20 @@
         <div id="cq-question-wrap">
           <div class="cq-q" id="cq-q"></div>
           <div class="cq-opts" id="cq-opts"></div>
-          <!-- "Something else" text input (Q1 & Q2 only) -->
-          <div class="cq-other-wrap" id="cq-other-wrap" style="display:none;">
-            <input class="cq-other-input" id="cq-other-input" placeholder="Type your answer here…" />
-          </div>
         </div>
 
+        <!-- Text is set per question by cqRender(): most questions accept
+             up to 2 answers, the last one accepts exactly 1. -->
         <div class="cq-footer">
-          <p class="cq-hint" style="margin:0;">Select one or more &nbsp;·&nbsp; ← to go back</p>
+          <p class="cq-hint" id="cq-hint" style="margin:0;">Select up to 2 &nbsp;·&nbsp; ← to go back</p>
           <button id="cq-next-btn" class="btn btn-primary btn-sm" onclick="cqNextQ()">Next →</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="../career_profiles.js"></script>
+  <script src="../riasec_careers.js"></script>
+  <script src="../riasec_engine.js"></script>
   <script src="../script.js"></script>
 
 </body>
