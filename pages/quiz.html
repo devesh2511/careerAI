@@ -5,7 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CareerAI · Aptitude Quiz</title>
-  <link rel="stylesheet" href="style.css" />
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
 </head>
 
 <body data-page="quiz">
@@ -16,9 +27,13 @@
   <div id="quiz" class="screen active">
     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
       <div class="quiz-wrap">
-        <div class="quiz-header">
+        <div class="quiz-header quiz-topbar">
           <span class="quiz-num" id="quiz-num">Question 1 of 20</span>
           <span class="quiz-area" id="quiz-area">⚡ Logical Reasoning</span>
+          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
+            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
+            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
+          </button>
         </div>
         <div class="progress-bar-wrap">
           <div class="progress-bar-fill" id="quiz-bar" style="width:5%"></div>
@@ -49,7 +64,9 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="../scripts/riasec_careers.js"></script>
+  <script src="../scripts/riasec_engine.js"></script>
+  <script src="../scripts/script.js"></script>
 
 </body>
 

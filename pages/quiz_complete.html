@@ -5,7 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CareerAI · Quiz Complete</title>
-  <link rel="stylesheet" href="style.css" />
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
 </head>
 
 <body data-page="quizcomplete">
@@ -18,7 +29,7 @@
       <div class="qc-wrap">
         <div class="qc-emoji">🎉</div>
         <h2 style="font-size:28px;font-weight:800;margin-bottom:12px;">Quiz Complete!</h2>
-        <p style="font-size:15px;color:var(--muted);margin-bottom:32px;">Great job, Arjun! Your aptitude scores are in.
+        <p style="font-size:15px;color:var(--muted);margin-bottom:32px;">Great job, Devesh! Your aptitude scores are in.
           We're generating your career matches now.</p>
         <div class="card" style="margin-bottom:24px;">
           <div
@@ -60,7 +71,9 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="../scripts/riasec_careers.js"></script>
+  <script src="../scripts/riasec_engine.js"></script>
+  <script src="../scripts/script.js"></script>
 
 </body>
 

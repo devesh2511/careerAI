@@ -5,7 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CareerAI · Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
 </head>
 
 <body data-page="app">
@@ -47,10 +58,17 @@
           <div class="user-row">
             <div class="user-avatar">A</div>
             <div class="user-info">
-              <div class="user-name">Arjun Sharma</div>
+              <div class="user-name">Devesh Jain</div>
               <div class="user-class">Class 10 · CBSE</div>
             </div>
-            <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+            <div class="user-actions">
+              <button class="theme-toggle sidebar-theme" onclick="toggleTheme()" aria-label="Switch theme"
+                aria-pressed="false">
+                <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
+                <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
+              </button>
+              <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+            </div>
           </div>
         </div>
       </aside>
@@ -61,6 +79,11 @@
         <div class="mobile-topbar">
           <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
           <div class="mobile-topbar-logo">Career<span>AI</span></div>
+          <button class="theme-toggle mobile-theme" onclick="toggleTheme()" aria-label="Switch theme"
+            aria-pressed="false">
+            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
+            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
+          </button>
         </div>
 
 
@@ -79,34 +102,32 @@
           <div id="db-main"></div>
 
           <!-- quick actions (always visible) -->
-          <div
-            style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
-            Quick Actions</div>
+          <div class="section-label">Quick Actions</div>
           <div class="quick-actions">
             <div class="qa-card" onclick="navTo('stream')">
-              <div class="qa-icon">🛤️</div>
+              <div class="qa-icon ic-blue">🛤️</div>
               <div class="qa-label">Stream Guide</div>
             </div>
             <div class="qa-card" onclick="navTo('roadmap')">
-              <div class="qa-icon">🗺️</div>
+              <div class="qa-icon ic-pink">🗺️</div>
               <div class="qa-label">My Roadmap</div>
             </div>
             <div class="qa-card" onclick="navTo('chat')">
-              <div class="qa-icon">💬</div>
+              <div class="qa-icon ic-orange">💬</div>
               <div class="qa-label">Ask AI</div>
             </div>
             <div class="qa-card" onclick="navTo('explorer')">
-              <div class="qa-icon">🌍</div>
+              <div class="qa-icon ic-teal">🌍</div>
               <div class="qa-label">Explore Careers</div>
             </div>
             <div class="qa-card" onclick="cqStart()">
-              <div class="qa-icon">🧠</div>
+              <div class="qa-icon ic-violet">🧠</div>
               <div class="qa-label">Career Quiz</div>
             </div>
           </div>
 
           <!-- dynamic: stat cards (empty until quiz taken) -->
-          <div class="card-grid g2" id="db-stats"></div>
+          <div class="db-stats" id="db-stats"></div>
         </div>
 
         <!-- ── CAREER MATCH RESULTS ── -->
@@ -626,7 +647,7 @@
             <div class="msg">
               <div class="msg-avatar msg-ai-avatar">AI</div>
               <div>
-                <div class="msg-bubble">Hey Arjun! 👋 I'm your CareerAI counsellor. I can see your top match is
+                <div class="msg-bubble">Hey Devesh! 👋 I'm your CareerAI counsellor. I can see your top match is
                   <strong>UX Designer (92%)</strong> and you're recommended for <strong>PCM + CS</strong>. Ask me
                   anything — careers, streams, colleges, or what a day in the life of a UX designer actually looks like!
                 </div>
@@ -780,13 +801,13 @@
             <div class="settings-row">
               <div>
                 <div class="settings-row-label">Full Name</div>
-                <div class="settings-row-sub">Arjun Sharma</div>
+                <div class="settings-row-sub">Devesh Jain</div>
               </div><button class="btn btn-ghost btn-sm">Edit</button>
             </div>
             <div class="settings-row">
               <div>
                 <div class="settings-row-label">Email</div>
-                <div class="settings-row-sub">arjun@gmail.com</div>
+                <div class="settings-row-sub">Devesh@gmail.com</div>
               </div><button class="btn btn-ghost btn-sm">Edit</button>
             </div>
             <div class="settings-row">
@@ -838,19 +859,17 @@
               </div><button class="btn btn-ghost btn-sm" style="color:var(--accent3);">Clear</button>
             </div>
           </div>
+          <!-- OpenAI Integration section removed: the app runs in demo mode
+               only, so an API key here would have had no effect. The
+               matching engine row below states what actually happens. -->
           <div class="settings-section">
-            <div class="settings-section-title">OpenAI Integration</div>
-            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+            <div class="settings-section-title">Career Matching</div>
+            <div class="settings-row">
               <div>
-                <div class="settings-row-label">OpenAI API Key</div>
-                <div class="settings-row-sub">Add your key so the career quiz calls GPT-4o with your real answers. Key
-                  is stored locally in your browser only.</div>
-              </div>
-              <div style="display:flex;gap:10px;width:100%;">
-                <input id="settings-api-key" class="form-input" type="password" placeholder="sk-…"
-                  style="flex:1;font-family:monospace;font-size:13px;" />
-                <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save Key</button>
-              </div>
+                <div class="settings-row-label">Matching engine</div>
+                <div class="settings-row-sub">Your results are scored on this device from your quiz answers — nothing
+                  is sent anywhere.</div>
+              </div><span class="badge badge-green">On-device</span>
             </div>
           </div>
           <div class="settings-section">
@@ -869,7 +888,9 @@
     </div><!-- /app-layout -->
   </div><!-- /app -->
 
-  <script src="script.js"></script>
+  <script src="../scripts/riasec_careers.js"></script>
+  <script src="../scripts/riasec_engine.js"></script>
+  <script src="../scripts/script.js"></script>
 
 </body>
 

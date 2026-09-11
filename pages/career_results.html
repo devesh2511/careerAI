@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI · Career Results</title>
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body data-page="airesults">
+
+  <!-- ════════════════════════════════════════
+     AI CAREER RESULTS SCREEN
+════════════════════════════════════════ -->
+  <div id="airesults" class="screen active">
+    <div class="air-wrap">
+
+      <!-- Print-only masthead: the on-screen top bar is mostly buttons, which
+           are dropped from the PDF, so the paper copy needs its own title and
+           a date stamp saying when the report was generated. -->
+      <div class="air-print-head">
+        <div class="air-print-brand">CareerAI</div>
+        <div class="air-print-meta">Career Report · generated <span id="air-print-date">—</span></div>
+      </div>
+
+      <!-- Top bar -->
+      <div class="air-topbar">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">
+            Your AI Career Report</div>
+          <h2
+            style="font-size:24px;font-weight:800;letter-spacing:-.5px;margin-top:4px;display:flex;align-items:center;gap:10px;">
+            Career Matches
+            <span id="air-demo-badge" class="air-demo-badge">Demo Mode</span>
+          </h2>
+        </div>
+        <div class="no-print" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="cqSavePdf()" title="Save this report as a PDF">⬇ Save
+            PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="cqStart()">🔄 Retake</button>
+          <button class="btn btn-secondary btn-sm" onclick="show('landing')">← Home</button>
+          <button class="btn btn-primary btn-sm" onclick="show('dashboard')">Open Full App →</button>
+        </div>
+      </div>
+
+      <!-- Personality card -->
+      <div class="air-hero">
+        <div class="air-personality-label">Your Career Personality</div>
+        <div class="air-personality-type" id="air-personality-type">Loading…</div>
+        <div class="air-personality-desc" id="air-personality-desc">Loading your profile…</div>
+      </div>
+
+      <!-- Stream recommendation -->
+      <div class="air-stream-box">
+        <div style="font-size:32px;flex-shrink:0;">🛤️</div>
+        <div class="air-stream-left">
+          <div class="air-stream-label">Recommended Stream for Class 11</div>
+          <div class="air-stream-val" id="air-stream-val">PCM+CS</div>
+          <div class="air-stream-reason" id="air-stream-reason">Loading…</div>
+        </div>
+        <button class="btn btn-secondary btn-sm no-print" style="align-self:center;flex-shrink:0;"
+          onclick="show('dashboard')">Full Stream Guide →</button>
+      </div>
+
+      <!-- ── Interest profile (doc section 15) ──────────────────────
+           Six areas as bars, strongest first. The areas are named in
+           plain language; the RIASEC letters appear only as the code. -->
+      <div class="air-riasec-box">
+        <div class="air-riasec-head">
+          <div>
+            <div class="air-riasec-title">Your Career Interest Profile</div>
+            <div class="air-riasec-sub" id="air-riasec-note"></div>
+          </div>
+          <div class="air-riasec-code-wrap">
+            <div class="air-riasec-code-label">Your code</div>
+            <div class="air-riasec-code" id="air-riasec-code">—</div>
+          </div>
+        </div>
+
+        <div id="air-riasec-bars"></div>
+
+        <div class="air-enjoy-wrap">
+          <div class="air-enjoy-title">You may enjoy</div>
+          <ul class="air-enjoy" id="air-enjoy"></ul>
+        </div>
+      </div>
+
+      <!-- Career cards -->
+      <div
+        style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        Careers to explore</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;" id="air-match-note"></div>
+      <div id="air-careers"></div>
+
+      <!-- CTAs -->
+      <div class="no-print" style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="show('dashboard')"
+          style="flex:1;min-width:160px;justify-content:center;">🏠 Explore Full Dashboard</button>
+        <button class="btn btn-secondary" onclick="cqSavePdf()" style="justify-content:center;">⬇ Save as PDF</button>
+        <button class="btn btn-secondary" onclick="cqStart()" style="justify-content:center;">🔄 Retake Quiz</button>
+      </div>
+
+      <!-- How the match was produced. Was an "add your API key" prompt, but
+           the app runs in demo mode only and the Settings field is gone. -->
+      <div class="air-footer-hint" id="air-api-hint">
+        <strong style="color:#a8a3ff;">How this was matched:</strong> your 20 answers were scored across six
+        career-interest areas, then your full interest pattern was compared against every career in the
+        database to rank the closest fits. It all runs on your device; nothing is sent anywhere.
+        <br /><br />
+        <strong style="color:#a8a3ff;">Remember:</strong> this is a guide for exploration — it does not decide
+        your future.
+      </div>
+    </div>
+  </div>
+
+  <script src="../scripts/riasec_careers.js"></script>
+  <script src="../scripts/riasec_engine.js"></script>
+  <script src="../scripts/script.js"></script>
+
+</body>
+
+</html>
