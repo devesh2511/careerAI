@@ -681,6 +681,8 @@
       r.ranked.forEach((d, i) => {
         const strong = i < 3;
         const row = document.createElement('div');
+        //row.className = 'air-riasec-row';
+        //row.innerHTML =
         row.className = 'air-riasec-row' + (strong ? ' air-riasec-row-top' : '');
         // The letter here is what decodes the chip above — the top three,
         // in this order, are the code. Naming the areas twice was the
@@ -698,6 +700,7 @@
         bars.appendChild(row);
       });
 
+      //if (codeEl) codeEl.textContent = r.code;
       // Each letter is a tile in the rank colour of its bar, so the eye
       // links "A" to the top bar without the code being spelled out twice.
       const codeLetters = (r.code || '').split('')

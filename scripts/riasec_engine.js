@@ -11,6 +11,8 @@
 // something completely different here than they did in the old model, so
 // none of the old trait code is reused.
 //
+// RIASEC labels are never shown to students (product rule 1). They exist
+// only as internal scoring fields.
 // The bars and career copy are always in plain language (product rule 1) —
 // the formal RIASEC labels surface in one place only, the "what your code
 // means" key, so the three letters of the code are not an unexplained
@@ -801,6 +803,7 @@
         code: scoring.code,
         pct: scoring.pct,
         ranked: scoring.ranked.map(r => ({
+          //dim: r.dim, name: r.name, plain: r.plain,
           dim: r.dim, name: r.name, plain: r.plain, meaning: r.meaning,
           emoji: r.emoji, pct: Math.round(r.pct)
         })),
