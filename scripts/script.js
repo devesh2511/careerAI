@@ -681,8 +681,15 @@
       r.ranked.forEach((d, i) => {
         const strong = i < 3;
         const row = document.createElement('div');
-        row.className = 'air-riasec-row';
+        //row.className = 'air-riasec-row';
+        //row.innerHTML =
+        row.className = 'air-riasec-row' + (strong ? ' air-riasec-row-top' : '');
+        // The letter here is what decodes the chip above — the top three,
+        // in this order, are the code. Naming the areas twice was the
+        // earlier version of this and it just read as repetition.
         row.innerHTML =
+          '<div class="air-riasec-letter"' + (strong ? ' style="color:' + texts[i] + ';"' : '') + '>' +
+          d.dim + '</div>' +
           '<div class="air-riasec-label"><span class="air-riasec-emoji">' + d.emoji + '</span>' +
           '<span class="air-riasec-name"></span></div>' +
           '<div class="air-riasec-track"><div class="air-riasec-fill" style="width:' + d.pct +
@@ -693,7 +700,49 @@
         bars.appendChild(row);
       });
 
-      if (codeEl) codeEl.textContent = r.code;
+      //if (codeEl) codeEl.textContent = r.code;
+      // Each letter is a tile in the rank colour of its bar, so the eye
+      // links "A" to the top bar without the code being spelled out twice.
+      const codeLetters = (r.code || '').split('')
+        .map(l => ({ letter: l, dim: r.ranked.find(d => d.dim === l) }))
+        .filter(x => x.dim);
+
+      if (codeEl) {
+        codeEl.textContent = '';
+        codeLetters.forEach((x, i) => {
+          const tile = document.createElement('span');
+          tile.className = 'air-riasec-code-tile';
+          tile.style.color = texts[i];
+          tile.style.borderBottomColor = fills[i];
+          tile.textContent = x.letter;
+          codeEl.appendChild(tile);
+        });
+      }
+
+      // The letters are only meaningful if the student is told what they
+      // stand for: formal area name plus the plain "you like…" line.
+      // These come from the engine's tables rather than the saved payload,
+      // so a result stored by an older build still renders the full text.
+      const keyEl = document.getElementById('air-code-key');
+      if (keyEl) {
+        keyEl.innerHTML = '';
+        codeLetters.forEach((x, i) => {
+          const name = (typeof RS_DIM_NAMES !== 'undefined' && RS_DIM_NAMES[x.letter]) || x.dim.name;
+          const mean = (typeof RS_DIM_MEANING !== 'undefined' && RS_DIM_MEANING[x.letter]) || x.dim.meaning;
+          if (!name || !mean) return;
+          const row = document.createElement('div');
+          row.className = 'air-code-key-row';
+          row.innerHTML =
+            '<span class="air-code-key-letter" style="color:' + texts[i] +
+            ';border-bottom-color:' + fills[i] + ';"></span>' +
+            '<div class="air-code-key-text"><span class="air-code-key-name"></span>' +
+            ' — you like <span class="air-code-key-mean"></span></div>';
+          row.querySelector('.air-code-key-letter').textContent = x.letter;
+          row.querySelector('.air-code-key-name').textContent = name;
+          row.querySelector('.air-code-key-mean').textContent = mean + '.';
+          keyEl.appendChild(row);
+        });
+      }
 
       // Flag genuinely close scores rather than implying a firm ranking
       // (doc section 8).

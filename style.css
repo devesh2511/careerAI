@@ -1370,6 +1370,234 @@ select.form-input option {
 .feat-card h3 {
   font-size: 16.5px;
   font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: -.2px;
+  margin-bottom: 14px;
+}
+
+.lv-opts {
+  display: grid;
+  gap: 8px;
+}
+
+.lv-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  color: var(--muted);
+}
+
+.lv-opt i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  flex-shrink: 0;
+}
+
+.lv-opt.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.lv-opt.on i {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--surface);
+}
+
+.lv-match {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.lv-match+.lv-match {
+  border-top: 1px solid var(--border);
+}
+
+.lv-match-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px var(--rim);
+}
+
+.lv-match-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -.1px;
+}
+
+.lv-match-name small {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.lv-match-pct {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── "By the numbers" strip ──
+   The references run a live usage counter here. These are facts about what
+   the product does instead — we have no usage figures to stand behind. */
+.land-facts {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.facts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.fact {
+  padding: 30px 24px;
+  text-align: center;
+  border-left: 1px solid var(--border);
+}
+
+.fact:first-child {
+  border-left: none;
+}
+
+.fact-val {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -1.3px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(120deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.fact-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+
+/* ── Section headings ── */
+.land-features {
+  padding: 84px 32px;
+}
+
+.land-feat-title {
+  text-align: center;
+  font-size: clamp(27px, 3.4vw, 38px);
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1.18;
+  margin-bottom: 10px;
+}
+
+.land-feat-sub {
+  text-align: center;
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 560px;
+  margin: 0 auto 52px;
+}
+
+/* Three across, so the six cards read as two even rows. auto-fit would fit
+   four at this width and leave a ragged 4 + 2. */
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.feat-card {
+  background: linear-gradient(180deg, var(--card-top), transparent 45%), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: var(--shadow), var(--sheen);
+  transition: border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+
+.feat-card:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg), var(--glow), var(--sheen);
+}
+
+.feat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  margin-bottom: 18px;
+  /* The tint comes from an .ic-* class; this adds the rim + lift */
+  box-shadow: inset 0 0 0 1px var(--rim), var(--tile-lift);
+  transition: transform .25s var(--ease-out);
+}
+
+.feat-card:hover .feat-icon {
+  transform: scale(1.07) rotate(-3deg);
+}
+
+/* Icon tints. Classes rather than inline styles, so the alphas stay tunable
+   per theme from one place. */
+.ic-violet {
+  background: rgba(108, 99, 255, .12);
+}
+
+.ic-teal {
+  background: rgba(0, 191, 153, .13);
+}
+
+.ic-blue {
+  background: rgba(56, 189, 248, .14);
+}
+
+.ic-pink {
+  background: rgba(245, 82, 122, .12);
+}
+
+.ic-orange {
+  background: rgba(251, 146, 60, .14);
+}
+
+.ic-purple {
+  background: rgba(167, 139, 250, .15);
+}
+
+.feat-card h3 {
+  font-size: 16.5px;
+  font-weight: 700;
   letter-spacing: -.3px;
   margin-bottom: 8px;
 }
@@ -1993,9 +2221,18 @@ select.form-input option {
   box-shadow: none;
 }
 
-.quiz-footer {
+.db-empty p {
+  font-size: 14.5px;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 420px;
+  margin: 0 auto 24px;
+}
+
+/* What the quiz unlocks. Concrete deliverables do more to earn the click
+   than another line of persuasion. */
+.db-unlocks {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-top: 28px;
 }
@@ -4066,12 +4303,276 @@ select.form-input option {
   margin-bottom: 10px;
 }
 
+.air-career-why {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.air-pct {
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: -1.2px;
+  flex-shrink: 0;
+  text-align: right;
+  line-height: 1;
+}
+
+.air-demo-badge {
+  background: rgba(245, 158, 11, .1);
+  border: 1px solid rgba(245, 158, 11, .3);
+  color: var(--yellow-text);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  display: none;
+}
+
+/* ── RIASEC interest profile (career results screen) ──────────────────────
+   Six bars, strongest first, named in plain language. The RIASEC letters
+   themselves only ever appear as the code chip. */
+.air-riasec-box {
+  background: linear-gradient(180deg, var(--card-top), transparent 45%), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow), var(--sheen);
+}
+
+.air-riasec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+/* Takes the slack so the note wraps beside the code chip rather than
+   leaving a hole under the title. */
+.air-riasec-head-left {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.air-riasec-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.2px;
+}
+
+.air-riasec-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* A compact strip: label on the left, three letter tiles on the right.
+   Each tile takes the rank colour of its bar, and every bar is tagged
+   with its letter, so the chart itself decodes the code. */
+.air-riasec-code-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 10px 13px;
+  background: var(--well);
+  box-shadow: var(--well-inset);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.air-riasec-code-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.air-riasec-code {
+  display: flex;
+  gap: 6px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent2-text);
+}
+
+.air-riasec-code-tile {
+  width: 36px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-width: 3px;
+  border-radius: 10px;
+}
+
+.air-riasec-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+/* Each bar carries its RIASEC letter, which is what decodes the chip
+   above: the top three are the code, in this order. */
+.air-riasec-letter {
+  width: 15px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--muted);
+  opacity: .5;
+}
+
+.air-riasec-row-top .air-riasec-letter {
+  opacity: 1;
+}
+
+.air-riasec-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 222px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.air-riasec-emoji {
+  font-size: 15px;
+}
+
+.air-riasec-name {
+  font-weight: 600;
+}
+
+.air-riasec-track {
+  flex: 1;
+  height: 9px;
+  min-width: 60px;
+  background: var(--well);
+  box-shadow: var(--well-inset);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.air-riasec-fill {
+  height: 100%;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
+  transition: width .6s var(--ease-out);
+}
+
+.air-riasec-pct {
+  width: 46px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.air-enjoy-wrap {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Sits between the header and the bars, so it reads as part of the code
+   chip rather than as a footnote: divider below, not above. */
+.air-code-key-wrap {
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Decodes the three letters of the code. The letter chips repeat the
+   tiles in the header, down to the colour, so the two read as one thing. */
+.air-code-key {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.air-code-key-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.air-code-key-letter {
+  width: 24px;
+  height: 25px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 7px;
+}
+
+.air-code-key-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  padding-top: 2px;
+}
+
+.air-code-key-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.air-enjoy-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+/* Chips rather than bullets: the phrases are short, so a single column
+   wasted the width, and each chip stays whole when the row wraps. */
 .air-enjoy {
   margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  line-height: 1.9;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.air-enjoy li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px 7px 11px;
+  background: var(--well);
+  box-shadow: var(--well-inset);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12.5px;
+  line-height: 1.35;
   color: var(--text);
+}
+
+.air-enjoy li::before {
+  content: '✦';
+  font-size: 11px;
+  color: var(--accent2-text);
 }
 
 /* Masthead for the PDF only — the @media print block reveals it */
@@ -4594,20 +5095,43 @@ body.nav-open .sidebar-overlay {
   }
 
 
-  /* RIASEC bars: the label column is too wide to sit beside the bar here */
+  /* Side-by-side leaves the bar about 70px wide here, which reads as noise.
+     Stack instead: letter + name + value on one line, bar across the next. */
+  .air-riasec-row {
+    flex-wrap: wrap;
+    gap: 7px 8px;
+    margin-bottom: 15px;
+  }
+
+  .air-riasec-letter {
+    width: 12px;
+    font-size: 11px;
+  }
+
   .air-riasec-label {
-    width: 150px;
-    font-size: 12px;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 12.5px;
+  }
+
+  .air-riasec-track {
+    order: 3;
+    flex: 0 0 100%;
   }
 
   .air-riasec-pct {
-    width: 38px;
-    font-size: 12px;
+    order: 2;
+    width: auto;
+    font-size: 12.5px;
   }
 
-  .air-riasec-code {
-    font-size: 22px;
+  /* The code panel wraps under the title here, so let it span the card */
+  .air-riasec-code-wrap {
+    width: 100%;
+    justify-content: space-between;
   }
+
   /* ── AI results screen ── */
   .air-wrap {
     padding: 18px 14px 44px;
