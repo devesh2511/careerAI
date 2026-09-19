@@ -11,8 +11,10 @@
 // something completely different here than they did in the old model, so
 // none of the old trait code is reused.
 //
-// RIASEC labels are never shown to students (product rule 1). They exist
-// only as internal scoring fields.
+// The bars and career copy are always in plain language (product rule 1) —
+// the formal RIASEC labels surface in one place only, the "what your code
+// means" key, so the three letters of the code are not an unexplained
+// acronym.
 //
 // Loaded as a plain <script> before script.js (attaches to the global),
 // and require()-able from tests/ under Node.
@@ -43,6 +45,17 @@
   };
 
   const RS_DIM_EMOJI = { R: '🔧', I: '🔬', A: '🎨', S: '🤝', E: '🚀', C: '📋' };
+
+  // Straight from the RIASEC table in the spec. Shown against the letters
+  // of the student's own code so the code is not an unexplained acronym.
+  const RS_DIM_MEANING = {
+    R: 'building, fixing, machines, tools, nature, and practical work',
+    I: 'science, maths, research, questions, and solving problems',
+    A: 'art, design, music, writing, stories, and creating new things',
+    S: 'helping, teaching, listening, guiding, and working with people',
+    E: 'leading, convincing, organising, selling, and starting things',
+    C: 'numbers, organising information, planning, accuracy, and clear systems'
+  };
 
   // What a student high in each area tends to enjoy — the "You may enjoy"
   // list on the result screen (doc section 15).
@@ -372,6 +385,7 @@
     const ranked = RS_DIMS
       .map(d => ({
         dim: d, name: RS_DIM_NAMES[d], plain: RS_DIM_PLAIN[d],
+        meaning: RS_DIM_MEANING[d],
         emoji: RS_DIM_EMOJI[d], raw: raw[d], pct: pct[d]
       }))
       .sort((x, y) => y.pct - x.pct);
@@ -787,7 +801,7 @@
         code: scoring.code,
         pct: scoring.pct,
         ranked: scoring.ranked.map(r => ({
-          dim: r.dim, name: r.name, plain: r.plain,
+          dim: r.dim, name: r.name, plain: r.plain, meaning: r.meaning,
           emoji: r.emoji, pct: Math.round(r.pct)
         })),
         close: scoring.close,
@@ -802,6 +816,7 @@
 
   return {
     RS_DIMS, RS_DIM_NAMES, RS_DIM_PLAIN, RS_DIM_EMOJI, RS_DIM_ENJOY,
+    RS_DIM_MEANING,
     RS_PROFILES, rsProfileFor, rsStreamFor, rsBuildResults,
     rsPatternSimilarity, rsSimilarityToPct,
     RS_QUESTIONS,

@@ -75,18 +75,31 @@
       </div>
 
       <!-- ── Interest profile (doc section 15) ──────────────────────
-           Six areas as bars, strongest first. The areas are named in
-           plain language; the RIASEC letters appear only as the code. -->
+           Six areas as bars, strongest first, named in plain language.
+           The formal RIASEC names appear once, in the key that explains
+           the three letters of the student's own code. -->
       <div class="air-riasec-box">
         <div class="air-riasec-head">
-          <div>
+          <div class="air-riasec-head-left">
             <div class="air-riasec-title">Your Career Interest Profile</div>
             <div class="air-riasec-sub" id="air-riasec-note"></div>
           </div>
+          <!-- The code is three letters, so it means nothing on its own.
+               Rather than repeat the area names here, each bar below is
+               tagged with its letter — the bars are the key. -->
           <div class="air-riasec-code-wrap">
             <div class="air-riasec-code-label">Your code</div>
             <div class="air-riasec-code" id="air-riasec-code">—</div>
           </div>
+        </div>
+
+        <!-- Decodes the three letters before the chart, so the code is
+             already explained by the time the bars are read. Only the
+             student's own letters are listed; every area is named on the
+             bars themselves. -->
+        <div class="air-code-key-wrap">
+          <div class="air-enjoy-title">What your code means</div>
+          <div class="air-code-key" id="air-code-key"></div>
         </div>
 
         <div id="air-riasec-bars"></div>

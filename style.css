@@ -3960,11 +3960,18 @@ select.form-input option {
 
 .air-riasec-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
   margin-bottom: 18px;
+}
+
+/* Takes the slack so the note wraps beside the code chip rather than
+   leaving a hole under the title. */
+.air-riasec-head-left {
+  flex: 1 1 240px;
+  min-width: 0;
 }
 
 .air-riasec-title {
@@ -3980,9 +3987,19 @@ select.form-input option {
   line-height: 1.5;
 }
 
+/* A compact strip: label on the left, three letter tiles on the right.
+   Each tile takes the rank colour of its bar, and every bar is tagged
+   with its letter, so the chart itself decodes the code. */
 .air-riasec-code-wrap {
-  text-align: right;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 10px 13px;
+  background: var(--well);
+  box-shadow: var(--well-inset);
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
 .air-riasec-code-label {
@@ -3994,12 +4011,24 @@ select.form-input option {
 }
 
 .air-riasec-code {
-  font-size: 26px;
+  display: flex;
+  gap: 6px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: 3px;
+  line-height: 1;
   color: var(--accent2-text);
-  line-height: 1.1;
-  text-shadow: 0 0 18px rgba(0, 212, 170, .55);
+}
+
+.air-riasec-code-tile {
+  width: 36px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-width: 3px;
+  border-radius: 10px;
 }
 
 .air-riasec-row {
@@ -4009,11 +4038,27 @@ select.form-input option {
   margin-bottom: 10px;
 }
 
+/* Each bar carries its RIASEC letter, which is what decodes the chip
+   above: the top three are the code, in this order. */
+.air-riasec-letter {
+  width: 15px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--muted);
+  opacity: .5;
+}
+
+.air-riasec-row-top .air-riasec-letter {
+  opacity: 1;
+}
+
 .air-riasec-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 210px;
+  width: 222px;
   flex-shrink: 0;
   font-size: 13px;
 }
@@ -4057,6 +4102,55 @@ select.form-input option {
   border-top: 1px solid var(--border);
 }
 
+/* Sits between the header and the bars, so it reads as part of the code
+   chip rather than as a footnote: divider below, not above. */
+.air-code-key-wrap {
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Decodes the three letters of the code. The letter chips repeat the
+   tiles in the header, down to the colour, so the two read as one thing. */
+.air-code-key {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.air-code-key-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.air-code-key-letter {
+  width: 24px;
+  height: 25px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 7px;
+}
+
+.air-code-key-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  padding-top: 2px;
+}
+
+.air-code-key-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
 .air-enjoy-title {
   font-size: 11px;
   font-weight: 700;
@@ -4066,12 +4160,35 @@ select.form-input option {
   margin-bottom: 10px;
 }
 
+/* Chips rather than bullets: the phrases are short, so a single column
+   wasted the width, and each chip stays whole when the row wraps. */
 .air-enjoy {
   margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  line-height: 1.9;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.air-enjoy li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px 7px 11px;
+  background: var(--well);
+  box-shadow: var(--well-inset);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12.5px;
+  line-height: 1.35;
   color: var(--text);
+}
+
+.air-enjoy li::before {
+  content: '✦';
+  font-size: 11px;
+  color: var(--accent2-text);
 }
 
 /* Masthead for the PDF only — the @media print block reveals it */
@@ -4594,20 +4711,43 @@ body.nav-open .sidebar-overlay {
   }
 
 
-  /* RIASEC bars: the label column is too wide to sit beside the bar here */
+  /* Side-by-side leaves the bar about 70px wide here, which reads as noise.
+     Stack instead: letter + name + value on one line, bar across the next. */
+  .air-riasec-row {
+    flex-wrap: wrap;
+    gap: 7px 8px;
+    margin-bottom: 15px;
+  }
+
+  .air-riasec-letter {
+    width: 12px;
+    font-size: 11px;
+  }
+
   .air-riasec-label {
-    width: 150px;
-    font-size: 12px;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 12.5px;
+  }
+
+  .air-riasec-track {
+    order: 3;
+    flex: 0 0 100%;
   }
 
   .air-riasec-pct {
-    width: 38px;
-    font-size: 12px;
+    order: 2;
+    width: auto;
+    font-size: 12.5px;
   }
 
-  .air-riasec-code {
-    font-size: 22px;
+  /* The code panel wraps under the title here, so let it span the card */
+  .air-riasec-code-wrap {
+    width: 100%;
+    justify-content: space-between;
   }
+
   /* ── AI results screen ── */
   .air-wrap {
     padding: 18px 14px 44px;
