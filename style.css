@@ -2625,6 +2625,19 @@ select.form-input option {
   transition: background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease);
 }
 
+/* The drawer renders these as real <button>s; the page renders some as
+   <div>s. Normalising here keeps the two identical. */
+button.filter-chip {
+  line-height: inherit;
+  appearance: none;
+}
+
+.filter-chip:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
 .filter-chip:hover,
 .filter-chip.active {
   background: var(--accent-soft);
@@ -2833,6 +2846,12 @@ select.form-input option {
   cursor: pointer;
   box-shadow: var(--shadow-sm), var(--sheen);
   transition: border-color .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
+  /* Column layout so the fit bar can be pinned to the bottom: titles run to
+     one or two lines, and a bar that floats with the text makes the row of
+     percentages impossible to compare at a glance. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .explore-card:hover {
@@ -2871,6 +2890,10 @@ select.form-input option {
   gap: 8px;
   font-size: 12px;
   font-weight: 700;
+  /* Pinned to the bottom edge of the card — see .explore-card */
+  margin-top: auto;
+  padding-top: 4px;
+  width: 100%;
 }
 
 .explore-card .fit-bar {
@@ -2885,6 +2908,372 @@ select.form-input option {
 .explore-card .fit-fill {
   height: 100%;
   border-radius: 100px;
+}
+
+.explore-card .ex-salary {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* Explorer cards are informational — nothing to click, so no pointer. */
+.explore-card.is-static {
+  cursor: default;
+}
+
+/* ─────────────────────── EXPLORER SEARCH / FILTER / SORT ─────────────────────── */
+/* One line above the grid. Everything that narrows the list lives in the
+   drawer, so the page does not open with a screenful of controls. */
+.ex-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ex-bar .search-bar {
+  flex: 1;
+  min-width: 180px;
+  margin-bottom: 0;
+}
+
+.ex-search-clear {
+  display: none;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ex-search-clear:hover {
+  color: var(--text);
+}
+
+.ex-search-clear.is-on {
+  display: block;
+}
+
+/* ── The drawer trigger ── */
+.ex-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .15s var(--ease), background .15s var(--ease), box-shadow .15s var(--ease);
+}
+
+.ex-filter-btn:hover {
+  border-color: var(--border-strong);
+}
+
+.ex-filter-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+/* Lit while filters are on, with the number of them — a closed drawer must
+   never hide the fact that the grid is being narrowed. */
+.ex-filter-btn.is-on {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.ex-filter-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* ── Sort pill: the label lives inside the control, not beside it ── */
+.ex-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 5px 4px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .15s var(--ease), background .15s var(--ease);
+}
+
+.ex-tool:hover {
+  border-color: var(--border-strong);
+}
+
+/* The select drops its own ring, so the pill carries the focus state for it
+   and keyboard users still get a visible indicator. */
+.ex-tool:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.ex-tool>span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ex-select {
+  width: auto;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.ex-select:hover,
+.ex-select:focus {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* ── Active filter chips (below the bar) ── */
+.ex-active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.ex-active:empty {
+  display: none;
+}
+
+.ex-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 13px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.ex-active-pill .exa-key {
+  opacity: .7;
+  font-weight: 800;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.ex-active-pill button {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  color: inherit;
+  opacity: .75;
+  cursor: pointer;
+}
+
+.ex-active-pill button:hover {
+  opacity: 1;
+}
+
+.ex-active-clear {
+  background: none;
+  border: none;
+  padding: 5px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ex-active-clear:hover {
+  color: var(--text);
+}
+
+/* ── Filter drawer ── */
+/* Sits at body level rather than inside .page: the page-entry animation
+   transforms its container, which would trap a fixed-position panel. */
+.ex-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(4, 4, 8, .5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .22s var(--ease), visibility .22s var(--ease);
+}
+
+.ex-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 201;
+  width: 460px;
+  max-width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -18px 0 48px rgba(4, 4, 8, .22);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform .26s var(--ease-out), visibility .26s var(--ease-out);
+}
+
+/* The drawer is modal, so the page behind it should not scroll away under
+   the overlay. */
+body.ex-filters-open {
+  overflow: hidden;
+}
+
+body.ex-filters-open .ex-drawer-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+body.ex-filters-open .ex-drawer {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.ex-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ex-drawer-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.ex-drawer-sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ex-drawer-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ex-drawer-close:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.ex-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.ex-group-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.ex-group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ex-drawer-foot {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.ex-drawer-foot .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* A category with nothing in it under the current filters: still clickable,
+   but it should not read as an equal option. */
+.filter-chip.is-empty {
+  opacity: .45;
+}
+
+/* The count is supporting detail — at full weight it competes with the
+   category name for the same glance. */
+.filter-chip .fc-n {
+  margin-left: 7px;
+  opacity: .55;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter-chip.active .fc-n {
+  opacity: .8;
+}
+
+/* Search / filter came back empty: spans the whole grid rather than sitting
+   in the first column as a lone card-sized block. */
+.ex-none {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 56px 20px;
+  color: var(--muted);
 }
 
 /* ─────────────────────────────── CAREER DETAIL ─────────────────────────────── */
@@ -4795,6 +5184,36 @@ body.nav-open .sidebar-overlay {
   }
 }
 
+/* ────────────  NARROW TABLET / SMALL WINDOW  (≤900px)  ──────────── */
+/* The explorer bar puts search, the filter trigger and sort on one line. The
+   sidebar still takes its full 220px at these widths, so search is the first
+   thing to be squeezed — below this it gets its own row and the two controls
+   share the next. */
+@media (max-width: 900px) {
+  .ex-bar {
+    flex-wrap: wrap;
+  }
+
+  .ex-bar .search-bar {
+    flex: 1 1 100%;
+  }
+
+  .ex-filter-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .ex-tool {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .ex-select {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 /* ─────────────────────  PHONE  (≤640px)  ───────────────────── */
 @media (max-width: 640px) {
 
@@ -5323,6 +5742,11 @@ body.nav-open .sidebar-overlay {
   .explore-card,
   .stream-opt {
     padding: 16px;
+  }
+
+  /* Near enough to full-screen that the drawer reads as its own view. */
+  .ex-drawer {
+    width: 100%;
   }
 
   /* ── Roadmap timeline ── */

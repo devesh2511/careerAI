@@ -138,6 +138,7 @@
       if (pageId === 'dashboard') syncDashboard();
       else if (pageId === 'results') syncResults();
       else if (pageId === 'stream') syncStream();
+      else if (pageId === 'explorer') syncExplorer();
       else if (pageId === 'progress') syncProgress();
     }
 
@@ -965,6 +966,559 @@
           card.style.background = '';
         }
       });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // CAREER EXPLORER
+    //
+    // Every card is built from RIASEC_CAREERS, so the explorer lists the
+    // whole database and can never drift out of sync with the quiz: add a
+    // career to the catalogue and it shows up here with no markup change.
+    //
+    // Fit % comes from the same rsCareerFit() the shortlist is ranked with,
+    // so a career reads the same percentage here as on the results page —
+    // including the ones the diversity and minimum-fit rules keep out of the
+    // top five. Before the quiz is taken there is no profile to compare
+    // against, so the cards drop the fit row instead of inventing a number.
+    // ══════════════════════════════════════════════════════════════
+
+    // Four controls narrow the grid — category chips, stream, minimum fit and
+    // the search box — and they compose. Each control's counts are computed
+    // with the OTHER filters already applied, so a chip reads "how many would
+    // I see if I clicked this" rather than a number that never moves.
+    //
+    // Chips group the catalogue's `family` tags into the handful of buckets a
+    // student actually browses by. Families are grouped rather than listed
+    // one-per-chip because fourteen chips scan as a wall, not a filter.
+    const EX_GROUPS = [
+      { key: 'all', label: 'All', families: null },
+      { key: 'tech', label: 'Technology', families: ['computing'] },
+      { key: 'engineering', label: 'Engineering & Trades', families: ['engineering', 'trades'] },
+      { key: 'science', label: 'Science', families: ['science'] },
+      { key: 'healthcare', label: 'Healthcare', families: ['healthcare'] },
+      { key: 'creative', label: 'Design & Arts', families: ['design', 'media-arts'] },
+      { key: 'commerce', label: 'Business & Finance', families: ['business', 'finance', 'operations'] },
+      { key: 'people', label: 'People & Society', families: ['education', 'psychology', 'social-policy'] },
+      { key: 'outdoors', label: 'Outdoors & Services', families: ['outdoor-services'] }
+    ];
+
+    // Class 11 streams, in the order a student is likely to look for them.
+    // Any token the catalogue uses that is not listed here still gets an
+    // option, appended at the end.
+    const EX_STREAM_ORDER = ['PCM+CS', 'PCM', 'PCB', 'Commerce', 'Arts', 'ITI', 'Any'];
+
+    // Minimum-fit steps. The labels are worded in plain terms because "65%"
+    // on its own does not tell a student whether that is good.
+    const EX_FIT_STEPS = [
+      { key: 'all', label: 'Any fit', min: 0 },
+      { key: '85', label: 'Excellent · 85%+', min: 85 },
+      { key: '75', label: 'Strong · 75%+', min: 75 },
+      { key: '65', label: 'Good · 65%+', min: 65 }
+    ];
+
+    // needsFit marks the orders that only mean something once the quiz has
+    // produced a profile — they are left out of the menu until then.
+    const EX_SORTS = [
+      { key: 'fit', label: 'Best fit', needsFit: true },
+      { key: 'az', label: 'Name: A → Z' },
+      { key: 'za', label: 'Name: Z → A' },
+      { key: 'salary-high', label: 'Salary: high → low' },
+      { key: 'salary-low', label: 'Salary: low → high' },
+      { key: 'category', label: 'Category' }
+    ];
+
+    let exGroup = 'all', exStream = 'all', exFit = 'all', exSort = '', exQuery = '';
+    let exCareers = null, exGroups = null;
+
+    // The student's six-dimensional profile, or null before the quiz.
+    // riasecScores is what the quiz saves; appResults is the fallback for a
+    // session stored by a build that only wrote the results payload.
+    function exStudentPct() {
+      const s = loadState();
+      if (s.riasecScores && s.riasecScores.pct) return s.riasecScores.pct;
+      if (appResults && appResults.riasec && appResults.riasec.pct) return appResults.riasec.pct;
+      return null;
+    }
+
+    // Colour tracks how strong the match is, not the card's position: with a
+    // hundred-plus cards on screen, rank-based colour would say nothing.
+    function exBand(pct) {
+      return pct >= 85 ? 0 : pct >= 75 ? 1 : pct >= 65 ? 2 : pct >= 55 ? 3 : 4;
+    }
+
+    // Salaries are authored as copy ("₹5–9 LPA starting"), not numbers, so
+    // sorting reads the range back out of the string. A career with no figure
+    // at all ("Varies widely") gets null and always sorts to the end rather
+    // than being treated as ₹0.
+    function exSalaryRange(text) {
+      const span = String(text || '').match(/(\d+)\s*[–—-]\s*(\d+)/);
+      if (span) return { low: +span[1], high: +span[2] };
+      const single = String(text || '').match(/(\d+)/);
+      return single ? { low: +single[1], high: +single[1] } : null;
+    }
+
+    // "PCB / PCM" means either stream works, so a career carries a list of
+    // streams, not one.
+    function exStreamsOf(career) {
+      return String(career.stream || '').split('/').map(s => s.trim()).filter(Boolean);
+    }
+
+    function exBuildList() {
+      const db = typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : [];
+      const pct = exStudentPct();
+      return db.map(c => ({
+        career: c,
+        match_pct: pct ? Math.round(rsCareerFit(pct, c).fit * 100) : null,
+        salary: exSalaryRange(c.salary),
+        streams: exStreamsOf(c),
+        // Searching the stream and the "why" line too means "PCB" or
+        // "helping people" find careers whose titles never say either.
+        haystack: (c.title + ' ' + c.field + ' ' + c.stream + ' ' + c.why).toLowerCase()
+      }));
+    }
+
+    // Any family missing from EX_GROUPS is collected into "Other", so a new
+    // family in the catalogue can never leave careers reachable only from the
+    // All chip. Counts are filled in per render by exRenderDrawer().
+    function exGroupsFor(list) {
+      const groups = EX_GROUPS.map(g => Object.assign({}, g));
+      const mapped = {};
+      groups.forEach(g => (g.families || []).forEach(f => { mapped[f] = 1; }));
+      const extra = [];
+      list.forEach(it => {
+        const fam = it.career.family || '';
+        if (fam && !mapped[fam] && extra.indexOf(fam) === -1) extra.push(fam);
+      });
+      if (extra.length) groups.push({ key: 'other', label: 'Other', families: extra });
+      // Drop buckets the catalogue has nothing in — but keep All, which is
+      // the fallback selection.
+      return groups.filter(g => !g.families ||
+        list.some(it => g.families.indexOf(it.career.family) !== -1));
+    }
+
+    function exGroupBy(key) {
+      return (exGroups || []).find(g => g.key === key) || null;
+    }
+
+    function exInGroup(item, group) {
+      return !group || !group.families || group.families.indexOf(item.career.family) !== -1;
+    }
+
+    function exStreamMatch(item, token) {
+      if (item.streams.indexOf(token) !== -1) return true;
+      // A career marked "Any" is open from every stream, so it stays visible
+      // whichever stream is picked.
+      return token !== 'Any' && item.streams.indexOf('Any') !== -1;
+    }
+
+    function exHasFit() {
+      return !!(exCareers && exCareers.length && exCareers[0].match_pct !== null);
+    }
+
+    // `skip` names one control to ignore, which is how each control's own
+    // count is worked out: the stream counts apply the chips, the search and
+    // the fit floor, but not the stream.
+    function exPasses(item, skip) {
+      if (skip !== 'group' && !exInGroup(item, exGroupBy(exGroup))) return false;
+      if (skip !== 'stream' && exStream !== 'all' && !exStreamMatch(item, exStream)) return false;
+      if (skip !== 'fit' && exFit !== 'all') {
+        if (item.match_pct === null || item.match_pct < +exFit) return false;
+      }
+      if (skip !== 'query') {
+        const q = exQuery.trim().toLowerCase();
+        if (q && item.haystack.indexOf(q) === -1) return false;
+      }
+      return true;
+    }
+
+    // Stream tokens the catalogue actually uses, in EX_STREAM_ORDER first.
+    function exStreamOptions(list) {
+      const seen = {};
+      list.forEach(it => it.streams.forEach(s => { seen[s] = 1; }));
+      const known = EX_STREAM_ORDER.filter(s => seen[s]);
+      const rest = Object.keys(seen).filter(s => EX_STREAM_ORDER.indexOf(s) === -1).sort();
+      return known.concat(rest);
+    }
+
+    function exSortsFor(hasFit) {
+      return EX_SORTS.filter(s => !s.needsFit || hasFit);
+    }
+
+    // The menu selection, or — while it is still on its default — best fit
+    // when there is a profile to rank by and A → Z before that.
+    function exActiveSort() {
+      const hasFit = exHasFit();
+      if (exSort && exSortsFor(hasFit).some(s => s.key === exSort)) return exSort;
+      return hasFit ? 'fit' : 'az';
+    }
+
+    function exComparator(sort) {
+      const byTitle = (a, b) => a.career.title.localeCompare(b.career.title);
+      // Unknown salaries sort last in both directions — they are missing
+      // data, not cheap jobs.
+      const bySalary = dir => (a, b) => {
+        if (!a.salary || !b.salary) return (a.salary ? -1 : b.salary ? 1 : 0) || byTitle(a, b);
+        // Equal ends are broken on the other end of the range — ₹3–8 LPA
+        // really does start lower than ₹3–15 LPA — and only then by name.
+        const [va, ta] = dir === 'desc' ? [a.salary.high, a.salary.low] : [a.salary.low, a.salary.high];
+        const [vb, tb] = dir === 'desc' ? [b.salary.high, b.salary.low] : [b.salary.low, b.salary.high];
+        return (dir === 'desc' ? (vb - va) || (tb - ta) : (va - vb) || (ta - tb)) || byTitle(a, b);
+      };
+      switch (sort) {
+        case 'fit': return (a, b) => (b.match_pct - a.match_pct) || byTitle(a, b);
+        case 'za': return (a, b) => byTitle(b, a);
+        case 'salary-high': return bySalary('desc');
+        case 'salary-low': return bySalary('asc');
+        case 'category': return (a, b) => {
+          const ga = exGroupOf(a), gb = exGroupOf(b);
+          return (ga || '').localeCompare(gb || '') || byTitle(a, b);
+        };
+        default: return byTitle;
+      }
+    }
+
+    // Label of the bucket a career falls in — used by the Category sort so
+    // the grid groups the way the chips do.
+    function exGroupOf(item) {
+      const g = (exGroups || []).find(x => x.families && exInGroup(item, x));
+      return g ? g.label : 'Other';
+    }
+
+    function exCard(item) {
+      const c = item.career, pct = item.match_pct;
+      const band = pct === null ? null : exBand(pct);
+      const div = document.createElement('div');
+      // is-static: these cards are informational. The career detail page is
+      // written for one specific career, so sending all of them there would
+      // just show the wrong job.
+      div.className = 'explore-card is-static';
+      div.title = c.why;   // the one-line reason, without stretching every card
+      div.innerHTML =
+        '<div class="explore-icon" style="background:' +
+        (band === null ? 'var(--surface2)' : ICON_BG[band]) + ';">' + c.emoji + '</div>' +
+        '<h4></h4>' +
+        '<div class="field"></div>' +
+        '<span class="badge ' + cqStreamBadge(c.stream) + '" style="margin-bottom:10px;"></span>' +
+        '<div class="ex-salary"></div>' +
+        (band === null ? '' :
+          '<div class="fit"><div class="fit-bar"><div class="fit-fill" style="width:' + pct +
+          '%;background:' + PCT_FILL[band] + ';"></div></div>' +
+          '<span style="color:' + PCT_COLORS[band] + ';">' + pct + '%</span></div>');
+      // Career text is authored copy with quotes and apostrophes in it, so it
+      // goes in as text, never as markup.
+      div.querySelector('h4').textContent = c.title;
+      div.querySelector('.field').textContent = c.field;
+      div.querySelector('.badge').textContent = c.stream;
+      div.querySelector('.ex-salary').textContent = '💰 ' + c.salary;
+      return div;
+    }
+
+    // ── Rendering: the bar, the active-filter pills, and the drawer ──
+    // Counts are rebuilt on every render so they track the other filters. A
+    // control's own selection always stays selectable even when nothing
+    // matches it, so a choice can never silently disappear.
+    // A real <button>, not the decorative <div> chips elsewhere in the app:
+    // inside a modal dialog these have to be reachable and operable from the
+    // keyboard. dataset.k lets focus survive the re-render after a click.
+    function exChip(key, label, count, on, onClick) {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'filter-chip' + (on ? ' active' : '') +
+        (count === 0 && !on ? ' is-empty' : '');
+      el.dataset.k = key;
+      el.setAttribute('aria-pressed', String(!!on));
+      // Label and count are separate spans so the count can sit back a step
+      // visually instead of reading as part of the name.
+      el.innerHTML = '<span class="fc-label"></span><span class="fc-n"></span>';
+      el.querySelector('.fc-label').textContent = label;
+      el.querySelector('.fc-n').textContent = count;
+      el.onclick = onClick;
+      return el;
+    }
+
+    function exSection(title, chips) {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = '<div class="ex-group-title"></div><div class="ex-group-chips"></div>';
+      wrap.querySelector('.ex-group-title').textContent = title;
+      const row = wrap.querySelector('.ex-group-chips');
+      chips.forEach(c => row.appendChild(c));
+      return wrap;
+    }
+
+    // How many filters are narrowing the grid right now. The search box is
+    // not counted — it is visible on its own.
+    function exActiveCount() {
+      return (exGroup !== 'all' ? 1 : 0) + (exStream !== 'all' ? 1 : 0) + (exFit !== 'all' ? 1 : 0);
+    }
+
+    function exIsFiltered() {
+      return exActiveCount() > 0 || !!exQuery.trim();
+    }
+
+    function exFillSelect(sel, options, value) {
+      sel.innerHTML = '';
+      options.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.label;
+        sel.appendChild(opt);
+      });
+      sel.value = value;
+    }
+
+    function exRenderBar(shownCount) {
+      const hasFit = exHasFit();
+
+      const sortSel = document.getElementById('ex-sort');
+      if (sortSel) {
+        exFillSelect(sortSel, exSortsFor(hasFit).map(s => ({ value: s.key, label: s.label })),
+          exActiveSort());
+      }
+
+      const searchClear = document.getElementById('ex-search-clear');
+      if (searchClear) searchClear.className = 'ex-search-clear' + (exQuery ? ' is-on' : '');
+
+      // The example-laden placeholder is worth its length on a laptop and
+      // just gets clipped mid-word on a phone.
+      const box = document.getElementById('ex-search');
+      if (box) {
+        box.placeholder = window.innerWidth < 520
+          ? 'Search careers…'
+          : 'Search careers — e.g. doctor, animation, finance…';
+      }
+
+      const n = exActiveCount();
+      const btn = document.getElementById('ex-filter-btn');
+      if (btn) btn.classList.toggle('is-on', n > 0);
+      const badge = document.getElementById('ex-filter-count');
+      if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+
+      const apply = document.getElementById('ex-drawer-apply');
+      if (apply) {
+        apply.textContent = shownCount === 1 ? 'Show 1 career' : 'Show ' + shownCount + ' careers';
+        apply.disabled = shownCount === 0;
+      }
+      const dsub = document.getElementById('ex-drawer-sub');
+      if (dsub) {
+        dsub.textContent = n === 0 ? 'Nothing applied yet'
+          : n + (n === 1 ? ' filter applied' : ' filters applied');
+      }
+      const dclear = document.getElementById('ex-drawer-clear');
+      if (dclear) dclear.disabled = !exIsFiltered();
+    }
+
+    // One removable pill per active filter, so what is being applied is
+    // readable with the drawer shut.
+    function exRenderActive() {
+      const wrap = document.getElementById('ex-active');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+
+      const pills = [];
+      if (exGroup !== 'all') {
+        const g = exGroupBy(exGroup);
+        pills.push(['Category', g ? g.label : exGroup, () => exSetGroup('all')]);
+      }
+      if (exStream !== 'all') pills.push(['Stream', exStream, () => exSetStream('all')]);
+      if (exFit !== 'all') {
+        const step = EX_FIT_STEPS.find(s => s.key === exFit);
+        pills.push(['Fit', step ? step.label : exFit + '%+', () => exSetFit('all')]);
+      }
+      if (exQuery.trim()) pills.push(['Search', '“' + exQuery.trim() + '”', exClearSearch]);
+
+      pills.forEach(([key, value, remove]) => {
+        const el = document.createElement('div');
+        el.className = 'ex-active-pill';
+        el.innerHTML = '<span class="exa-key"></span><span class="exa-val"></span>' +
+          '<button type="button" aria-label="Remove filter">✕</button>';
+        el.querySelector('.exa-key').textContent = key;
+        el.querySelector('.exa-val').textContent = value;
+        el.querySelector('button').onclick = remove;
+        wrap.appendChild(el);
+      });
+
+      if (pills.length > 1) {
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.className = 'ex-active-clear';
+        clear.textContent = 'Clear all';
+        clear.onclick = exClear;
+        wrap.appendChild(clear);
+      }
+    }
+
+    // Category / stream / fit, all as chips: in a drawer there is room to
+    // show every option with its count instead of hiding them in a menu.
+    function exRenderDrawer() {
+      const body = document.getElementById('ex-drawer-body');
+      if (!body) return;
+      // Tapping a chip re-renders the whole drawer, which would otherwise
+      // drop the keyboard user back to the top of the dialog.
+      const active = document.activeElement;
+      const refocus = active && active.dataset && body.contains(active) ? active.dataset.k : null;
+      body.innerHTML = '';
+
+      body.appendChild(exSection('Category', exGroups.map(g =>
+        exChip('cat:' + g.key, g.label,
+          exCareers.filter(it => exPasses(it, 'group') && exInGroup(it, g)).length,
+          g.key === exGroup,
+          () => exSetGroup(g.key)))));
+
+      const streams = [{ key: 'all', label: 'Any stream' }].concat(
+        exStreamOptions(exCareers).map(s => ({ key: s, label: s })));
+      body.appendChild(exSection('Class 11 stream', streams.map(s =>
+        exChip('stream:' + s.key, s.label,
+          s.key === 'all'
+            ? exCareers.filter(it => exPasses(it, 'stream')).length
+            : exCareers.filter(it => exPasses(it, 'stream') && exStreamMatch(it, s.key)).length,
+          s.key === exStream,
+          () => exSetStream(s.key)))));
+
+      // Nothing to filter by fit until the quiz has run, so the section is
+      // left out rather than shown doing nothing.
+      if (exHasFit()) {
+        body.appendChild(exSection('Minimum fit', EX_FIT_STEPS.map(step =>
+          exChip('fit:' + step.key, step.label,
+            exCareers.filter(it => exPasses(it, 'fit') && it.match_pct >= step.min).length,
+            step.key === exFit,
+            () => exSetFit(step.key)))));
+      }
+
+      if (refocus) {
+        const again = [...body.querySelectorAll('[data-k]')].find(el => el.dataset.k === refocus);
+        if (again) again.focus();
+      }
+    }
+
+    function exRenderGrid() {
+      const grid = document.getElementById('explore-grid');
+      if (!grid || !exCareers) return;
+
+      const sort = exActiveSort();
+      const shown = exCareers.filter(it => exPasses(it)).sort(exComparator(sort));
+
+      grid.innerHTML = '';
+      shown.forEach(it => grid.appendChild(exCard(it)));
+
+      if (!shown.length) {
+        const none = document.createElement('div');
+        none.className = 'ex-none';
+        none.innerHTML =
+          '<div style="font-size:32px;margin-bottom:10px;">🔍</div>' +
+          '<div style="font-weight:700;margin-bottom:4px;"></div>' +
+          '<div style="font-size:13px;margin-bottom:18px;">Nothing matches every filter at once — ' +
+          'try loosening one.</div>' +
+          '<button class="btn btn-secondary btn-sm" onclick="exClear()">Clear filters</button>';
+        none.querySelector('div:nth-child(2)').textContent = exQuery.trim()
+          ? 'No careers match “' + exQuery.trim() + '”'
+          : 'No careers match these filters';
+        grid.appendChild(none);
+      }
+
+      // The Sort control already names the order, so the subtitle does not
+      // repeat it — it answers "how much of the catalogue am I looking at".
+      const sub = document.getElementById('ex-sub');
+      if (sub) {
+        sub.textContent = (shown.length === exCareers.length
+          ? 'All ' + exCareers.length + ' careers'
+          : 'Showing ' + shown.length + ' of ' + exCareers.length + ' careers') +
+          (exHasFit() ? '' : ' · take the quiz to see your fit %');
+      }
+
+      return shown.length;
+    }
+
+    // The grid is the source of truth for "how many match", so it renders
+    // first and everything else is told the number.
+    function exRender() {
+      const shown = exRenderGrid();
+      exRenderBar(shown);
+      exRenderActive();
+      exRenderDrawer();
+    }
+
+    function syncExplorer() {
+      const grid = document.getElementById('explore-grid');
+      if (!grid) return;
+
+      exCareers = exBuildList();
+      exGroups = exGroupsFor(exCareers);
+      if (!exGroups.some(g => g.key === exGroup)) exGroup = 'all';
+
+      exRender();
+    }
+
+    // ── Control handlers (wired in app.html) ──
+    function exSearch(value) {
+      exQuery = value || '';
+      exRender();
+    }
+
+    function exSetGroup(value) {
+      exGroup = value || 'all';
+      exRender();
+    }
+
+    function exSetStream(value) {
+      exStream = value || 'all';
+      exRender();
+    }
+
+    function exSetFit(value) {
+      exFit = value || 'all';
+      exRender();
+    }
+
+    function exSetSort(value) {
+      exSort = value || '';
+      exRender();
+    }
+
+    function exClearSearch() {
+      exQuery = '';
+      const box = document.getElementById('ex-search');
+      if (box) { box.value = ''; box.focus(); }
+      exRender();
+    }
+
+    // ── The filter drawer ──
+    // Filtering stays live while the drawer is open — the grid behind it
+    // updates as chips are tapped — so the footer button only has to close
+    // it, and it says how many careers are waiting.
+    function exOpenFilters() {
+      document.body.classList.add('ex-filters-open');
+      const drawer = document.getElementById('ex-drawer');
+      const btn = document.getElementById('ex-filter-btn');
+      if (drawer) drawer.setAttribute('aria-hidden', 'false');
+      if (btn) btn.setAttribute('aria-expanded', 'true');
+      const close = document.getElementById('ex-drawer-close');
+      if (close) close.focus();
+      document.addEventListener('keydown', exDrawerKeys);
+    }
+
+    function exCloseFilters() {
+      document.body.classList.remove('ex-filters-open');
+      const drawer = document.getElementById('ex-drawer');
+      const btn = document.getElementById('ex-filter-btn');
+      if (drawer) drawer.setAttribute('aria-hidden', 'true');
+      if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.focus(); }
+      document.removeEventListener('keydown', exDrawerKeys);
+    }
+
+    function exDrawerKeys(e) {
+      if (e.key === 'Escape') exCloseFilters();
+    }
+
+    // Sort is deliberately left alone: it is an ordering preference, not a
+    // filter, so clearing the filters should not silently reorder the grid.
+    function exClear() {
+      exGroup = 'all';
+      exStream = 'all';
+      exFit = 'all';
+      exQuery = '';
+      const box = document.getElementById('ex-search');
+      if (box) box.value = '';
+      exRender();
     }
 
     function syncProgress() {
