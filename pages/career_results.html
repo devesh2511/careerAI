@@ -79,76 +79,72 @@
            plain language; the RIASEC letters appear only as the code. -->
       <div class="air-riasec-box">
         <div class="air-riasec-head">
-          <div>
-            <div class="air-riasec-title">Your Career Interest Profile</div>
-            <div class="air-riasec-sub" id="air-riasec-note"></div>
-          </div>
-           Six areas as bars, strongest first, named in plain language.
-           The formal RIASEC names appear once, in the key that explains
-           the three letters of the student's own code. -->
-      <div class="air-riasec-box">
-        <div class="air-riasec-head">
-          <div class="air-riasec-head-left">
-            <div class="air-riasec-title">Your Career Interest Profile</div>
-            <div class="air-riasec-sub" id="air-riasec-note"></div>
-          </div>
-          <!-- The code is three letters, so it means nothing on its own.
+
+          <div class="air-riasec-box">
+            <div class="air-riasec-head">
+              <div class="air-riasec-head-left">
+                <div class="air-riasec-title">Your Career Interest Profile</div>
+                <div class="air-riasec-sub" id="air-riasec-note"></div>
+              </div>
+              <!-- The code is three letters, so it means nothing on its own.
                Rather than repeat the area names here, each bar below is
                tagged with its letter — the bars are the key. -->
-          <div class="air-riasec-code-wrap">
-            <div class="air-riasec-code-label">Your code</div>
-            <div class="air-riasec-code" id="air-riasec-code">—</div>
-          </div>
-        </div>
+              <div class="air-riasec-code-wrap">
+                <div class="air-riasec-code-label">Your code</div>
+                <div class="air-riasec-code" id="air-riasec-code">—</div>
+              </div>
+            </div>
 
-        <!-- Decodes the three letters before the chart, so the code is
+            <!-- Decodes the three letters before the chart, so the code is
              already explained by the time the bars are read. Only the
              student's own letters are listed; every area is named on the
              bars themselves. -->
-        <div class="air-code-key-wrap">
-          <div class="air-enjoy-title">What your code means</div>
-          <div class="air-code-key" id="air-code-key"></div>
-        </div>
+            <div class="air-code-key-wrap">
+              <div class="air-enjoy-title">What your code means</div>
+              <div class="air-code-key" id="air-code-key"></div>
+            </div>
 
-        <div id="air-riasec-bars"></div>
+            <div id="air-riasec-bars"></div>
 
-        <div class="air-enjoy-wrap">
-          <div class="air-enjoy-title">You may enjoy</div>
-          <ul class="air-enjoy" id="air-enjoy"></ul>
-        </div>
-      </div>
+            <div class="air-enjoy-wrap">
+              <div class="air-enjoy-title">You may enjoy</div>
+              <ul class="air-enjoy" id="air-enjoy"></ul>
+            </div>
+          </div>
 
-      <!-- Career cards -->
-      <div
-        style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-        Careers to explore</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;" id="air-match-note"></div>
-      <div id="air-careers"></div>
+          <!-- Career cards -->
+          <div
+            style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+            Careers to explore</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:16px;" id="air-match-note"></div>
+          <div id="air-careers"></div>
 
-      <!-- CTAs -->
-      <div class="no-print" style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="show('dashboard')"
-          style="flex:1;min-width:160px;justify-content:center;">🏠 Explore Full Dashboard</button>
-        <button class="btn btn-secondary" onclick="cqSavePdf()" style="justify-content:center;">⬇ Save as PDF</button>
-        <button class="btn btn-secondary" onclick="cqStart()" style="justify-content:center;">🔄 Retake Quiz</button>
-      </div>
+          <!-- CTAs -->
+          <div class="no-print" style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="show('dashboard')"
+              style="flex:1;min-width:160px;justify-content:center;">🏠 Explore Full Dashboard</button>
+            <button class="btn btn-secondary" onclick="cqSavePdf()" style="justify-content:center;">⬇ Save as
+              PDF</button>
+            <button class="btn btn-secondary" onclick="cqStart()" style="justify-content:center;">🔄 Retake
+              Quiz</button>
+          </div>
 
-      <!-- How the match was produced. Was an "add your API key" prompt, but
+          <!-- How the match was produced. Was an "add your API key" prompt, but
            the app runs in demo mode only and the Settings field is gone. -->
-      <div class="air-footer-hint" id="air-api-hint">
-        <strong style="color:#a8a3ff;">How this was matched:</strong> your 20 answers were scored across six
-        career-interest areas, then your full interest pattern was compared against every career in the
-        database to rank the closest fits. It all runs on your device; nothing is sent anywhere.
-        <br /><br />
-        <strong style="color:#a8a3ff;">Remember:</strong> this is a guide for exploration — it does not decide
-        your future.
+          <div class="air-footer-hint" id="air-api-hint">
+            <strong style="color:#a8a3ff;">How this was matched:</strong> your 20 answers were scored across six
+            career-interest areas, then your full interest pattern was compared against every career in the
+            database to rank the closest fits. It all runs on your device; nothing is sent anywhere.
+            <br /><br />
+            <strong style="color:#a8a3ff;">Remember:</strong> this is a guide for exploration — it does not decide
+            your future.
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <script src="../scripts/riasec_careers.js"></script>
-  <script src="../scripts/riasec_engine.js"></script>
-  <script src="../scripts/script.js"></script>
+      <script src="../scripts/riasec_careers.js"></script>
+      <script src="../scripts/riasec_engine.js"></script>
+      <script src="../scripts/script.js"></script>
 
 </body>
 
