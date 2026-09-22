@@ -766,7 +766,7 @@
   // RESULT OBJECT
   //
   // Shape note: personality_type / personality_desc / stream_recommendation
-  // / stream_reason / top_careers[] are what the dashboard, results, stream
+  // / stream_reason / top_careers[] are what the dashboard, results, explorer
   // and progress screens in app.html already read, so they are kept exactly
   // as they were. The `riasec` block is the new material for the result
   // screen (doc section 15).

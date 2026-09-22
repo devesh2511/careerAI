@@ -42,8 +42,6 @@
           <button class="nav-item" data-page="explorer" onclick="navTo('explorer',this)"><span
               class="icon">🌍</span>Explore Careers</button>
           <div class="nav-divider"></div>
-          <button class="nav-item" data-page="stream" onclick="navTo('stream',this)"><span
-              class="icon">🛤️</span>Stream Guide</button>
           <button class="nav-item" data-page="roadmap" onclick="navTo('roadmap',this)"><span
               class="icon">🗺️</span>Roadmap</button>
           <div class="nav-divider"></div>
@@ -104,10 +102,6 @@
           <!-- quick actions (always visible) -->
           <div class="section-label">Quick Actions</div>
           <div class="quick-actions">
-            <div class="qa-card" onclick="navTo('stream')">
-              <div class="qa-icon ic-blue">🛤️</div>
-              <div class="qa-label">Stream Guide</div>
-            </div>
             <div class="qa-card" onclick="navTo('roadmap')">
               <div class="qa-icon ic-pink">🗺️</div>
               <div class="qa-label">My Roadmap</div>
@@ -139,7 +133,8 @@
             </div>
             <button class="btn btn-secondary btn-sm">📥 Download Report</button>
           </div>
-          <div class="stream-banner" onclick="navTo('stream')">
+          <div class="stream-banner"
+            onclick="appResults ? exploreStream(appResults.stream_recommendation) : cqStart()">
             <div class="stream-banner-left">
               <span style="font-size:24px;">🛤️</span>
               <div>
@@ -319,7 +314,7 @@
         <!-- ── CAREER DETAIL ── -->
         <div id="careerdetail" class="page">
           <button class="back-btn"
-            onclick="history.back();navTo('results',document.querySelector('.nav-item:nth-child(2)'))">← Back to
+            onclick="history.back();navTo('results')">← Back to
             Matches</button>
           <div class="cd-hero">
             <div>
@@ -338,9 +333,9 @@
               <div class="cd-fit-label">Career Fit Score</div>
               <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
                 <button class="btn btn-primary btn-sm"
-                  onclick="navTo('roadmap',document.querySelector('.nav-item:nth-child(7)'))">Generate Roadmap</button>
+                  onclick="navTo('roadmap')">Generate Roadmap</button>
                 <button class="btn btn-secondary btn-sm"
-                  onclick="navTo('chat',document.querySelector('.nav-item:nth-child(9)'))">Ask AI</button>
+                  onclick="navTo('chat')">Ask AI</button>
               </div>
             </div>
           </div>
@@ -389,89 +384,6 @@
               <span class="badge badge-blue">NATA</span>
               <span class="badge badge-green">NID DAT</span>
               <span class="badge badge-orange">CEED (PG)</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── STREAM RECOMMENDATION ── -->
-        <div id="stream" class="page">
-          <div class="topbar">
-            <div>
-              <div class="page-title">Stream Guide</div>
-              <div class="page-sub">Your Class 11 stream recommendation based on aptitude + interests</div>
-            </div>
-            <button class="btn btn-secondary btn-sm">📥 Download PDF</button>
-          </div>
-          <div class="stream-hero">
-            <div class="stream-rec-label">We recommend for Class 11</div>
-            <div class="stream-rec-name">PCM + Computer Science</div>
-            <div class="stream-rec-pct">89% suitability · High confidence</div>
-            <div class="stream-reason">"Your spatial reasoning scored in the top 15% and you enjoy coding + maths. PCM
-              with Computer Science gives you the widest range of tech careers — including UX Design, your #1 match —
-              while keeping all engineering doors open."</div>
-          </div>
-          <div
-            style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">
-            All Streams Scored</div>
-          <div class="stream-cards">
-            <div class="stream-opt" style="background:rgba(108,99,255,.08);border-color:var(--accent);">
-              <div class="pct" style="color:#a8a3ff;">89%</div>
-              <h4 style="color:#a8a3ff;">PCM + CS ✦</h4>
-              <p style="color:var(--muted);">Engineering, Architecture, Data Science, UX, Software, Game Dev</p>
-            </div>
-            <div class="stream-opt" style="background:rgba(56,189,248,.05);border-color:rgba(56,189,248,.3);">
-              <div class="pct" style="color:#38bdf8;">76%</div>
-              <h4 style="color:#38bdf8;">PCM</h4>
-              <p style="color:var(--muted);">Engineering, Architecture, Defence, Pilot, Civil Services</p>
-            </div>
-            <div class="stream-opt" style="background:rgba(251,146,60,.05);border-color:rgba(251,146,60,.3);">
-              <div class="pct" style="color:#fb923c;">44%</div>
-              <h4 style="color:#fb923c;">Commerce</h4>
-              <p style="color:var(--muted);">CA, Finance, Business, Marketing, Economics</p>
-            </div>
-            <div class="stream-opt" style="background:rgba(255,101,132,.05);border-color:rgba(255,101,132,.25);">
-              <div class="pct" style="color:var(--accent3);">31%</div>
-              <h4 style="color:var(--accent3);">Arts</h4>
-              <p style="color:var(--muted);">Journalism, Psychology, Design, Civil Services, Law</p>
-            </div>
-            <div class="stream-opt" style="background:rgba(0,212,170,.05);border-color:rgba(0,212,170,.25);">
-              <div class="pct" style="color:var(--accent2);">28%</div>
-              <h4 style="color:var(--accent2);">PCB</h4>
-              <p style="color:var(--muted);">MBBS, Pharmacy, Biotechnology, Physiotherapy</p>
-            </div>
-          </div>
-          <div class="card">
-            <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Subject Focus Plan — What to strengthen now
-            </div>
-            <div class="meter">
-              <div class="meter-label">Mathematics</div>
-              <div class="meter-track">
-                <div class="meter-fill" style="width:90%;background:linear-gradient(90deg,var(--accent),#a8a3ff);">
-                </div>
-              </div>
-              <div class="meter-pct" style="color:#a8a3ff;">High priority</div>
-            </div>
-            <div class="meter">
-              <div class="meter-label">Computer Science</div>
-              <div class="meter-track">
-                <div class="meter-fill" style="width:95%;background:linear-gradient(90deg,var(--accent2),#6ee7d4);">
-                </div>
-              </div>
-              <div class="meter-pct" style="color:var(--accent2);">High priority</div>
-            </div>
-            <div class="meter">
-              <div class="meter-label">Physics</div>
-              <div class="meter-track">
-                <div class="meter-fill" style="width:75%;background:linear-gradient(90deg,#38bdf8,#7dd3fc);"></div>
-              </div>
-              <div class="meter-pct" style="color:#38bdf8;">Medium</div>
-            </div>
-            <div class="meter">
-              <div class="meter-label">English</div>
-              <div class="meter-track">
-                <div class="meter-fill" style="width:55%;background:linear-gradient(90deg,#fb923c,#fdba74);"></div>
-              </div>
-              <div class="meter-pct" style="color:#fb923c;">Medium</div>
             </div>
           </div>
         </div>

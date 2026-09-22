@@ -20,7 +20,7 @@
     };
 
     // These are .page divs inside app.html — they still switch in place.
-    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'stream', 'roadmap', 'chat', 'progress', 'settings'];
+    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'roadmap', 'chat', 'progress', 'settings'];
 
     // Which file are we on? Set via <body data-page="...">
     const CURRENT_PAGE = (document.body && document.body.dataset.page) || 'landing';
@@ -137,7 +137,6 @@
       // Sync quiz results into the page just revealed
       if (pageId === 'dashboard') syncDashboard();
       else if (pageId === 'results') syncResults();
-      else if (pageId === 'stream') syncStream();
       else if (pageId === 'explorer') syncExplorer();
       else if (pageId === 'progress') syncProgress();
     }
@@ -554,7 +553,7 @@
       return CQ_STREAM_BADGE[first] || 'badge-purple';
     }
 
-    // Rehydrated on every page load so the dashboard/results/stream/progress
+    // Rehydrated on every page load so the dashboard/results/progress
     // pages in app.html can read the last quiz run.
     let appResults = loadState().appResults || null;
 
@@ -623,7 +622,7 @@
     }
 
     function cqRenderResults(data, isDemo) {
-      appResults = data; // make available to dashboard, results, stream pages
+      appResults = data; // make available to dashboard, results, progress pages
       document.getElementById('air-personality-type').textContent = data.personality_type;
       document.getElementById('air-personality-desc').textContent = data.personality_desc;
       document.getElementById('air-stream-val').textContent = data.stream_recommendation;
@@ -908,7 +907,7 @@
 
       const d = appResults;
       if (streamVal) streamVal.textContent = d.stream_recommendation;
-      if (streamBadge) { streamBadge.textContent = 'Based on your quiz'; streamBadge.style.color = 'var(--accent2)'; }
+      if (streamBadge) { streamBadge.textContent = 'See careers in this stream'; streamBadge.style.color = 'var(--accent2)'; }
 
       if (!list) return;
       list.innerHTML = '';
@@ -930,41 +929,6 @@
           '<div class="pct-mini-bar"><div class="pct-mini-fill" style="width:' + c.match_pct + '%;background:' + PCT_FILL[i] + ';"></div></div>' +
           '</div>';
         list.appendChild(div);
-      });
-    }
-
-    function syncStream() {
-      if (!appResults) return;
-      const d = appResults;
-
-      // ── Hero ──
-      const nameEl = document.querySelector('.stream-rec-name');
-      const pctEl = document.querySelector('.stream-rec-pct');
-      const reasonEl = document.querySelector('.stream-reason');
-      if (nameEl) nameEl.textContent = d.stream_recommendation;
-      if (pctEl) pctEl.textContent = 'Based on your career quiz · High confidence';
-      if (reasonEl) reasonEl.textContent = d.stream_reason;
-
-      // ── Highlight matching stream card ──
-      const rec = d.stream_recommendation.toLowerCase();
-      document.querySelectorAll('.stream-opt').forEach(card => {
-        const h4 = card.querySelector('h4');
-        if (!h4) return;
-        const name = h4.textContent.replace(' ✦', '').trim();
-        // Strip extra descriptors so 'PCM+CS' matches 'PCM + CS ✦' etc.
-        const cardKey = name.toLowerCase().replace(/\s/g, '').replace('+', '');
-        const recKey = rec.replace(/\s/g, '').replace('+', '');
-        const isMatch = recKey.startsWith(cardKey) || cardKey.startsWith(recKey);
-        if (isMatch) {
-          if (!name.includes('✦')) h4.textContent = name + ' ✦';
-          card.style.borderWidth = '2px';
-          card.style.borderColor = 'var(--accent)';
-          card.style.background = 'rgba(108,99,255,.1)';
-        } else {
-          h4.textContent = name.replace(' ✦', '');
-          card.style.borderColor = '';
-          card.style.background = '';
-        }
       });
     }
 
@@ -1445,7 +1409,24 @@
       exGroups = exGroupsFor(exCareers);
       if (!exGroups.some(g => g.key === exGroup)) exGroup = 'all';
 
+      // Set by exploreStream(); consumed once so a later visit is unfiltered.
+      const pending = loadState().exPendingStream;
+      if (pending) {
+        saveState({ exPendingStream: null });
+        exStream = exStreamOptions(exCareers).indexOf(pending) !== -1 ? pending : 'all';
+      }
+
       exRender();
+    }
+
+    // Opens the explorer narrowed to a recommended stream. "PCM+CS / Commerce"
+    // names two, so the first (stronger) one is filtered on; "Any" filters
+    // nothing. Goes through session state so it survives the hop in from
+    // career_results.html.
+    function exploreStream(stream) {
+      const first = String(stream || '').split('/')[0].trim();
+      saveState({ exPendingStream: first && first !== 'Any' ? first : 'all' });
+      show('explorer');
     }
 
     // ── Control handlers (wired in app.html) ──
