@@ -2925,14 +2925,23 @@ button.filter-chip {
 .ex-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   margin-bottom: 14px;
 }
 
+/* Search stays compact on the left; the grid, not the input, owns the width. */
 .ex-bar .search-bar {
-  flex: 1;
+  flex: 0 1 280px;
   min-width: 180px;
   margin-bottom: 0;
+}
+
+/* Filters + sort, pushed to the right edge as one group. */
+.ex-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ex-search-clear {
@@ -5096,6 +5105,10 @@ body.nav-open .sidebar-overlay {
   }
 
   .ex-bar .search-bar {
+    flex: 1 1 100%;
+  }
+
+  .ex-bar-actions {
     flex: 1 1 100%;
   }
 

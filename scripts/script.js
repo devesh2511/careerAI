@@ -1242,15 +1242,6 @@
       const searchClear = document.getElementById('ex-search-clear');
       if (searchClear) searchClear.className = 'ex-search-clear' + (exQuery ? ' is-on' : '');
 
-      // The example-laden placeholder is worth its length on a laptop and
-      // just gets clipped mid-word on a phone.
-      const box = document.getElementById('ex-search');
-      if (box) {
-        box.placeholder = window.innerWidth < 520
-          ? 'Search careers…'
-          : 'Search careers — e.g. doctor, animation, finance…';
-      }
-
       const n = exActiveCount();
       const btn = document.getElementById('ex-filter-btn');
       if (btn) btn.classList.toggle('is-on', n > 0);

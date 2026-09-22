@@ -133,8 +133,7 @@
             </div>
             <button class="btn btn-secondary btn-sm">📥 Download Report</button>
           </div>
-          <div class="stream-banner"
-            onclick="appResults ? exploreStream(appResults.stream_recommendation) : cqStart()">
+          <div class="stream-banner" onclick="appResults ? exploreStream(appResults.stream_recommendation) : cqStart()">
             <div class="stream-banner-left">
               <span style="font-size:24px;">🛤️</span>
               <div>
@@ -279,30 +278,32 @@
               <div class="page-sub" id="ex-sub">Browse every career in the database</div>
             </div>
           </div>
-          <!-- One line above the grid: search, the drawer trigger, sort.
-               The filters themselves live in the drawer, so browsing is not
-               fenced off behind a wall of controls. -->
+          <!-- One line above the grid: a compact search on the left, the
+               drawer trigger and sort on the right. The filters themselves
+               live in the drawer, so browsing is not fenced off behind a
+               wall of controls. -->
           <div class="ex-bar">
             <div class="search-bar">
-              <span aria-hidden="true" style="color:var(--muted);">🔍</span>
               <input id="ex-search" aria-label="Search careers"
-                placeholder="Search careers — e.g. doctor, animation, finance…"
-                oninput="exSearch(this.value)" />
-              <button class="ex-search-clear" id="ex-search-clear" onclick="exClearSearch()"
-                title="Clear search" aria-label="Clear search">✕</button>
+                placeholder="Search careers…" oninput="exSearch(this.value)" />
+              <button class="ex-search-clear" id="ex-search-clear" onclick="exClearSearch()" title="Clear search"
+                aria-label="Clear search">✕</button>
             </div>
-            <button class="ex-filter-btn" id="ex-filter-btn" onclick="exOpenFilters()"
-              aria-haspopup="dialog" aria-expanded="false" aria-controls="ex-drawer">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <path d="M1.6 2.5h12.8a.5.5 0 0 1 .38.83L10 9.1v4.2a.5.5 0 0 1-.7.46l-2.6-1.15a.5.5 0 0 1-.3-.46V9.1L1.22 3.33a.5.5 0 0 1 .38-.83Z" />
-              </svg>
-              Filters
-              <span class="ex-filter-count" id="ex-filter-count" hidden></span>
-            </button>
-            <label class="ex-tool ex-tool-sort">
-              <span>Sort</span>
-              <select class="form-input ex-select" id="ex-sort" onchange="exSetSort(this.value)"></select>
-            </label>
+            <div class="ex-bar-actions">
+              <button class="ex-filter-btn" id="ex-filter-btn" onclick="exOpenFilters()" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="ex-drawer">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path
+                    d="M1.6 2.5h12.8a.5.5 0 0 1 .38.83L10 9.1v4.2a.5.5 0 0 1-.7.46l-2.6-1.15a.5.5 0 0 1-.3-.46V9.1L1.22 3.33a.5.5 0 0 1 .38-.83Z" />
+                </svg>
+                Filters
+                <span class="ex-filter-count" id="ex-filter-count" hidden></span>
+              </button>
+              <label class="ex-tool ex-tool-sort">
+                <span>Sort</span>
+                <select class="form-input ex-select" id="ex-sort" onchange="exSetSort(this.value)"></select>
+              </label>
+            </div>
           </div>
           <!-- What is currently narrowing the grid, each one removable, so an
                active filter is never hidden inside a closed drawer. -->
@@ -313,8 +314,7 @@
 
         <!-- ── CAREER DETAIL ── -->
         <div id="careerdetail" class="page">
-          <button class="back-btn"
-            onclick="history.back();navTo('results')">← Back to
+          <button class="back-btn" onclick="history.back();navTo('results')">← Back to
             Matches</button>
           <div class="cd-hero">
             <div>
@@ -332,10 +332,8 @@
               <div class="cd-fit" style="color:#a8a3ff;">92%</div>
               <div class="cd-fit-label">Career Fit Score</div>
               <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
-                <button class="btn btn-primary btn-sm"
-                  onclick="navTo('roadmap')">Generate Roadmap</button>
-                <button class="btn btn-secondary btn-sm"
-                  onclick="navTo('chat')">Ask AI</button>
+                <button class="btn btn-primary btn-sm" onclick="navTo('roadmap')">Generate Roadmap</button>
+                <button class="btn btn-secondary btn-sm" onclick="navTo('chat')">Ask AI</button>
               </div>
             </div>
           </div>
