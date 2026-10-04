@@ -10,18 +10,15 @@
 // API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
 //   POST /auth/register   POST /auth/login   POST /auth/logout
 //   GET  /me              GET  /me/access
+//   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
 // As more endpoints ship, move their methods from reply(...) to http(...).
 //
 // Everything else is still a MOCK SERVER that runs in the browser and keeps
 // its tables in localStorage. A live login copies the student into it (see
-// shadow()), so the mocked screens — school change, billing, admin — keep
-// working. It enforces the same rules the database will:
-//   • access = active individual plan, OR School ID + email on that
-//     school's roster + an active school plan (§6.4)
-//   • soft delete (is_deleted) vs hard delete; payment records survive a
-//     hard delete with the payer cleared (§6.3, §7)
-//   • contests open Saturday 07:00 IST, lock once open, schedule needs 5
-//     questions (§5)
+// shadow()), so the mocked screens — school change, billing — keep working.
+// Its access check follows the same rule as the database: active individual
+// plan, OR School ID + email on that school's roster + an active school plan
+// (§6.4). Schools and plans added in the live admin panel are not in it.
 //
 // Errors reject with an Error carrying .status (HTTP) and .code (API code).
 //
@@ -32,7 +29,8 @@
 //   priya.k@kvpowai.edu.in    School ID KV-POWAI, school hasn't paid    → paywall
 //   rahul.verma@gmail.com     no school                                 → paywall
 //   arjun.nair@gmail.com      paid individually                         → access
-//   admin@careerai.in / admin123                                        → admin panel
+// Admins are live too: the first one is created with `npm run create-admin`
+// in the careerAPI repo.
 //
 // CareerAPI.resetDemo() in the console restores the seed data.
 // ══════════════════════════════════════════════════════════════
@@ -50,14 +48,12 @@
 
   const DB_KEY = 'careerai_api_mock';
   const STUDENT_SESSION = 'careerai_session';
-  const ADMIN_SESSION = 'careerai_admin_session';
   const DB_VERSION = 1;
   const LATENCY = 150;                       // fake network delay, ms
   const HOUR = 3600e3, DAY = 24 * HOUR, WEEK = 7 * DAY;
   // Contest #1 opened Saturday 5 Sep 2026, 07:00 IST — same calendar as contest_api.js.
   const CONTEST_EPOCH = Date.UTC(2026, 8, 5, 1, 30);
   const CONTEST_WINDOW = 36 * HOUR;
-  const AREAS = ['Logical Reasoning', 'Numerical Ability', 'Verbal Ability', 'Spatial Reasoning'];
 
   // Prices are placeholders until the business sets them.
   const PLANS = {
@@ -199,26 +195,35 @@
 
   // ── Live API ────────────────────────────────────────────────────────────
   // Rejects the same way the mock does: an Error with .status, .code and,
-  // for validation errors, .field.
-  function http(method, path, body) {
+  // for validation errors, .field. JSON body unless contentType is given,
+  // in which case body is sent as-is (the roster CSV).
+  function http(method, path, body, contentType) {
     return fetch(API_BASE + path, {
       method: method,
       credentials: 'include',
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body)
+      headers: body === undefined ? {} : { 'Content-Type': contentType || 'application/json' },
+      body: body === undefined ? undefined : contentType ? body : JSON.stringify(body)
     }).then(res => res.json().catch(() => ({})).then(data => {
       if (res.ok) return data;
       const err = data.error || {};
       const e = new Error(err.message || 'Something went wrong. Please try again.');
       e.status = res.status; e.code = err.code || 'server_error';
       if (err.field) e.field = err.field;
-      if (res.status === 401) sessionSet(STUDENT_SESSION, null);
+      // An admin 401 says nothing about the student session.
+      if (res.status === 401 && path.indexOf('/admin') !== 0) sessionSet(STUDENT_SESSION, null);
       throw e;
     }), () => {
       const e = new Error("Can't reach the server. Check your connection and try again.");
       e.status = 0; e.code = 'network_error';
       throw e;
     });
+  }
+
+  // { deleted: true, q: 'x', mode: undefined } → '?deleted=true&q=x'. Falsy values are left out.
+  function query(params) {
+    const parts = Object.keys(params).filter(k => params[k])
+      .map(k => k + '=' + encodeURIComponent(params[k] === true ? 'true' : params[k]));
+    return parts.length ? '?' + parts.join('&') : '';
   }
 
   // After a live login, mirror the student into the mock tables under the
@@ -254,7 +259,6 @@
     throw e;
   }
   const lower = s => String(s || '').trim().toLowerCase();
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   function normCode(c) { return String(c || '').trim().toUpperCase(); }
 
   // "Ananya Sharma" → "Ananya S." (§2.1)
@@ -310,86 +314,7 @@
     if (!st) { sessionSet(STUDENT_SESSION, null); fail(401, 'unauthenticated', 'Please log in.'); }
     return st;
   }
-  function meAdmin() {
-    const id = sessionGet(ADMIN_SESSION);
-    const a = id && db.admins.find(x => x.id === id && !x.is_deleted);
-    if (!a) { sessionSet(ADMIN_SESSION, null); fail(401, 'unauthenticated', 'Please log in as an admin.'); }
-    return a;
-  }
   function softDelete(row) { row.is_deleted = true; row.deleted_at = iso(now()); }
-  function restore(row) { row.is_deleted = false; row.deleted_at = null; }
-  function needMode(mode) {
-    if (mode !== 'soft' && mode !== 'hard') fail(400, 'bad_mode', 'Delete mode must be soft or hard.');
-  }
-
-  // ── Contest helpers ─────────────────────────────────────────────────────
-  function contestState(c) {
-    const t = now(), o = Date.parse(c.opens_at), cl = Date.parse(c.closes_at);
-    return t < o ? 'upcoming' : t < cl ? 'open' : 'closed';
-  }
-  function contestDTO(c, withQuestions) {
-    const out = {
-      id: c.id, opens_at: c.opens_at, closes_at: c.closes_at, status: c.status, scored_at: c.scored_at,
-      state: contestState(c), locked: Date.parse(c.opens_at) <= now(),
-      question_count: c.questions.length, is_deleted: c.is_deleted, deleted_at: c.deleted_at, created_at: c.created_at,
-      created_by: (db.admins.find(a => a.id === c.created_by) || {}).full_name || null
-    };
-    if (withQuestions) out.questions = c.questions.slice().sort((a, b) => a.position - b.position);
-    return out;
-  }
-  function findContest(id) {
-    const c = db.contests.find(x => x.id === Number(id));
-    if (!c) fail(404, 'not_found', 'No such contest.');
-    return c;
-  }
-  function lockCheck(c) {
-    if (Date.parse(c.opens_at) <= now()) fail(409, 'contest_locked', 'This contest has opened, so its questions can no longer change.');
-  }
-
-  function findSchool(id) {
-    const s = db.schools.find(x => x.id === Number(id));
-    if (!s) fail(404, 'not_found', 'No such school.');
-    return s;
-  }
-  function schoolDTO(s) {
-    const subNow = activeSub(x => x.school_id === s.id);
-    const latest = db.subscriptions.filter(x => x.school_id === s.id && x.status === 'active')
-      .sort((a, b) => Date.parse(b.ends_at) - Date.parse(a.ends_at))[0] || null;
-    return Object.assign({}, s, {
-      roster_count: db.roster.filter(r => r.school_id === s.id).length,
-      student_count: db.students.filter(x => x.school_id === s.id && !x.is_deleted).length,
-      subscription: subNow ? { active: true, plan: subNow.plan, ends_at: subNow.ends_at }
-        : latest ? { active: false, plan: latest.plan, ends_at: latest.ends_at } : null
-    });
-  }
-  function validateSchool(data, selfId) {
-    const out = {};
-    const req = (k, label) => {
-      const v = String(data[k] == null ? '' : data[k]).trim();
-      if (!v) fail(400, 'invalid', label + ' is required.', { field: k });
-      return v;
-    };
-    out.name = req('name', 'School name');
-    out.school_code = normCode(req('school_code', 'School ID'));
-    if (!/^[A-Z0-9-]{3,20}$/.test(out.school_code))
-      fail(400, 'invalid', 'School ID must be 3–20 letters, digits or dashes.', { field: 'school_code' });
-    if (db.schools.some(s => s.school_code === out.school_code && s.id !== selfId))
-      fail(409, 'school_code_taken', 'Another school already uses this School ID.', { field: 'school_code' });
-    const ud = String(data.udise_code || '').trim();
-    if (ud && !/^[0-9]{11}$/.test(ud)) fail(400, 'invalid', 'UDISE+ code must be 11 digits.', { field: 'udise_code' });
-    if (ud && db.schools.some(s => s.udise_code === ud && s.id !== selfId))
-      fail(409, 'udise_taken', 'A school with this UDISE+ code already exists.', { field: 'udise_code' });
-    out.udise_code = ud || null;
-    out.board = ['CBSE', 'ICSE', 'State Board'].includes(data.board) ? data.board : null;
-    out.city = req('city', 'City');
-    out.state = req('state', 'State');
-    out.status = data.status === 'suspended' ? 'suspended' : 'active';
-    out.contact_name = req('contact_name', 'Contact name');
-    out.contact_email = req('contact_email', 'Contact email');
-    if (!EMAIL_RE.test(out.contact_email)) fail(400, 'invalid', 'Contact email looks wrong.', { field: 'contact_email' });
-    out.contact_phone = String(data.contact_phone || '').trim() || null;
-    return out;
-  }
 
   // ══════════════════════════════════════════════════════════════
   // PUBLIC API — one method per backend endpoint
@@ -490,377 +415,106 @@
     },
 
     // ══════════════════════════════════════════════════════════════
-    // ADMIN — every call needs an admin session
+    // ADMIN — live. Every call but login needs the admin session cookie
+    // (careerai_admin_session), separate from the student one.
     // ══════════════════════════════════════════════════════════════
     admin: {
       // POST /admin/auth/login
-      login(body) {
-        return reply(() => {
-          const a = db.admins.find(x => lower(x.email) === lower(body.email));
-          if (!a || a.is_deleted || a.password !== String(body.password || ''))
-            fail(401, 'bad_credentials', 'Email or password is incorrect.');
-          a.last_login_at = iso(now()); save();
-          sessionSet(ADMIN_SESSION, a.id);
-          return { admin: { id: a.id, email: a.email, full_name: a.full_name } };
-        });
-      },
+      login(body) { return http('POST', '/admin/auth/login', { email: body.email, password: body.password }); },
       // POST /admin/auth/logout
-      logout() { return reply(() => { sessionSet(ADMIN_SESSION, null); return { ok: true }; }); },
-      me() { return reply(() => { const a = meAdmin(); return { admin: { id: a.id, email: a.email, full_name: a.full_name } }; }); },
-
+      logout() { return http('POST', '/admin/auth/logout'); },
+      // GET /admin/me
+      me() { return http('GET', '/admin/me'); },
       // GET /admin/overview
-      overview() {
-        return reply(() => {
-          meAdmin();
-          const live = db.students.filter(s => !s.is_deleted);
-          const withAccess = live.filter(s => accessOf(s).has_access);
-          const upcoming = db.contests.filter(c => !c.is_deleted && contestState(c) !== 'closed')
-            .sort((a, b) => Date.parse(a.opens_at) - Date.parse(b.opens_at));
-          return {
-            students: live.length,
-            students_with_access: withAccess.length,
-            students_via_school: withAccess.filter(s => accessOf(s).source === 'school').length,
-            schools: db.schools.filter(s => !s.is_deleted).length,
-            schools_paying: db.schools.filter(s => !s.is_deleted && activeSub(x => x.school_id === s.id)).length,
-            next_contests: upcoming.slice(0, 3).map(c => contestDTO(c)),
-            drafts_needing_questions: db.contests.filter(c => !c.is_deleted && c.status === 'draft').map(c => contestDTO(c))
-          };
-        });
-      },
+      overview() { return http('GET', '/admin/overview'); },
 
       contests: {
-        // GET /admin/contests
-        list(opts) {
-          return reply(() => {
-            meAdmin();
-            const del = !!(opts && opts.deleted);
-            return db.contests.filter(c => c.is_deleted === del)
-              .sort((a, b) => Date.parse(b.opens_at) - Date.parse(a.opens_at)).map(c => contestDTO(c));
-          });
-        },
-        get(id) { return reply(() => { meAdmin(); return contestDTO(findContest(id), true); }); },
-        // POST /admin/contests  { opens_at: Saturday date 'YYYY-MM-DD' }
-        create(body) {
-          return reply(() => {
-            const a = meAdmin();
-            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(body.date || ''));
-            if (!m) fail(400, 'invalid', 'Pick a Saturday.', { field: 'date' });
-            // 07:00 IST on that date = 01:30 UTC.
-            const open = Date.UTC(+m[1], +m[2] - 1, +m[3], 1, 30);
-            if (new Date(open + 5.5 * HOUR).getUTCDay() !== 6) fail(400, 'invalid', 'Contests open on a Saturday.', { field: 'date' });
-            if (open <= now()) fail(400, 'invalid', 'Pick a Saturday in the future.', { field: 'date' });
-            if (db.contests.some(c => !c.is_deleted && c.opens_at === iso(open)))
-              fail(409, 'week_taken', 'There is already a contest that week.', { field: 'date' });
-            const c = { id: nextId('contests'), opens_at: iso(open), closes_at: iso(open + CONTEST_WINDOW), status: 'draft',
-              scored_at: null, created_by: a.id, is_deleted: false, deleted_at: null, created_at: iso(now()), questions: [] };
-            db.contests.push(c); save();
-            return contestDTO(c, true);
-          });
-        },
+        // GET /admin/contests?deleted=
+        list(opts) { return http('GET', '/admin/contests' + query({ deleted: opts && opts.deleted })); },
+        // GET /admin/contests/:id
+        get(id) { return http('GET', '/admin/contests/' + id); },
+        // POST /admin/contests  { date: Saturday 'YYYY-MM-DD' }
+        create(body) { return http('POST', '/admin/contests', { date: body.date }); },
         // PUT /admin/contests/:id/questions/:position
-        saveQuestion(id, position, q) {
-          return reply(() => {
-            meAdmin();
-            const c = findContest(id);
-            lockCheck(c);
-            const pos = Number(position);
-            if (!(pos >= 1 && pos <= 5)) fail(400, 'invalid', 'Position must be 1–5.');
-            if (!AREAS.includes(q.area)) fail(400, 'invalid', 'Pick an area.', { field: 'area' });
-            if (!String(q.text || '').trim()) fail(400, 'invalid', 'Write the question.', { field: 'text' });
-            const opts = (q.options || []).map(o => String(o || '').trim());
-            if (opts.length !== 4 || opts.some(o => !o)) fail(400, 'invalid', 'Fill in all 4 options.', { field: 'options' });
-            if (new Set(opts.map(lower)).size !== 4) fail(400, 'invalid', 'The 4 options must be different.', { field: 'options' });
-            // null/'' must not coerce to 0 (option A)
-            const ci = q.correct_index == null || q.correct_index === '' ? NaN : Number(q.correct_index);
-            if (!(ci >= 0 && ci <= 3)) fail(400, 'invalid', 'Mark the correct option.', { field: 'correct_index' });
-            if (!String(q.explanation || '').trim()) fail(400, 'invalid', 'Write the explanation students see after close.', { field: 'explanation' });
-            const row = { id: 'c' + c.id + '-q' + pos, position: pos, area: q.area,
-              text: String(q.text).trim(), options: opts, correct_index: ci, explanation: String(q.explanation).trim() };
-            c.questions = c.questions.filter(x => x.position !== pos).concat(row);
-            save();
-            return contestDTO(c, true);
-          });
-        },
+        saveQuestion(id, position, q) { return http('PUT', '/admin/contests/' + id + '/questions/' + position, q); },
         // POST /admin/contests/:id/schedule
-        schedule(id) {
-          return reply(() => {
-            meAdmin();
-            const c = findContest(id);
-            lockCheck(c);
-            if (c.questions.length !== 5) fail(409, 'needs_5_questions', 'Add all 5 questions before scheduling.');
-            c.status = 'scheduled'; save();
-            return contestDTO(c, true);
-          });
-        },
+        schedule(id) { return http('POST', '/admin/contests/' + id + '/schedule'); },
         // POST /admin/contests/:id/unschedule — back to draft, only before it opens
-        unschedule(id) {
-          return reply(() => {
-            meAdmin();
-            const c = findContest(id);
-            lockCheck(c);
-            c.status = 'draft'; save();
-            return contestDTO(c, true);
-          });
-        },
+        unschedule(id) { return http('POST', '/admin/contests/' + id + '/unschedule'); },
         // DELETE /admin/contests/:id?mode=soft|hard
-        remove(id, mode) {
-          return reply(() => {
-            meAdmin(); needMode(mode);
-            const c = findContest(id);
-            if (mode === 'hard') {
-              if (Date.parse(c.opens_at) <= now())
-                fail(409, 'contest_locked', 'An opened contest can only be soft-deleted, because students have attempts on it.');
-              db.contests = db.contests.filter(x => x !== c);
-            } else softDelete(c);
-            save();
-            return { ok: true };
-          });
-        },
-        restore(id) {
-          return reply(() => {
-            meAdmin();
-            const c = findContest(id);
-            if (db.contests.some(x => x !== c && !x.is_deleted && x.opens_at === c.opens_at))
-              fail(409, 'week_taken', 'Another contest now uses that week.');
-            restore(c); save();
-            return contestDTO(c);
-          });
-        }
+        remove(id, mode) { return http('DELETE', '/admin/contests/' + id + query({ mode: mode })); },
+        // POST /admin/contests/:id/restore
+        restore(id) { return http('POST', '/admin/contests/' + id + '/restore'); }
       },
 
       schools: {
-        // GET /admin/schools
-        list(opts) {
-          return reply(() => {
-            meAdmin();
-            const del = !!(opts && opts.deleted), q = lower(opts && opts.q);
-            return db.schools.filter(s => s.is_deleted === del)
-              .filter(s => !q || lower(s.name + ' ' + s.school_code + ' ' + s.city).includes(q))
-              .sort((a, b) => a.name.localeCompare(b.name)).map(schoolDTO);
-          });
-        },
-        get(id) { return reply(() => { meAdmin(); return schoolDTO(findSchool(id)); }); },
+        // GET /admin/schools?deleted=&q=
+        list(opts) { return http('GET', '/admin/schools' + query({ deleted: opts && opts.deleted, q: opts && opts.q })); },
+        // GET /admin/schools/:id
+        get(id) { return http('GET', '/admin/schools/' + id); },
         // POST /admin/schools
-        create(data) {
-          return reply(() => {
-            const a = meAdmin();
-            const s = Object.assign({ id: nextId('schools') }, validateSchool(data, null),
-              { created_by: a.id, is_deleted: false, deleted_at: null, created_at: iso(now()), updated_at: iso(now()) });
-            db.schools.push(s); save();
-            return schoolDTO(s);
-          });
-        },
+        create(data) { return http('POST', '/admin/schools', data); },
         // PUT /admin/schools/:id
-        update(id, data) {
-          return reply(() => {
-            meAdmin();
-            const s = findSchool(id);
-            Object.assign(s, validateSchool(data, s.id), { updated_at: iso(now()) });
-            save();
-            return schoolDTO(s);
-          });
-        },
+        update(id, data) { return http('PUT', '/admin/schools/' + id, data); },
         // DELETE /admin/schools/:id?mode=soft|hard
-        remove(id, mode) {
-          return reply(() => {
-            meAdmin(); needMode(mode);
-            const s = findSchool(id);
-            if (mode === 'hard') {
-              db.roster = db.roster.filter(r => r.school_id !== s.id);
-              db.subscriptions.forEach(x => { if (x.school_id === s.id) x.school_id = null; });   // kept for GST
-              db.students.forEach(x => { if (x.school_id === s.id) x.school_id = null; });
-              db.schools = db.schools.filter(x => x !== s);
-            } else softDelete(s);
-            save();
-            return { ok: true };
-          });
-        },
-        restore(id) { return reply(() => { meAdmin(); const s = findSchool(id); restore(s); save(); return schoolDTO(s); }); }
+        remove(id, mode) { return http('DELETE', '/admin/schools/' + id + query({ mode: mode })); },
+        // POST /admin/schools/:id/restore
+        restore(id) { return http('POST', '/admin/schools/' + id + '/restore'); }
       },
 
       roster: {
-        // GET /admin/schools/:id/roster — each email with whether a student has registered with it
-        list(schoolId) {
-          return reply(() => {
-            meAdmin();
-            const s = findSchool(schoolId);
-            return db.roster.filter(r => r.school_id === s.id).sort((a, b) => a.email.localeCompare(b.email)).map(r => {
-              const st = db.students.find(x => lower(x.email) === lower(r.email) && !x.is_deleted);
-              return {
-                email: r.email, created_at: r.created_at,
-                student: st ? { full_name: st.full_name, linked: st.school_id === s.id } : null
-              };
-            });
-          });
-        },
-        // POST /admin/schools/:id/roster — CSV text, one email per line (a header row is skipped)
-        upload(schoolId, text) {
-          return reply(() => {
-            const a = meAdmin();
-            const s = findSchool(schoolId);
-            const out = { added: [], already: [], conflicts: [], invalid: [] };
-            const seen = new Set();
-            String(text || '').split(/[\r\n,;]+/).map(x => x.trim().replace(/^"|"$/g, '')).filter(Boolean).forEach(raw => {
-              const e = lower(raw);
-              if (seen.has(e)) return;
-              seen.add(e);
-              if (e === 'email' || e === 'emails') return;
-              if (!EMAIL_RE.test(e)) { out.invalid.push(raw); return; }
-              const hit = db.roster.find(r => lower(r.email) === e);
-              if (hit && hit.school_id === s.id) { out.already.push(e); return; }
-              if (hit) { out.conflicts.push({ email: e, school: (db.schools.find(x => x.id === hit.school_id) || {}).name || 'another school' }); return; }
-              db.roster.push({ id: nextId('roster'), school_id: s.id, email: e, added_by: a.id, created_at: iso(now()) });
-              out.added.push(e);
-            });
-            save();
-            return out;
-          });
-        },
+        // GET /admin/schools/:id/roster
+        list(schoolId) { return http('GET', '/admin/schools/' + schoolId + '/roster'); },
+        // POST /admin/schools/:id/roster — CSV text, one email per line
+        upload(schoolId, text) { return http('POST', '/admin/schools/' + schoolId + '/roster', String(text || ''), 'text/csv'); },
         // DELETE /admin/schools/:id/roster/:email
         remove(schoolId, email) {
-          return reply(() => {
-            meAdmin();
-            const s = findSchool(schoolId);
-            db.roster = db.roster.filter(r => !(r.school_id === s.id && lower(r.email) === lower(email)));
-            save();
-            return { ok: true };
-          });
+          return http('DELETE', '/admin/schools/' + schoolId + '/roster/' + encodeURIComponent(email));
         }
       },
 
       subscriptions: {
         // GET /admin/schools/:id/subscriptions
-        list(schoolId) {
-          return reply(() => {
-            meAdmin();
-            const s = findSchool(schoolId);
-            const t = now();
-            return db.subscriptions.filter(x => x.school_id === s.id)
-              .sort((a, b) => Date.parse(b.starts_at) - Date.parse(a.starts_at))
-              .map(x => Object.assign({}, x, {
-                current: x.status === 'active' && Date.parse(x.starts_at) <= t && t < Date.parse(x.ends_at)
-              }));
-          });
-        },
-        // POST /admin/schools/:id/subscriptions — records a payment the school made
+        list(schoolId) { return http('GET', '/admin/schools/' + schoolId + '/subscriptions'); },
+        // POST /admin/schools/:id/subscriptions — records a payment the school
+        // made. The form takes rupees; the API takes paise.
         create(schoolId, body) {
-          return reply(() => {
-            meAdmin();
-            const s = findSchool(schoolId);
-            const st = Date.parse(body.starts_at), en = Date.parse(body.ends_at);
-            if (isNaN(st)) fail(400, 'invalid', 'Pick a start date.', { field: 'starts_at' });
-            if (isNaN(en) || en <= st) fail(400, 'invalid', 'The end date must be after the start date.', { field: 'ends_at' });
-            const amt = Math.round(Number(body.amount_rupees) * 100);
-            if (!(amt >= 0)) fail(400, 'invalid', 'Enter the amount paid.', { field: 'amount_rupees' });
-            const ref = String(body.payment_ref || '').trim();
-            if (!ref) fail(400, 'invalid', 'Enter the invoice or payment reference.', { field: 'payment_ref' });
-            const provider = body.payment_provider === 'razorpay' ? 'razorpay' : 'invoice';
-            if (db.subscriptions.some(x => x.payment_provider === provider && x.payment_ref === ref))
-              fail(409, 'duplicate_payment', 'This payment reference is already recorded.', { field: 'payment_ref' });
-            const x = sub({ payer_type: 'school', school_id: s.id, plan: 'school_annual', starts_at: iso(st), ends_at: iso(en),
-              amount_paise: amt, status: 'active', payment_provider: provider, payment_ref: ref });
-            db.subscriptions.push(x); save();
-            return x;
-          });
+          const rupees = body.amount_rupees === '' || body.amount_rupees == null ? NaN : Number(body.amount_rupees);
+          return http('POST', '/admin/schools/' + schoolId + '/subscriptions', {
+            starts_at: body.starts_at, ends_at: body.ends_at,
+            amount_paise: Number.isFinite(rupees) ? Math.round(rupees * 100) : null,
+            payment_provider: body.payment_provider || 'invoice', payment_ref: body.payment_ref
+          }).catch(e => { if (e.field === 'amount_paise') e.field = 'amount_rupees'; throw e; });
         }
       },
 
       students: {
-        // GET /admin/students
-        list(opts) {
-          return reply(() => {
-            meAdmin();
-            const del = !!(opts && opts.deleted), q = lower(opts && opts.q);
-            return db.students.filter(s => s.is_deleted === del)
-              .filter(s => !q || lower(s.full_name + ' ' + s.email).includes(q))
-              .sort((a, b) => a.full_name.localeCompare(b.full_name))
-              .map(s => Object.assign(studentDTO(s), { is_deleted: s.is_deleted, deleted_at: s.deleted_at, access: accessOf(s) }));
-          });
-        },
+        // GET /admin/students?deleted=&q=
+        list(opts) { return http('GET', '/admin/students' + query({ deleted: opts && opts.deleted, q: opts && opts.q })); },
         // DELETE /admin/students/:id?mode=soft|hard
-        remove(id, mode) {
-          return reply(() => {
-            meAdmin(); needMode(mode);
-            const s = db.students.find(x => x.id === id);
-            if (!s) fail(404, 'not_found', 'No such student.');
-            if (mode === 'hard') {
-              db.subscriptions.forEach(x => { if (x.student_id === s.id) x.student_id = null; });   // kept for GST
-              db.students = db.students.filter(x => x !== s);
-            } else softDelete(s);
-            save();
-            return { ok: true };
-          });
-        },
-        restore(id) {
-          return reply(() => {
-            meAdmin();
-            const s = db.students.find(x => x.id === id);
-            if (!s) fail(404, 'not_found', 'No such student.');
-            restore(s); save();
-            return { ok: true };
-          });
-        }
+        remove(id, mode) { return http('DELETE', '/admin/students/' + encodeURIComponent(id) + query({ mode: mode })); },
+        // POST /admin/students/:id/restore
+        restore(id) { return http('POST', '/admin/students/' + encodeURIComponent(id) + '/restore'); }
       },
 
       admins: {
-        // GET /admin/admins
-        list(opts) {
-          return reply(() => {
-            const self = meAdmin();
-            const del = !!(opts && opts.deleted);
-            return db.admins.filter(a => a.is_deleted === del).sort((a, b) => a.full_name.localeCompare(b.full_name))
-              .map(a => ({ id: a.id, email: a.email, full_name: a.full_name, last_login_at: a.last_login_at,
-                is_deleted: a.is_deleted, deleted_at: a.deleted_at, created_at: a.created_at, is_me: a.id === self.id }));
-          });
-        },
+        // GET /admin/admins?deleted=
+        list(opts) { return http('GET', '/admin/admins' + query({ deleted: opts && opts.deleted })); },
         // POST /admin/admins
         create(body) {
-          return reply(() => {
-            meAdmin();
-            const full_name = String(body.full_name || '').trim();
-            const email = lower(body.email);
-            if (!full_name) fail(400, 'invalid', 'Enter a name.', { field: 'full_name' });
-            if (!EMAIL_RE.test(email)) fail(400, 'invalid', 'Enter a valid email.', { field: 'email' });
-            if (String(body.password || '').length < 8) fail(400, 'invalid', 'Password must be at least 8 characters.', { field: 'password' });
-            if (db.admins.some(a => lower(a.email) === email)) fail(409, 'email_taken', 'An admin with this email already exists.', { field: 'email' });
-            const a = { id: uuid(), email: email, full_name: full_name, password: String(body.password), last_login_at: null,
-              is_deleted: false, deleted_at: null, created_at: iso(now()) };
-            db.admins.push(a); save();
-            return { id: a.id };
-          });
+          return http('POST', '/admin/admins', { full_name: body.full_name, email: body.email, password: body.password });
         },
         // DELETE /admin/admins/:id?mode=soft|hard
-        remove(id, mode) {
-          return reply(() => {
-            const self = meAdmin(); needMode(mode);
-            if (id === self.id) fail(409, 'cannot_delete_self', 'You can\'t delete your own admin account.');
-            const a = db.admins.find(x => x.id === id);
-            if (!a) fail(404, 'not_found', 'No such admin.');
-            if (mode === 'hard') {
-              db.contests.forEach(c => { if (c.created_by === a.id) c.created_by = null; });
-              db.schools.forEach(s => { if (s.created_by === a.id) s.created_by = null; });
-              db.admins = db.admins.filter(x => x !== a);
-            } else softDelete(a);
-            save();
-            return { ok: true };
-          });
-        },
-        restore(id) {
-          return reply(() => {
-            meAdmin();
-            const a = db.admins.find(x => x.id === id);
-            if (!a) fail(404, 'not_found', 'No such admin.');
-            restore(a); save();
-            return { ok: true };
-          });
-        }
+        remove(id, mode) { return http('DELETE', '/admin/admins/' + encodeURIComponent(id) + query({ mode: mode })); },
+        // POST /admin/admins/:id/restore
+        restore(id) { return http('POST', '/admin/admins/' + encodeURIComponent(id) + '/restore'); }
       }
     },
 
     // ── Mock-only helpers (not part of the backend contract) ──
     resetDemo() {
       try { localStorage.removeItem(DB_KEY); } catch (e) { }
-      sessionSet(STUDENT_SESSION, null); sessionSet(ADMIN_SESSION, null);
+      sessionSet(STUDENT_SESSION, null);
       db = null;
     }
   };
