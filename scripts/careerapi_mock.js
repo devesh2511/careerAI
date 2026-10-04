@@ -39,8 +39,14 @@
 (function (root) {
   'use strict';
 
-  // Production careerAPI (careerAPI repo, deployed on Vercel).
-  const API_BASE = 'https://careerapi.vercel.app';
+  // Production careerAPI (careerAPI repo, deployed on Vercel). On the deployed
+  // site, vercel.json proxies /api to it, so the session cookie is first-party
+  // (Safari and other browsers that block third-party cookies drop it
+  // otherwise). Local dev (Live Server, file://) has no proxy, so it calls the
+  // API directly.
+  const API_ORIGIN = 'https://careerapi.vercel.app';
+  const API_BASE = /^(localhost|127\.0\.0\.1|)$/.test(root.location ? root.location.hostname : '')
+    ? API_ORIGIN : '/api';
 
   const DB_KEY = 'careerai_api_mock';
   const STUDENT_SESSION = 'careerai_session';
