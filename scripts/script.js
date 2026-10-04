@@ -152,7 +152,7 @@
         }
         case 'onboarding': obInit(); break;
         case 'evaluation': startEval(); break;
-        case 'quiz': qIdx = 0; renderQ(); break;
+        case 'quiz': ctInit(); break;
         case 'careerquiz': cqResume(); break;
         case 'ailoading': cqFinish(); break;
         case 'airesults': cqShowResults(); break;
@@ -221,50 +221,7 @@
       }, 1000);
     }
 
-    // ── Quiz ──
-    const questions = [
-      { q: 'A pattern shows: 2, 6, 12, 20, 30… What comes next?', opts: ['38', '40', '42', '44'], area: '⚡ Logical Reasoning' },
-      { q: 'Which shape, when folded, makes a cube?', opts: ['Cross shape', 'T shape', 'L shape', 'Z shape'], area: '🎨 Spatial Ability' },
-      { q: 'Choose the word most opposite to "Concise".', opts: ['Brief', 'Lengthy', 'Clear', 'Simple'], area: '📖 Verbal Aptitude' },
-      { q: 'You need to design a new app for grocery shopping. What\'s your first step?', opts: ['Start coding immediately', 'Talk to people who shop groceries', 'Pick the colour theme', 'Search for similar apps'], area: '🌍 Domain Curiosity' },
-      { q: 'If 3 workers can build a wall in 6 days, how many days for 9 workers?', opts: ['1 day', '2 days', '3 days', '4 days'], area: '⚡ Logical Reasoning' },
-    ];
-    let qIdx = 0, selected = null;
-    function renderQ() {
-      const opts = document.getElementById('quiz-opts');
-      if (!opts) return; // not on quiz.html
-      const q = questions[qIdx % questions.length];
-      document.getElementById('quiz-num').textContent = `Question ${qIdx + 1} of 20`;
-      document.getElementById('quiz-area').textContent = q.area;
-      document.getElementById('quiz-q').textContent = q.q;
-      document.getElementById('quiz-bar').style.width = ((qIdx + 1) / 20 * 100) + '%';
-      opts.innerHTML = '';
-      q.opts.forEach((o, i) => {
-        const letters = ['A', 'B', 'C', 'D'];
-        const div = document.createElement('div');
-        div.className = 'quiz-option';
-        div.innerHTML = `<div class="opt-letter">${letters[i]}</div>${o}`;
-        div.onclick = function () { selectOpt(this); };
-        opts.appendChild(div);
-      });
-      selected = null;
-    }
-    function selectOpt(el) {
-      document.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected'));
-      el.classList.add('selected');
-      el.querySelector('.opt-letter').style.background = 'var(--accent)';
-      el.querySelector('.opt-letter').style.color = '#fff';
-      selected = el;
-    }
-    function quizNext() {
-      if (qIdx >= 19) { show('quizcomplete'); return; }
-      qIdx++;
-      renderQ();
-    }
-    function quizPrev() {
-      if (qIdx > 0) { qIdx--; renderQ(); }
-    }
-    // (quiz init now happens in the per-page bootstrap at the top of this file)
+    // ── Weekly aptitude contest (quiz.html) lives in scripts/contest.js ──
 
     // ── Filter chips ──
     function filterChip(el) {
@@ -315,9 +272,6 @@
       el.classList.toggle('on');
       el.classList.toggle('off');
     }
-
-    // (renderQ() is called by the per-page init for quiz.html — calling it
-    //  here would throw on every other page and abort this script.)
 
     // ══════════════════════════════════════════════════════════════
     // CAREER INTEREST QUIZ  (RIASEC)
@@ -1494,10 +1448,11 @@
     }
 
     function syncProgress() {
+      lbRender();  // weekly contest leaderboards (scripts/contest.js)
       if (!appResults) return;
       const d = appResults, top = d.top_careers[0];
       // Update the Class 10 row in "Top Match Evolution"
-      const evol = document.querySelector('#progress .card');
+      const evol = document.getElementById('pg-evolution');
       if (!evol) return;
       // Re-render evolution table
       const items = evol.querySelectorAll('div[style*="align-items:center"]');
@@ -1508,7 +1463,7 @@
           '<span style="color:var(--accent2);font-weight:800;margin-left:auto;">' + top.match_pct + '% ✦</span>';
       }
       // AI note
-      const note = document.querySelector('#progress [style*="rgba(108,99,255,.06)"] div:last-child');
+      const note = document.querySelector('#pg-ai-note div:last-child');
       if (note) note.textContent =
         '"Your profile points strongly toward ' + d.personality_type.replace('The ', '') + '. ' +
         top.title + ' is your top career at ' + top.match_pct + '%. Stream recommendation: ' + d.stream_recommendation + '."';

@@ -509,9 +509,13 @@
           <div class="topbar">
             <div>
               <div class="page-title">Progress Tracker</div>
-              <div class="page-sub">Your career clarity journey — Class 8 to Class 10</div>
-            </div><button class="btn btn-primary btn-sm" onclick="show('quiz')">Retake Quiz</button>
+              <div class="page-sub">Weekly aptitude contest rankings and your career clarity journey</div>
+            </div><button class="btn btn-primary btn-sm" onclick="show('quiz')">Weekly Contest →</button>
           </div>
+          <!-- Weekly aptitude contest: status, global/career leaderboards and
+               history — drawn by lbRender() in scripts/contest.js. -->
+          <div id="lb-root"></div>
+          <div class="lb-section-title">Career clarity journey</div>
           <div class="progress-timeline">
             <div class="pt-node done">
               <div class="pt-circle">✅</div>
@@ -604,7 +608,7 @@
               <span style="font-size:13px;font-weight:700;color:#fcd34d;margin-left:10px;">88 ↑</span>
             </div>
           </div>
-          <div class="card" style="margin-bottom:16px;">
+          <div class="card" id="pg-evolution" style="margin-bottom:16px;">
             <div
               style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">
               Top Match Evolution</div>
@@ -621,7 +625,7 @@
                   style="color:var(--accent2);font-weight:800;margin-left:auto;">92% ✦</span></div>
             </div>
           </div>
-          <div
+          <div id="pg-ai-note"
             style="background:rgba(108,99,255,.06);border:1px solid rgba(108,99,255,.2);border-radius:12px;padding:18px 20px;">
             <div style="font-size:12px;font-weight:700;color:#a8a3ff;margin-bottom:6px;">AI Note on Your Progress</div>
             <div style="font-size:13px;color:var(--muted);line-height:1.7;">"Your interest in design has consistently
@@ -751,6 +755,8 @@
 
   <script src="../scripts/riasec_careers.js"></script>
   <script src="../scripts/riasec_engine.js"></script>
+  <script src="../scripts/contest_api.js"></script>
+  <script src="../scripts/contest.js"></script>
   <script src="../scripts/script.js"></script>
 
 </body>

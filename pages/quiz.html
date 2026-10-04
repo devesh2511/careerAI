@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CareerAI · Aptitude Quiz</title>
+  <title>CareerAI · Weekly Aptitude Contest</title>
   <!-- Resolve the theme before first paint: a deferred script would let a
        dark-mode user see a white flash on every navigation. -->
   <script>
@@ -22,50 +22,31 @@
 <body data-page="quiz">
 
   <!-- ════════════════════════════════════════
-     APTITUDE QUIZ SCREEN
+     WEEKLY APTITUDE CONTEST
+     Everything inside #ct-root is drawn by scripts/contest.js: the lobby,
+     the 5 questions, the submit review, the "results at 7 PM" wait and
+     ?review=N for a closed contest's answers.
 ════════════════════════════════════════ -->
   <div id="quiz" class="screen active">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+    <div class="ct-page">
       <div class="quiz-wrap">
-        <div class="quiz-header quiz-topbar">
-          <span class="quiz-num" id="quiz-num">Question 1 of 20</span>
-          <span class="quiz-area" id="quiz-area">⚡ Logical Reasoning</span>
+        <div class="quiz-topbar">
+          <button class="btn btn-ghost btn-sm" onclick="show('progress')" aria-label="Back to progress">←</button>
+          <span class="quiz-num" id="ct-label">Weekly Aptitude Contest</span>
           <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
             <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
             <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
           </button>
         </div>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-fill" id="quiz-bar" style="width:5%"></div>
-        </div>
-
-        <div class="quiz-card">
-          <div class="quiz-q" id="quiz-q">A pattern shows: 2, 6, 12, 20, 30… What comes next?</div>
-          <div class="quiz-options" id="quiz-opts">
-            <div class="quiz-option" onclick="selectOpt(this)">
-              <div class="opt-letter">A</div>38
-            </div>
-            <div class="quiz-option" onclick="selectOpt(this)">
-              <div class="opt-letter">B</div>40
-            </div>
-            <div class="quiz-option" onclick="selectOpt(this)">
-              <div class="opt-letter">C</div>42
-            </div>
-            <div class="quiz-option" onclick="selectOpt(this)">
-              <div class="opt-letter">D</div>44
-            </div>
-          </div>
-          <div class="quiz-footer">
-            <button class="btn btn-ghost btn-sm" onclick="quizPrev()">← Back</button>
-            <button class="btn btn-primary btn-sm" onclick="quizNext()">Next →</button>
-          </div>
-        </div>
+        <div id="ct-root" aria-live="polite"></div>
       </div>
     </div>
   </div>
 
   <script src="../scripts/riasec_careers.js"></script>
   <script src="../scripts/riasec_engine.js"></script>
+  <script src="../scripts/contest_api.js"></script>
+  <script src="../scripts/contest.js"></script>
   <script src="../scripts/script.js"></script>
 
 </body>
