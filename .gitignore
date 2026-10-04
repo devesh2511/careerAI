@@ -5,6 +5,7 @@ anthropic_key
 creds.json
 .env
 .env.*
+*.env
 *.pem
 
 
