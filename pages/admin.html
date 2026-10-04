@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI Admin</title>
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="../admin.css" />
+</head>
+
+<body data-page="admin">
+
+  <!-- ════════════════════════════════════════
+     ADMIN LAYOUT (sidebar + one view)
+     Every view is drawn into #adm-view by scripts/admin.js, routed by the
+     hash: #/overview, #/contests, #/contests/6, #/schools, #/schools/2,
+     #/students, #/admins.
+════════════════════════════════════════ -->
+  <div id="app" class="screen active">
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-text">Career<span>AI</span></div>
+          <div class="adm-role">Admin</div>
+        </div>
+        <nav class="nav">
+          <button class="nav-item" data-view="overview" onclick="admGo('overview')"><span
+              class="icon">🏠</span>Overview</button>
+          <button class="nav-item" data-view="contests" onclick="admGo('contests')"><span
+              class="icon">📝</span>Contests</button>
+          <div class="nav-divider"></div>
+          <button class="nav-item" data-view="schools" onclick="admGo('schools')"><span
+              class="icon">🏫</span>Schools</button>
+          <button class="nav-item" data-view="students" onclick="admGo('students')"><span
+              class="icon">🎓</span>Students</button>
+          <div class="nav-divider"></div>
+          <button class="nav-item" data-view="admins" onclick="admGo('admins')"><span
+              class="icon">🛡️</span>Admins</button>
+        </nav>
+        <div class="sidebar-user">
+          <div class="user-row">
+            <div class="user-avatar" id="adm-avatar">·</div>
+            <div class="user-info">
+              <div class="user-name" id="adm-name">…</div>
+              <div class="user-class">Admin</div>
+            </div>
+            <div class="user-actions">
+              <button class="theme-toggle sidebar-theme" onclick="toggleTheme()" aria-label="Switch theme"
+                aria-pressed="false">
+                <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
+                <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
+              </button>
+              <button class="logout-btn" onclick="admLogout()" title="Logout">⏻</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main-content">
+        <!-- Mobile header — CSS hides this above 640px -->
+        <div class="mobile-topbar">
+          <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
+          <div class="mobile-topbar-logo">Career<span>AI</span> Admin</div>
+          <button class="theme-toggle mobile-theme" onclick="toggleTheme()" aria-label="Switch theme"
+            aria-pressed="false">
+            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
+            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
+          </button>
+        </div>
+
+        <div class="adm-page" id="adm-view" aria-live="polite">
+          <div class="adm-loading">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="adm-toast" id="adm-toast" role="status"></div>
+
+  <script src="../scripts/contest_api.js"></script>
+  <script src="../scripts/careerapi_mock.js"></script>
+  <script src="../scripts/script.js"></script>
+  <script src="../scripts/admin.js"></script>
+
+</body>
+
+</html>

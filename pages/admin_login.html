@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI Admin · Sign In</title>
+  <!-- Resolve the theme before first paint: a deferred script would let a
+       dark-mode user see a white flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('careerai_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="../admin.css" />
+</head>
+
+<body data-page="adminlogin">
+
+  <!-- ════════════════════════════════════════
+     ADMIN LOGIN — separate from student login (schema §3)
+════════════════════════════════════════ -->
+  <div id="auth" class="screen active">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+      <form class="auth-box" id="adm-login-form" onsubmit="admLogin(event)" novalidate>
+        <div class="auth-logo">Career<span>AI</span></div>
+        <div class="auth-tagline">Admin panel · staff only</div>
+        <div class="adm-error-box" id="adm-login-err" style="display:none;" role="alert"></div>
+        <div class="form-group">
+          <label class="form-label" for="adm-email">Email</label>
+          <input class="form-input" id="adm-email" type="email" autocomplete="username" placeholder="you@careerai.in" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="adm-password">Password</label>
+          <input class="form-input" id="adm-password" type="password" autocomplete="current-password"
+            placeholder="••••••••" />
+        </div>
+        <button class="btn btn-primary" id="adm-login-btn" type="submit"
+          style="width:100%;justify-content:center;">Log in →</button>
+        <p class="adm-login-hint">Demo only: <span class="adm-mono">admin@careerai.in</span> /
+          <span class="adm-mono">admin123</span></p>
+        <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px;cursor:pointer;"
+          onclick="show('landing')">← Back to CareerAI</p>
+      </form>
+    </div>
+  </div>
+
+  <script src="../scripts/contest_api.js"></script>
+  <script src="../scripts/careerapi_mock.js"></script>
+  <script src="../scripts/script.js"></script>
+  <script src="../scripts/admin.js"></script>
+
+</body>
+
+</html>

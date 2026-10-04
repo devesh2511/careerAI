@@ -516,6 +516,11 @@
 
     // ── Mock-only helpers (not part of the backend contract) ──
     now: now,
+    // Contest n's questions WITH answers, for seeding the admin mock in
+    // careerapi_mock.js. The real server has no such endpoint for students.
+    mockQuestionSet(n) {
+      return QUESTION_SETS[(n - 1) % QUESTION_SETS.length].map(q => Object.assign({}, q, { options: q.options.slice() }));
+    },
     resetDemo() {
       try { localStorage.removeItem(STORE_KEY); } catch (e) { }
     }

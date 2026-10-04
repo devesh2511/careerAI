@@ -1,0 +1,602 @@
+/* ══════════════════════════════════════════════════════════════
+   CAREERAI ADMIN — styles used only by pages/admin*.html
+   Builds on style.css (layout, buttons, badges, forms, tables) and
+   uses its theme variables, so light and dark mode both just work.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Shell ── */
+.adm-page {
+  display: block;
+  padding: 32px 36px;
+  max-width: 1150px;
+}
+
+.adm-role {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.adm-crumb {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.adm-crumb a {
+  color: var(--accent-text);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.adm-crumb a:hover {
+  text-decoration: underline;
+}
+
+.adm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.adm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.adm-search {
+  max-width: 320px;
+  flex: 1 1 220px;
+}
+
+/* ── Stats ── */
+.adm-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.adm-stats .stat-label {
+  margin-bottom: 0;
+}
+
+.adm-section-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin: 26px 0 12px;
+}
+
+/* ── Panels and tables ── */
+.adm-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.adm-panel-pad {
+  padding: 20px 22px;
+}
+
+.adm-scroll {
+  overflow-x: auto;
+}
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.adm-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--wash);
+  white-space: nowrap;
+}
+
+.adm-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.adm-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.adm-table tr.adm-click {
+  cursor: pointer;
+}
+
+.adm-table tr.adm-click:hover td {
+  background: var(--accent-weak);
+}
+
+.adm-table .adm-num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-table .adm-row-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.adm-table .adm-row-actions .btn + .btn {
+  margin-left: 6px;
+}
+
+.adm-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.adm-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  letter-spacing: .3px;
+}
+
+.adm-empty,
+.adm-loading {
+  padding: 36px 22px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.adm-error-box {
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 101, 132, .35);
+  background: rgba(255, 101, 132, .08);
+  color: var(--accent3);
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
+.adm-note {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 16px;
+}
+
+.adm-note b {
+  color: var(--text);
+}
+
+.adm-banner-lock {
+  border-color: rgba(251, 146, 60, .4);
+  background: rgba(251, 146, 60, .08);
+  color: var(--orange-text);
+}
+
+/* Small "text" button for row actions */
+.adm-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+
+.adm-link:hover {
+  text-decoration: underline;
+}
+
+.btn-danger {
+  background: rgba(255, 101, 132, .12);
+  color: var(--accent3);
+  border: 1px solid rgba(255, 101, 132, .35);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(255, 101, 132, .2);
+}
+
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* ── Forms ── */
+.adm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
+.adm-form-grid .adm-span {
+  grid-column: 1 / -1;
+}
+
+.adm-field-err {
+  font-size: 12px;
+  color: var(--accent3);
+  margin-top: 6px;
+  min-height: 0;
+}
+
+.adm-field-err:empty {
+  display: none;
+}
+
+.form-input.adm-invalid {
+  border-color: var(--accent3);
+}
+
+.adm-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 70px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* ── Tabs inside a page ── */
+.adm-tabs {
+  margin-bottom: 18px;
+}
+
+/* ── Contest editor ── */
+.adm-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.adm-progress-track {
+  flex: 0 1 220px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.adm-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width .3s var(--ease);
+}
+
+.adm-q {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.adm-q.is-saved {
+  border-color: rgba(0, 212, 170, .45);
+}
+
+.adm-q-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.adm-q-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.adm-opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.adm-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 4px 4px 10px;
+  background: var(--surface2);
+}
+
+.adm-opt.is-correct {
+  border-color: var(--accent2);
+  background: rgba(0, 212, 170, .08);
+}
+
+.adm-opt input[type="radio"] {
+  accent-color: var(--accent2);
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.adm-opt .adm-opt-letter {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--muted);
+  width: 14px;
+}
+
+.adm-opt .form-input {
+  border: 0;
+  background: transparent;
+  padding: 8px 10px;
+  box-shadow: none;
+}
+
+.adm-q-foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Read-only question (locked contest) */
+.adm-ro-opt {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+}
+
+.adm-ro-opt.is-correct {
+  border-color: var(--accent2);
+  background: rgba(0, 212, 170, .08);
+  font-weight: 700;
+}
+
+.adm-ro-text {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.adm-ro-expl {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 12px;
+  line-height: 1.55;
+}
+
+/* ── Roster upload result ── */
+.adm-result {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  margin-top: 14px;
+}
+
+.adm-result ul {
+  margin: 4px 0 0 18px;
+  color: var(--muted);
+}
+
+/* ── Modal ── */
+.adm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 25, .45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px 16px 24px;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.adm-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 520px;
+  animation: admIn .2s var(--ease-out, ease-out) both;
+}
+
+.adm-modal.is-wide {
+  max-width: 680px;
+}
+
+@keyframes admIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.adm-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.adm-modal-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.adm-modal-close {
+  background: none;
+  border: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.adm-modal-body {
+  padding: 20px 22px;
+}
+
+.adm-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* Delete dialog choices */
+.adm-choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.adm-choice:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+
+.adm-choice.is-hard:has(input:checked) {
+  border-color: var(--accent3);
+  background: rgba(255, 101, 132, .06);
+}
+
+.adm-choice input {
+  margin-top: 3px;
+}
+
+.adm-choice-title {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.adm-choice-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.adm-hard-box {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.adm-hard-box ul {
+  margin: 6px 0 12px 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── Toast ── */
+.adm-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px 18px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  z-index: 1100;
+  max-width: calc(100vw - 32px);
+}
+
+.adm-toast.is-on {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+
+/* ── Login page ── */
+.adm-login-hint {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ── Phone ── */
+@media (max-width: 640px) {
+  .adm-page {
+    padding: 20px 16px;
+  }
+
+  .adm-form-grid,
+  .adm-opts {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-modal-overlay {
+    padding-top: 20px;
+  }
+
+  .adm-table th,
+  .adm-table td {
+    padding: 10px 12px;
+  }
+}

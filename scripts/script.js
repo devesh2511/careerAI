@@ -16,7 +16,10 @@
       app: 'pages/app.html',
       careerquiz: 'pages/career_quiz.html',
       ailoading: 'pages/ai_loading.html',
-      airesults: 'pages/career_results.html'
+      airesults: 'pages/career_results.html',
+      paywall: 'pages/paywall.html',
+      adminlogin: 'pages/admin_login.html',
+      admin: 'pages/admin.html'
     };
 
     // These are .page divs inside app.html — they still switch in place.
@@ -49,6 +52,26 @@
       try { sessionStorage.setItem(STATE_KEY, JSON.stringify(s)); } catch (e) { /* private mode */ }
     }
     function clearState() { try { sessionStorage.removeItem(STATE_KEY); } catch (e) { } }
+
+    // -- Session + access --
+    // Accounts live behind window.CareerAPI (scripts/careerapi_mock.js until
+    // careerAPI exists). The app is all or nothing: every page in PAID_PAGES
+    // stays hidden until the access check passes, and otherwise sends the
+    // student to login (no session) or the paywall (no plan).
+    const PAID_PAGES = ['app', 'onboarding', 'evaluation', 'quiz', 'quizcomplete', 'careerquiz', 'ailoading', 'airesults'];
+    function isLoggedIn() { return !!(window.CareerAPI && CareerAPI.auth.hasSession()); }
+    function requireAccess() {
+      if (!window.CareerAPI) return Promise.resolve(true);
+      return CareerAPI.me.access().then(a => {
+        if (a.has_access) return true;
+        show('paywall');
+        return false;
+      }, err => {
+        if (err.status === 401) show('auth');
+        else alert(err.message);
+        return false;
+      });
+    }
 
     // -- Theme --
     // Stored in localStorage, not sessionStorage: a theme choice should
@@ -108,8 +131,18 @@
     }
 
     function logout() {
-      clearState();
-      location.href = routeTo('landing');
+      const done = () => { clearState(); location.href = routeTo('landing'); };
+      if (window.CareerAPI) CareerAPI.auth.logout().then(done, done);
+      else done();
+    }
+
+    // A student closing their own account is a soft delete on the server
+    // (DELETE /me): the account is hidden and logged out, and an admin can
+    // restore it.
+    function deleteAccount() {
+      if (!confirm('Delete your CareerAI account? You will be logged out and removed from leaderboards.')) return;
+      CareerAPI.me.remove().then(() => { clearState(); location.href = routeTo('landing'); },
+        err => alert(err.message));
     }
 
     // ── Mobile sidebar drawer (phone breakpoint only) ──
@@ -139,15 +172,29 @@
       else if (pageId === 'results') syncResults();
       else if (pageId === 'explorer') syncExplorer();
       else if (pageId === 'progress') syncProgress();
+      else if (pageId === 'settings') syncSettings();
     }
 
     // ── Per-page init: replaces the old single-page bootstrap ──
     document.addEventListener('DOMContentLoaded', () => {
       initTheme();
+      if (!PAID_PAGES.includes(CURRENT_PAGE)) { initPage(); return; }
+      // Hidden, not blank: the markup is already there, it just must not be
+      // seen (or a quiz started) before the server says this student has paid.
+      document.body.style.visibility = 'hidden';
+      requireAccess().then(ok => {
+        if (!ok) return;
+        document.body.style.visibility = '';
+        initPage();
+      });
+    });
+
+    function initPage() {
       switch (CURRENT_PAGE) {
         case 'app': {
           const hash = (location.hash || '').replace(/^#\/?/, '');
           navTo(APP_PAGES.includes(hash) ? hash : 'dashboard');
+          syncUser();
           break;
         }
         case 'onboarding': obInit(); break;
@@ -156,8 +203,10 @@
         case 'careerquiz': cqResume(); break;
         case 'ailoading': cqFinish(); break;
         case 'airesults': cqShowResults(); break;
+        case 'auth': authInit(); break;
+        case 'paywall': pwInit(); break;
       }
-    });
+    }
 
     // ── Auth tabs ──
     function authTab(type, btn) {
@@ -165,6 +214,321 @@
       btn.classList.add('active');
       document.getElementById('auth-login').style.display = type === 'login' ? 'block' : 'none';
       document.getElementById('auth-register').style.display = type === 'register' ? 'block' : 'none';
+    }
+
+    // ── Shared bits for account screens ──
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    }
+    function rupees(paise) { return '₹' + (paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }); }
+    function longDate(iso) {
+      return new Date(iso).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    function setBusy(btn, busy) {
+      btn.disabled = busy;
+      btn.setAttribute('aria-busy', String(busy));
+    }
+    function val(id) { return document.getElementById(id).value; }
+
+    // ── Auth: login / register (pages/auth.html) ──
+    function authInit() {
+      // Already logged in: the gate on the next page decides dashboard vs paywall.
+      if (isLoggedIn()) { show('dashboard'); return; }
+      if (location.hash === '#register') authTab('register', document.querySelectorAll('.auth-tab')[1]);
+    }
+
+    // Clears the alert box and every per-field error inside one form.
+    function authReset(form, alertId) {
+      document.getElementById(alertId).textContent = '';
+      form.querySelectorAll('.form-error').forEach(e => { e.textContent = ''; });
+      form.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
+    }
+
+    function authSubmitLogin(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('login-btn');
+      authReset(form, 'login-alert');
+      setBusy(btn, true);
+      CareerAPI.auth.login({ email: val('login-email'), password: val('login-password') }).then(r => {
+        show(r.access.has_access ? 'dashboard' : 'paywall');
+      }, err => {
+        setBusy(btn, false);
+        document.getElementById('login-alert').textContent = err.message;
+      });
+    }
+
+    function authSubmitRegister(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('reg-btn');
+      authReset(form, 'reg-alert');
+      setBusy(btn, true);
+      CareerAPI.auth.register({
+        full_name: val('reg-full_name'), email: val('reg-email'),
+        password: val('reg-password'), school_code: val('reg-school_code')
+      }).then(r => {
+        // New students fill in onboarding next, after paying if they must.
+        if (r.access.has_access) show('onboarding');
+        else location.href = routeTo('paywall') + '?next=onboarding';
+      }, err => {
+        setBusy(btn, false);
+        const box = err.field && document.getElementById('reg-' + err.field + '-error');
+        if (box) {
+          box.textContent = err.message;
+          document.getElementById('reg-' + err.field).classList.add('is-invalid');
+          document.getElementById('reg-' + err.field).focus();
+        } else document.getElementById('reg-alert').textContent = err.message;
+      });
+    }
+
+    // ── Paywall (pages/paywall.html) ──
+    // Shown whenever the access check fails. Explains why (no School ID,
+    // email not on the school's list, school not paying) and sells an
+    // individual plan. Payments are non-refundable.
+    let pwPlan = 'student_annual';
+    let pwNext = 'dashboard';
+
+    function pwInit() {
+      pwNext = new URLSearchParams(location.search).get('next') === 'onboarding' ? 'onboarding' : 'dashboard';
+      pwRender();
+    }
+
+    function pwRender() {
+      const root = document.getElementById('pw-root');
+      root.innerHTML = '<div class="card pw-center"><div class="al-spinner"></div><p>Checking your access…</p></div>';
+      Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
+        root.innerHTML = a.has_access ? pwAllSet(a) : pwHero(m.student, a) + pwReason(m.student, a) + pwPlans();
+      }, err => {
+        if (err.status === 401) { show('auth'); return; }
+        root.innerHTML = '<div class="card pw-center"><p>' + esc(err.message) + '</p>' +
+          '<button class="btn btn-primary" onclick="pwRender()">Try again</button></div>';
+      });
+    }
+
+    function pwHero(st, a) {
+      const first = esc(st.full_name.split(' ')[0]);
+      return '<div class="pw-hero"><div class="pw-emoji">🔓</div>' +
+        '<h1>Unlock CareerAI, ' + first + '</h1>' +
+        '<p>' + (a.reason === 'no_school'
+          ? 'Get in free through your school, or get your own plan.'
+          : 'You\'re not covered by your school yet. Here\'s why, and what you can do.') + '</p></div>';
+    }
+
+    function pwSchoolForm(label) {
+      return '<form class="pw-school-form" onsubmit="pwSetSchool(event)">' +
+        '<input class="form-input" id="pw-code" maxlength="20" placeholder="School ID, e.g. DPS-RKP" ' +
+        'autocapitalize="characters" aria-label="School ID" />' +
+        '<button class="btn btn-secondary" id="pw-code-btn" type="submit">' + label + '</button></form>' +
+        '<div class="form-error" id="pw-code-error"></div>';
+    }
+
+    function pwReason(st, a) {
+      const school = a.school ? esc(a.school.name) : '';
+      let icon, title, body, extra = '';
+      if (a.reason === 'not_on_roster') {
+        icon = '📋';
+        title = 'Your email isn\'t on ' + school + '\'s list yet';
+        body = school + ' pays for its students, but <b>' + esc(st.email) + '</b> isn\'t on the list they sent us. ' +
+          'Ask your school coordinator to add it. You\'ll get in free as soon as they do.';
+        extra = '<div class="pw-school-form"><button class="btn btn-secondary" onclick="pwRender()">Check again</button>' +
+          '<button class="btn btn-ghost" onclick="pwShowSchoolForm()">Wrong school?</button></div>' +
+          '<div id="pw-school-slot"></div>';
+      } else if (a.reason === 'school_not_subscribed') {
+        icon = '⏳';
+        title = school + '\'s CareerAI plan isn\'t active';
+        body = 'Your school hasn\'t paid for this year yet, or its plan has run out. Ask your school about it, ' +
+          'or get your own plan below.';
+        extra = '<div class="pw-school-form"><button class="btn btn-secondary" onclick="pwRender()">Check again</button>' +
+          '<button class="btn btn-ghost" onclick="pwShowSchoolForm()">Wrong school?</button></div>' +
+          '<div id="pw-school-slot"></div>';
+      } else {
+        icon = '🏫';
+        title = 'Is your school on CareerAI?';
+        body = 'If your school has a CareerAI plan, enter the School ID they gave you and you\'ll get in free.';
+        extra = pwSchoolForm('Check');
+      }
+      return '<div class="card pw-reason"><div class="pw-reason-icon">' + icon + '</div><div style="flex:1;">' +
+        '<h3>' + title + '</h3><p>' + body + '</p>' + extra + '</div></div>' +
+        '<div class="pw-or">or get your own plan</div>';
+    }
+
+    function pwShowSchoolForm() {
+      document.getElementById('pw-school-slot').innerHTML = pwSchoolForm('Update');
+      document.getElementById('pw-code').focus();
+    }
+
+    function pwSetSchool(e) {
+      e.preventDefault();
+      const btn = document.getElementById('pw-code-btn');
+      const out = document.getElementById('pw-code-error');
+      out.textContent = '';
+      setBusy(btn, true);
+      CareerAPI.me.setSchool(val('pw-code')).then(r => {
+        if (r.access.has_access) { document.getElementById('pw-root').innerHTML = pwAllSet(r.access); return; }
+        pwRender();
+      }, err => {
+        setBusy(btn, false);
+        out.textContent = err.message;
+      });
+    }
+
+    function pwPlans() {
+      const P = CareerAPI.plans, a = P.student_annual, m = P.student_monthly;
+      const saving = Math.round((1 - a.amount_paise / (m.amount_paise * 12)) * 100);
+      const card = (p, price, per, note, badge) =>
+        '<button type="button" class="card pw-plan' + (pwPlan === p.plan ? ' selected' : '') + '" ' +
+        'aria-pressed="' + (pwPlan === p.plan) + '" onclick="pwPick(\'' + p.plan + '\')">' +
+        (badge ? '<span class="badge badge-green">' + badge + '</span>' : '') +
+        '<div class="pw-plan-name">' + p.label + '</div>' +
+        '<div class="pw-price">' + price + ' <small>' + per + '</small></div>' +
+        '<div class="pw-plan-note">' + note + '</div></button>';
+      const chosen = P[pwPlan];
+      return '<div class="pw-plans">' +
+        card(a, rupees(a.amount_paise), '/ year', 'That\'s ' + rupees(a.amount_paise / 12) + ' a month', 'Save ' + saving + '%') +
+        card(m, rupees(m.amount_paise), '/ month', 'Pay month by month') + '</div>' +
+        '<ul class="pw-includes"><li>Career quiz and full results</li><li>Weekly aptitude contest</li>' +
+        '<li>Global and career leaderboards</li><li>Career explorer and roadmaps</li>' +
+        '<li>AI career chat</li><li>Progress tracking</li></ul>' +
+        '<div class="pw-pay"><div class="form-alert" id="pw-pay-alert" role="alert"></div>' +
+        '<button class="btn btn-primary btn-lg" id="pw-pay-btn" onclick="pwCheckout()">Pay ' +
+        rupees(chosen.amount_paise) + ' →</button>' +
+        '<div class="pw-fineprint">Your plan starts as soon as payment goes through and runs for ' +
+        (chosen.months === 12 ? '12 months' : '1 month') + '. Payments are non-refundable.</div></div>';
+    }
+
+    function pwPick(plan) {
+      pwPlan = plan;
+      const host = document.querySelector('.pw-plans');
+      // Re-draw just the plans block so the reason card keeps any typed School ID.
+      const tmp = document.createElement('div');
+      tmp.innerHTML = pwPlans();
+      host.parentNode.querySelectorAll('.pw-plans, .pw-includes, .pw-pay').forEach(n => n.remove());
+      document.getElementById('pw-root').append(...tmp.childNodes);
+    }
+
+    function pwCheckout() {
+      const btn = document.getElementById('pw-pay-btn');
+      document.getElementById('pw-pay-alert').textContent = '';
+      setBusy(btn, true);
+      CareerAPI.billing.checkout(pwPlan).then(order => {
+        setBusy(btn, false);
+        pwOpenSheet(order);
+      }, err => {
+        setBusy(btn, false);
+        if (err.code === 'already_has_access') { pwRender(); return; }
+        document.getElementById('pw-pay-alert').textContent = err.message;
+      });
+    }
+
+    // Stand-in for the Razorpay checkout window. The real one is Razorpay's
+    // own script; its success callback is followed by the server webhook.
+    function pwOpenSheet(order) {
+      const el = document.createElement('div');
+      el.className = 'pay-overlay';
+      el.id = 'pay-overlay';
+      el.innerHTML = '<div class="pay-sheet" role="dialog" aria-modal="true" aria-label="Payment">' +
+        '<div class="pay-head"><span>💳 Razorpay</span><button class="btn btn-ghost btn-sm" onclick="pwCloseSheet()" ' +
+        'aria-label="Cancel payment">✕</button></div><div class="pay-body">' +
+        '<div style="font-size:13px;color:var(--muted);">CareerAI · ' + esc(CareerAPI.plans[order.plan].label) + ' plan</div>' +
+        '<div class="pay-amount">' + rupees(order.amount_paise) + '</div>' +
+        '<div class="pay-demo">Demo checkout: no real money moves. Pick what the payment should do.</div>' +
+        '<div class="pay-actions">' +
+        '<button class="btn btn-primary" onclick="pwFinish(\'' + order.order_id + '\', true, this)">Pay ' + rupees(order.amount_paise) + '</button>' +
+        '<button class="btn btn-ghost" onclick="pwFinish(\'' + order.order_id + '\', false, this)">Simulate a failed payment</button>' +
+        '</div></div></div>';
+      document.body.appendChild(el);
+    }
+
+    function pwCloseSheet() {
+      const el = document.getElementById('pay-overlay');
+      if (el) el.remove();
+    }
+
+    function pwFinish(orderId, succeed, btn) {
+      setBusy(btn, true);
+      CareerAPI.billing.mockPay(orderId, succeed).then(r => {
+        pwCloseSheet();
+        if (r.status === 'active') {
+          document.getElementById('pw-root').innerHTML = pwSuccess(r.access);
+          return;
+        }
+        document.getElementById('pw-pay-alert').textContent =
+          'Your payment didn\'t go through, and you haven\'t been charged. Please try again.';
+      }, err => {
+        pwCloseSheet();
+        document.getElementById('pw-pay-alert').textContent = err.message;
+      });
+    }
+
+    function pwContinue() {
+      return '<button class="btn btn-primary btn-lg" onclick="show(\'' + pwNext + '\')">' +
+        (pwNext === 'onboarding' ? 'Set up my profile →' : 'Go to my dashboard →') + '</button>';
+    }
+
+    function pwSuccess(a) {
+      return '<div class="card pw-center"><div class="pw-emoji">🎉</div><h2>You\'re in!</h2>' +
+        '<p>Your ' + esc(CareerAPI.plans[a.plan] ? CareerAPI.plans[a.plan].label.toLowerCase() : '') +
+        ' plan is active until <b>' + longDate(a.ends_at) + '</b>.</p>' + pwContinue() + '</div>';
+    }
+
+    function pwAllSet(a) {
+      const how = a.source === 'school'
+        ? esc(a.school.name) + ' covers you until <b>' + longDate(a.ends_at) + '</b>.'
+        : 'Your plan is active until <b>' + longDate(a.ends_at) + '</b>.';
+      return '<div class="card pw-center"><div class="pw-emoji">✅</div><h2>You have full access</h2>' +
+        '<p>' + how + '</p>' + pwContinue() + '</div>';
+    }
+
+    // ── Settings: account, School ID and membership (app.html#/settings) ──
+    function syncSettings() {
+      if (!window.CareerAPI) return;
+      Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
+        const st = m.student;
+        document.getElementById('st-name').textContent = st.full_name + ' · shown on leaderboards as ' + st.leaderboard_name;
+        document.getElementById('st-email').textContent = st.email;
+        document.getElementById('st-school').textContent = st.school
+          ? st.school.name + ' · ' + st.school.school_code
+          : 'Not added · your school gives you this';
+        document.getElementById('st-school-edit').innerHTML = '';
+        document.getElementById('st-plan').innerHTML = a.source === 'school'
+          ? 'Covered by ' + esc(a.school.name) + ' until ' + longDate(a.ends_at)
+          : esc((CareerAPI.plans[a.plan] || { label: '' }).label) + ' plan · active until ' + longDate(a.ends_at) +
+          ' · non-refundable';
+        document.getElementById('st-plan-badge').textContent = a.source === 'school' ? 'School plan' : 'Individual';
+      }, err => { if (err.status === 401) show('auth'); });
+    }
+
+    function stEditSchool() {
+      const box = document.getElementById('st-school-edit');
+      if (box.innerHTML) { box.innerHTML = ''; return; }
+      box.innerHTML = '<form class="st-edit" onsubmit="stSaveSchool(event)">' +
+        '<input class="form-input" id="st-code" maxlength="20" placeholder="e.g. DPS-RKP" aria-label="School ID" />' +
+        '<button class="btn btn-primary btn-sm" id="st-code-btn" type="submit">Save</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="stSaveSchool(null)">Remove</button></form>' +
+        '<div class="form-hint">Changing your school can change whether you\'re covered.</div>' +
+        '<div class="form-error" id="st-code-error"></div>';
+      document.getElementById('st-code').focus();
+    }
+
+    function stSaveSchool(e) {
+      if (e) e.preventDefault();
+      const code = e ? val('st-code') : '';
+      CareerAPI.me.setSchool(code).then(r => {
+        // Losing school cover means losing access: straight to the paywall.
+        if (!r.access.has_access) { show('paywall'); return; }
+        syncSettings();
+        syncUser();
+      }, err => { document.getElementById('st-code-error').textContent = err.message; });
+    }
+
+    // Sidebar name and avatar from the logged-in account.
+    function syncUser() {
+      if (!window.CareerAPI) return;
+      CareerAPI.me.get().then(m => {
+        const n = document.querySelector('.user-name'), av = document.querySelector('.user-avatar');
+        if (n) n.textContent = m.student.full_name;
+        if (av) av.textContent = m.student.full_name.charAt(0).toUpperCase();
+      }, () => { });
     }
 
     // ── Onboarding steps ──
@@ -297,9 +661,17 @@
       return { qi: qi, q: RS_QUESTIONS[qi] };
     }
 
+    // Sends a logged-out visitor to the login page. Returns true if they may stay.
+    function requireLogin() {
+      if (isLoggedIn()) return true;
+      show('auth');
+      return false;
+    }
+
     // Called from any page ("Take the quiz" / "Retake") — clears the old run
     // and hands off to career_quiz.html, which renders the first question.
     function cqStart() {
+      if (!requireLogin()) return;
       cqIdx = 0;
       cqAnswers = [];
       cqOrder = rsBuildOrder();
