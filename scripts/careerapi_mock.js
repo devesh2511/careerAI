@@ -6,9 +6,16 @@
 // endpoint in careerAPI/docs/database-schema.md §11, so swapping this mock
 // for real fetch() calls is a change to this file alone.
 //
-// Right now there is no backend, so everything below the API surface is a
-// MOCK SERVER that runs in the browser and keeps its tables in localStorage.
-// It enforces the same rules the database will:
+// LIVE: the endpoints the backend has built call the production API at
+// API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
+//   POST /auth/register   POST /auth/login   POST /auth/logout
+//   GET  /me              GET  /me/access
+// As more endpoints ship, move their methods from reply(...) to http(...).
+//
+// Everything else is still a MOCK SERVER that runs in the browser and keeps
+// its tables in localStorage. A live login copies the student into it (see
+// shadow()), so the mocked screens — school change, billing, admin — keep
+// working. It enforces the same rules the database will:
 //   • access = active individual plan, OR School ID + email on that
 //     school's roster + an active school plan (§6.4)
 //   • soft delete (is_deleted) vs hard delete; payment records survive a
@@ -18,7 +25,9 @@
 //
 // Errors reject with an Error carrying .status (HTTP) and .code (API code).
 //
-// Demo accounts (password for all students: password123)
+// Demo accounts — MOCK ONLY: student login is live now, so these students
+// don't exist on production; register a real account instead.
+// (password for all students: password123)
 //   ananya.sharma@dps.edu.in  School ID DPS-RKP, on roster, school paid → access
 //   priya.k@kvpowai.edu.in    School ID KV-POWAI, school hasn't paid    → paywall
 //   rahul.verma@gmail.com     no school                                 → paywall
@@ -29,6 +38,9 @@
 // ══════════════════════════════════════════════════════════════
 (function (root) {
   'use strict';
+
+  // Production careerAPI (careerAPI repo, deployed on Vercel).
+  const API_BASE = 'https://careerapi.vercel.app';
 
   const DB_KEY = 'careerai_api_mock';
   const STUDENT_SESSION = 'careerai_session';
@@ -177,6 +189,47 @@
       id: nextId('subscriptions'), school_id: null, student_id: null, currency: 'INR',
       created_at: o.starts_at || iso(Date.now()), updated_at: o.starts_at || iso(Date.now())
     }, o);
+  }
+
+  // ── Live API ────────────────────────────────────────────────────────────
+  // Rejects the same way the mock does: an Error with .status, .code and,
+  // for validation errors, .field.
+  function http(method, path, body) {
+    return fetch(API_BASE + path, {
+      method: method,
+      credentials: 'include',
+      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    }).then(res => res.json().catch(() => ({})).then(data => {
+      if (res.ok) return data;
+      const err = data.error || {};
+      const e = new Error(err.message || 'Something went wrong. Please try again.');
+      e.status = res.status; e.code = err.code || 'server_error';
+      if (err.field) e.field = err.field;
+      if (res.status === 401) sessionSet(STUDENT_SESSION, null);
+      throw e;
+    }), () => {
+      const e = new Error("Can't reach the server. Check your connection and try again.");
+      e.status = 0; e.code = 'network_error';
+      throw e;
+    });
+  }
+
+  // After a live login, mirror the student into the mock tables under the
+  // same id, so the endpoints that are still mocked find them.
+  function shadow(student) {
+    load();
+    let st = db.students.find(s => s.id === student.id);
+    if (!st) {
+      st = { id: student.id, password: null, current_career: null, is_deleted: false, deleted_at: null,
+        created_at: student.created_at || iso(now()) };
+      db.students.push(st);
+    }
+    const sch = student.school && schoolByCode(student.school.school_code);
+    Object.assign(st, { email: lower(student.email), full_name: student.full_name,
+      school_id: sch ? sch.id : st.school_id || null, is_deleted: false, deleted_at: null });
+    save();
+    sessionSet(STUDENT_SESSION, student.id);
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -341,51 +394,38 @@
     leaderboardName: leaderboardName,
 
     auth: {
-      // POST /auth/register
+      // POST /auth/register — live
       register(body) {
-        return reply(() => {
-          const full_name = String(body.full_name || '').trim().replace(/\s+/g, ' ');
-          const email = lower(body.email);
-          if (!full_name) fail(400, 'invalid', 'Please enter your full name.', { field: 'full_name' });
-          if (!EMAIL_RE.test(email)) fail(400, 'invalid', 'Please enter a valid email.', { field: 'email' });
-          if (String(body.password || '').length < 8) fail(400, 'invalid', 'Password must be at least 8 characters.', { field: 'password' });
-          if (db.students.some(s => lower(s.email) === email))
-            fail(409, 'email_taken', 'An account with this email already exists. Try logging in.', { field: 'email' });
-          let schoolId = null;
-          if (String(body.school_code || '').trim()) {
-            const s = schoolByCode(body.school_code);
-            if (!s) fail(400, 'unknown_school_id', 'We couldn\'t find that School ID. Check it with your school, or leave it blank.', { field: 'school_code' });
-            schoolId = s.id;
-          }
-          const st = { id: uuid(), email: email, full_name: full_name, password: String(body.password), school_id: schoolId,
-            current_career: null, is_deleted: false, deleted_at: null, created_at: iso(now()) };
-          db.students.push(st); save();
-          sessionSet(STUDENT_SESSION, st.id);
-          return { student: studentDTO(st), access: accessOf(st) };
-        });
+        return http('POST', '/auth/register', body).then(r => { shadow(r.student); return r; });
       },
-      // POST /auth/login
+      // POST /auth/login — live
       login(body) {
-        return reply(() => {
-          const st = db.students.find(s => lower(s.email) === lower(body.email));
-          // Same message for unknown email, wrong password and closed account.
-          if (!st || st.is_deleted || st.password !== String(body.password || ''))
-            fail(401, 'bad_credentials', 'Email or password is incorrect.');
-          sessionSet(STUDENT_SESSION, st.id);
-          return { student: studentDTO(st), access: accessOf(st) };
-        });
+        return http('POST', '/auth/login', body).then(r => { shadow(r.student); return r; });
       },
-      // POST /auth/logout
-      logout() { return reply(() => { sessionSet(STUDENT_SESSION, null); return { ok: true }; }); },
-      // Mock-only: is there a session cookie at all? (No round trip.)
+      // POST /auth/logout — live; the local session ends even if the call fails
+      logout() {
+        const end = () => sessionSet(STUDENT_SESSION, null);
+        return http('POST', '/auth/logout').then(r => { end(); return r; }, e => { end(); throw e; });
+      },
+      // Is there a session at all? (No round trip.) The cookie is httpOnly, so
+      // this is the flag set at login; a 401 from the API clears it.
       hasSession() { return !!sessionGet(STUDENT_SESSION); }
     },
 
     me: {
-      // GET /me
-      get() { return reply(() => ({ student: studentDTO(me()) })); },
-      // GET /me/access
-      access() { return reply(() => accessOf(me())); },
+      // GET /me — live
+      get() { return http('GET', '/me').then(r => { shadow(r.student); return r; }); },
+      // GET /me/access — live. Billing and school changes are still mocked, so
+      // a plan bought or a school joined in the mock also grants access.
+      access() {
+        return http('GET', '/me/access').then(real => {
+          if (real.has_access) return real;
+          load();
+          const st = db.students.find(s => s.id === sessionGet(STUDENT_SESSION) && !s.is_deleted);
+          const mock = st && accessOf(st);
+          return mock && mock.has_access ? clone(mock) : real;
+        });
+      },
       // PUT /me/school  — code '' / null clears it
       setSchool(code) {
         return reply(() => {
