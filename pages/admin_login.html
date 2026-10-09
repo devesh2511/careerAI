@@ -30,6 +30,7 @@
       <form class="auth-box" id="adm-login-form" onsubmit="admLogin(event)" novalidate>
         <div class="auth-logo">Career<span>AI</span></div>
         <div class="auth-tagline">Admin panel · staff only</div>
+        <div class="adm-ok-box" id="adm-login-ok" style="display:none;" role="status"></div>
         <div class="adm-error-box" id="adm-login-err" style="display:none;" role="alert"></div>
         <div class="form-group">
           <label class="form-label" for="adm-email">Email</label>
@@ -39,6 +40,7 @@
           <label class="form-label" for="adm-password">Password</label>
           <input class="form-input" id="adm-password" type="password" autocomplete="current-password"
             placeholder="••••••••" />
+          <p class="adm-forgot-link"><a href="#" onclick="admShowAuth('forgot'); return false;">Forgot password?</a></p>
         </div>
         <button class="btn btn-primary" id="adm-login-btn" type="submit"
           style="width:100%;justify-content:center;">Log in →</button>
@@ -46,6 +48,56 @@
           <span class="adm-mono">admin123</span></p>
         <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px;cursor:pointer;"
           onclick="show('landing')">← Back to CareerAI</p>
+      </form>
+
+      <!-- Forgot password, step 1: email a 6-digit code (POST /admin/auth/forgot-password) -->
+      <form class="auth-box" id="adm-forgot-form" onsubmit="admForgot(event)" novalidate hidden>
+        <div class="auth-logo">Career<span>AI</span></div>
+        <div class="auth-tagline">Reset your admin password</div>
+        <div class="adm-error-box" style="display:none;" role="alert"></div>
+        <p class="adm-auth-copy">Enter your admin email and we'll send you a 6-digit code.</p>
+        <div class="form-group">
+          <label class="form-label" for="adm-forgot-email">Email</label>
+          <input class="form-input" id="adm-forgot-email" name="email" type="email" autocomplete="username"
+            placeholder="you@careerai.in" />
+          <div class="adm-field-err" data-err="email"></div>
+        </div>
+        <button class="btn btn-primary" id="adm-forgot-btn" type="submit"
+          style="width:100%;justify-content:center;">Send code →</button>
+        <p class="adm-auth-back"><a href="#" onclick="admShowAuth('login'); return false;">← Back to log in</a></p>
+      </form>
+
+      <!-- Forgot password, step 2: code + new password (POST /admin/auth/reset-password) -->
+      <form class="auth-box" id="adm-reset-form" onsubmit="admReset(event)" novalidate hidden>
+        <div class="auth-logo">Career<span>AI</span></div>
+        <div class="auth-tagline">Choose a new password</div>
+        <div class="adm-error-box" style="display:none;" role="alert"></div>
+        <p class="adm-auth-copy">If <strong id="adm-reset-to"></strong> is an admin account, we've emailed it a
+          code. It expires in 15 minutes.</p>
+        <div class="form-group">
+          <label class="form-label" for="adm-reset-code">6-digit code</label>
+          <input class="form-input adm-code-input" id="adm-reset-code" name="code" type="text" inputmode="numeric"
+            autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+          <div class="adm-field-err" data-err="code"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="adm-reset-password">New password</label>
+          <input class="form-input" id="adm-reset-password" name="new_password" type="password"
+            autocomplete="new-password" placeholder="At least 8 characters" />
+          <div class="adm-field-err" data-err="new_password"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="adm-reset-confirm">Confirm new password</label>
+          <input class="form-input" id="adm-reset-confirm" name="confirm" type="password"
+            autocomplete="new-password" placeholder="Type it again" />
+          <div class="adm-field-err" data-err="confirm"></div>
+        </div>
+        <button class="btn btn-primary" id="adm-reset-btn" type="submit"
+          style="width:100%;justify-content:center;">Reset password →</button>
+        <p class="adm-auth-back">
+          <button type="button" class="adm-link-btn" id="adm-resend-btn" onclick="admResend()">Resend code</button>
+          · <a href="#" onclick="admShowAuth('forgot'); return false;">Use a different email</a>
+        </p>
       </form>
     </div>
   </div>

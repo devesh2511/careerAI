@@ -1,6 +1,6 @@
     // ══════════════════════════════════════════════════════════════
     // CAREERAI ADMIN — UI
-    // pages/admin_login.html → staff login (admLogin)
+    // pages/admin_login.html → staff login (admLogin), forgot password (admForgot, admReset)
     // pages/admin.html       → the panel: one view drawn into #adm-view,
     //                          routed by the hash (#/contests/6 …)
     // All data comes from window.CareerAPI.admin (scripts/careerapi_mock.js),
@@ -189,6 +189,7 @@
       const email = document.getElementById('adm-email').value.trim();
       const password = document.getElementById('adm-password').value;
       box.style.display = 'none';
+      document.getElementById('adm-login-ok').style.display = 'none';
       if (!email || !password) { box.textContent = 'Enter your email and password.'; box.style.display = 'block'; return; }
       admBusy(btn, true, 'Logging in…');
       CareerAPI.admin.login({ email: email, password: password })
@@ -203,6 +204,120 @@
 
     function admLogout() {
       CareerAPI.admin.logout().finally(() => { location.href = 'admin_login.html'; });
+    }
+
+    // ── Forgot password ──
+    // Three forms on the login page: login → forgot (email) → reset (code +
+    // new password) → back to login. The API answers forgot-password the
+    // same way for any email, so the page never says whether one is an admin.
+    const ADM_RESEND_SECONDS = 60;       // the API issues at most one code a minute
+    let admResetEmail = '';
+    let admResendTimer = null;
+
+    function admShowAuth(which) {
+      ['login', 'forgot', 'reset'].forEach(k => {
+        const form = document.getElementById('adm-' + k + '-form');
+        form.hidden = k !== which;
+        if (k !== 'login') admClearErrors(form);
+      });
+      document.getElementById('adm-login-err').style.display = 'none';
+      document.getElementById('adm-login-ok').style.display = 'none';
+      const typed = document.getElementById('adm-email').value.trim();
+      if (which === 'forgot') {
+        const input = document.getElementById('adm-forgot-email');
+        if (!input.value) input.value = admResetEmail || typed;
+        input.focus();
+      } else if (which === 'reset') {
+        document.getElementById('adm-reset-to').textContent = admResetEmail;
+        document.getElementById('adm-reset-code').focus();
+      } else {
+        document.getElementById(typed ? 'adm-password' : 'adm-email').focus();
+      }
+    }
+
+    function admRequestCode() {
+      return CareerAPI.admin.forgotPassword({ email: admResetEmail });
+    }
+
+    // Counts down on the Resend link so a click inside the API's cooldown
+    // doesn't look like it sent a code when it silently didn't.
+    function admStartResendTimer() {
+      const btn = document.getElementById('adm-resend-btn');
+      let left = ADM_RESEND_SECONDS;
+      clearInterval(admResendTimer);
+      const tick = () => {
+        btn.disabled = left > 0;
+        btn.textContent = left > 0 ? 'Resend code in ' + left + 's' : 'Resend code';
+        if (left-- <= 0) clearInterval(admResendTimer);
+      };
+      tick();
+      admResendTimer = setInterval(tick, 1000);
+    }
+
+    function admForgot(e) {
+      e.preventDefault();
+      const form = document.getElementById('adm-forgot-form');
+      const btn = document.getElementById('adm-forgot-btn');
+      const email = document.getElementById('adm-forgot-email').value.trim();
+      admClearErrors(form);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        admFormError(form, { field: 'email', message: 'Enter a valid email.' });
+        return;
+      }
+      admResetEmail = email;
+      admBusy(btn, true, 'Sending…');
+      admRequestCode()
+        .then(() => {
+          admBusy(btn, false);
+          const reset = document.getElementById('adm-reset-form');
+          reset.reset();
+          admShowAuth('reset');
+          admStartResendTimer();
+        })
+        .catch(err => { admBusy(btn, false); admFormError(form, err); });
+    }
+
+    function admResend() {
+      const form = document.getElementById('adm-reset-form');
+      const btn = document.getElementById('adm-resend-btn');
+      admClearErrors(form);
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      admRequestCode()
+        .then(() => { admStartResendTimer(); document.getElementById('adm-reset-code').focus(); })
+        .catch(err => { btn.disabled = false; btn.textContent = 'Resend code'; admFormError(form, err); });
+    }
+
+    function admReset(e) {
+      e.preventDefault();
+      const form = document.getElementById('adm-reset-form');
+      const btn = document.getElementById('adm-reset-btn');
+      const code = document.getElementById('adm-reset-code').value.replace(/\s+/g, '');
+      const password = document.getElementById('adm-reset-password').value;
+      const confirm = document.getElementById('adm-reset-confirm').value;
+      admClearErrors(form);
+      if (!/^\d{6}$/.test(code)) return admFormError(form, { field: 'code', message: 'Enter the 6-digit code from the email.' });
+      if (password.length < 8) return admFormError(form, { field: 'new_password', message: 'Password must be at least 8 characters.' });
+      if (password.length > 200) return admFormError(form, { field: 'new_password', message: 'Password must be at most 200 characters.' });
+      if (password !== confirm) return admFormError(form, { field: 'confirm', message: "The passwords don't match." });
+      admBusy(btn, true, 'Resetting…');
+      CareerAPI.admin.resetPassword({ email: admResetEmail, code: code, new_password: password })
+        .then(() => {
+          admBusy(btn, false);
+          clearInterval(admResendTimer);
+          form.reset();
+          document.getElementById('adm-email').value = admResetEmail;
+          document.getElementById('adm-password').value = '';
+          admShowAuth('login');
+          const ok = document.getElementById('adm-login-ok');
+          ok.textContent = 'Password changed. Log in with your new password.';
+          ok.style.display = 'block';
+        })
+        .catch(err => {
+          admBusy(btn, false);
+          admFormError(form, err);
+          if (err && err.code === 'invalid_code') document.getElementById('adm-reset-code').select();
+        });
     }
 
     // ══════════════════════════════════════════════════════════════

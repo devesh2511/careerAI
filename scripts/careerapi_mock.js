@@ -421,6 +421,13 @@
     admin: {
       // POST /admin/auth/login
       login(body) { return http('POST', '/admin/auth/login', { email: body.email, password: body.password }); },
+      // POST /admin/auth/forgot-password — always { ok: true }, admin or not
+      forgotPassword(body) { return http('POST', '/admin/auth/forgot-password', { email: body.email }); },
+      // POST /admin/auth/reset-password — ends every session of that admin
+      resetPassword(body) {
+        return http('POST', '/admin/auth/reset-password',
+          { email: body.email, code: body.code, new_password: body.new_password });
+      },
       // POST /admin/auth/logout
       logout() { return http('POST', '/admin/auth/logout'); },
       // GET /admin/me

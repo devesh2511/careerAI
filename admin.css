@@ -580,6 +580,74 @@ textarea.form-input {
   line-height: 1.6;
 }
 
+.adm-forgot-link {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 12.5px;
+}
+
+.adm-forgot-link a,
+.adm-auth-back a,
+.adm-link-btn {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.adm-forgot-link a:hover,
+.adm-auth-back a:hover,
+.adm-link-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.adm-link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.adm-link-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.adm-auth-copy {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+
+.adm-auth-copy strong {
+  color: var(--text);
+  word-break: break-all;
+}
+
+.adm-auth-back {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 16px;
+}
+
+.adm-code-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 20px;
+  letter-spacing: .4em;
+  text-align: center;
+}
+
+.adm-ok-box {
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(46, 204, 113, .35);
+  background: rgba(46, 204, 113, .08);
+  color: var(--text);
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
 /* ── Phone ── */
 @media (max-width: 640px) {
   .adm-page {
