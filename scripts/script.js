@@ -184,8 +184,10 @@
       document.body.style.visibility = 'hidden';
       requireAccess().then(ok => {
         if (!ok) return;
-        document.body.style.visibility = '';
-        initPage();
+        return cqLoadSaved().then(() => {
+          document.body.style.visibility = '';
+          initPage();
+        });
       });
     });
 
@@ -792,6 +794,11 @@
       const scoring = rsScore(cqAnswers, RS_QUESTIONS);
       const results = rsBuildResults(scoring, RIASEC_CAREERS);
 
+      // The scoring stays on device; only the finished run is saved to the
+      // student's account, so it comes back on their next login.
+      const top = results.top_careers[0];
+      const pct = {};
+      RS_DIMS.forEach(d => { pct[d] = Math.round(scoring.pct[d]); });
       saveState({
         appResults: results,
         isDemo: true,
@@ -799,9 +806,44 @@
           pct: scoring.pct,
           code: scoring.code,
           confidence: scoring.confidence
-        }
+        },
+        quizRun: top ? {
+          riasec_pct: pct, riasec_code: scoring.code, confidence: scoring.confidence,
+          top_career: top.title, results: results, answers: cqAnswers,
+          engine_version: RS_ENGINE_VERSION
+        } : null
       });
+      await cqSaveRun();
       show('airesults');
+    }
+
+    // POST /me/career-quiz, which also sets the student's career (career
+    // leaderboards group by it). Until it succeeds the run waits in
+    // state.quizRun and the results page tries again.
+    function cqSaveRun() {
+      const run = loadState().quizRun;
+      if (!run || !isLoggedIn() || !CareerAPI.me.saveCareerQuiz) return Promise.resolve();
+      return CareerAPI.me.saveCareerQuiz(run).then(() => saveState({ quizRun: null }), () => { });
+    }
+
+    // A fresh login starts with no quiz state in this tab, so the pages that
+    // show results fetch the student's last saved run first. Asked once per
+    // tab; if it fails they show the "take the quiz" state as before.
+    function cqLoadSaved() {
+      const s = loadState();
+      if (s.appResults || s.quizLoaded || !['app', 'airesults'].includes(CURRENT_PAGE) ||
+        !window.CareerAPI || !CareerAPI.me.latestCareerQuiz) return Promise.resolve();
+      return CareerAPI.me.latestCareerQuiz().then(r => {
+        const run = r.result;
+        if (!run) { saveState({ quizLoaded: true }); return; }
+        saveState({
+          quizLoaded: true,
+          appResults: run.results,
+          isDemo: true,
+          riasecScores: { pct: run.riasec_pct, code: run.riasec_code, confidence: run.confidence }
+        });
+        appResults = run.results;
+      }, () => { });
     }
 
     const CQ_STREAM_BADGE = {
@@ -824,6 +866,7 @@
     function cqShowResults() {
       const s = loadState();
       if (!s.appResults) { show('careerquiz'); return; }  // no run to show
+      cqSaveRun();  // only does anything if saving failed after the quiz
       cqRenderResults(s.appResults, s.isDemo !== false);
       cqInitPrint();
     }
@@ -886,10 +929,6 @@
 
     function cqRenderResults(data, isDemo) {
       appResults = data; // make available to dashboard, results, progress pages
-      // Career leaderboards group by the top career, so the server needs it
-      // (PUT /me/career). Sent every time; a failure only delays the board.
-      const top = data.top_careers && data.top_careers[0];
-      if (top && isLoggedIn() && CareerAPI.me.setCareer) CareerAPI.me.setCareer(top.title).catch(() => { });
       document.getElementById('air-personality-type').textContent = data.personality_type;
       document.getElementById('air-personality-desc').textContent = data.personality_desc;
       document.getElementById('air-stream-val').textContent = data.stream_recommendation;

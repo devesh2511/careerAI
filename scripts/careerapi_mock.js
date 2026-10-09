@@ -280,6 +280,11 @@
       // PUT /me/career — live. The career quiz's top career; career
       // leaderboards group by it.
       setCareer(career) { return http('PUT', '/me/career', { career: career }); },
+      // POST /me/career-quiz — live. Saves a quiz run and sets the career
+      // to its top career. → { id, current_career }
+      saveCareerQuiz(run) { return http('POST', '/me/career-quiz', run); },
+      // GET /me/career-quiz/latest — live. → { result } (null before the first run)
+      latestCareerQuiz() { return http('GET', '/me/career-quiz/latest'); },
       // PUT /me/school — live; code '' / null clears it. → { student, access }
       setSchool(code) {
         return http('PUT', '/me/school', { school_code: code || null }).then(r => { shadow(r.student); return r; });

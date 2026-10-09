@@ -28,6 +28,10 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
+  // Saved with every quiz run (POST /me/career-quiz), so a run can be
+  // re-scored later. Bump it whenever scoring or the career data changes.
+  const RS_ENGINE_VERSION = 'riasec-1';
+
   const RS_DIMS = ['R', 'I', 'A', 'S', 'E', 'C'];
 
   const RS_DIM_NAMES = {
@@ -818,6 +822,7 @@
   }
 
   return {
+    RS_ENGINE_VERSION,
     RS_DIMS, RS_DIM_NAMES, RS_DIM_PLAIN, RS_DIM_EMOJI, RS_DIM_ENJOY,
     RS_DIM_MEANING,
     RS_PROFILES, rsProfileFor, rsStreamFor, rsBuildResults,
