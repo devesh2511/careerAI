@@ -826,24 +826,27 @@
       return CareerAPI.me.saveCareerQuiz(run).then(() => saveState({ quizRun: null }), () => { });
     }
 
-    // A fresh login starts with no quiz state in this tab, so the pages that
-    // show results fetch the student's last saved run first. Asked once per
-    // tab; if it fails they show the "take the quiz" state as before.
+    // The pages that show results fetch the student's latest saved run on
+    // every load, so a quiz taken on another device shows up here on the next
+    // refresh. A run this tab hasn't managed to save yet is newer than the
+    // server's, so it's kept (and saved first). If the fetch fails, or the
+    // student has no saved run, whatever this tab has is shown.
     function cqLoadSaved() {
-      const s = loadState();
-      if (s.appResults || s.quizLoaded || !['app', 'airesults'].includes(CURRENT_PAGE) ||
+      if (!['app', 'airesults'].includes(CURRENT_PAGE) ||
         !window.CareerAPI || !CareerAPI.me.latestCareerQuiz) return Promise.resolve();
-      return CareerAPI.me.latestCareerQuiz().then(r => {
-        const run = r.result;
-        if (!run) { saveState({ quizLoaded: true }); return; }
-        saveState({
-          quizLoaded: true,
-          appResults: run.results,
-          isDemo: true,
-          riasecScores: { pct: run.riasec_pct, code: run.riasec_code, confidence: run.confidence }
-        });
-        appResults = run.results;
-      }, () => { });
+      return cqSaveRun().then(() => {
+        if (loadState().quizRun) return;
+        return CareerAPI.me.latestCareerQuiz().then(r => {
+          const run = r.result;
+          if (!run) return;
+          saveState({
+            appResults: run.results,
+            isDemo: true,
+            riasecScores: { pct: run.riasec_pct, code: run.riasec_code, confidence: run.confidence }
+          });
+          appResults = run.results;
+        }, () => { });
+      });
     }
 
     const CQ_STREAM_BADGE = {
@@ -866,7 +869,6 @@
     function cqShowResults() {
       const s = loadState();
       if (!s.appResults) { show('careerquiz'); return; }  // no run to show
-      cqSaveRun();  // only does anything if saving failed after the quiz
       cqRenderResults(s.appResults, s.isDemo !== false);
       cqInitPrint();
     }
