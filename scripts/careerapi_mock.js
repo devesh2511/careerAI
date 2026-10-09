@@ -9,7 +9,7 @@
 // LIVE: the endpoints the backend has built call the production API at
 // API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
 //   POST /auth/register   POST /auth/login   POST /auth/logout
-//   GET  /me              GET  /me/access
+//   GET  /me              GET  /me/access      PUT /me/career
 //   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
 // As more endpoints ship, move their methods from reply(...) to http(...).
 //
@@ -50,10 +50,7 @@
   const STUDENT_SESSION = 'careerai_session';
   const DB_VERSION = 1;
   const LATENCY = 150;                       // fake network delay, ms
-  const HOUR = 3600e3, DAY = 24 * HOUR, WEEK = 7 * DAY;
-  // Contest #1 opened Saturday 5 Sep 2026, 07:00 IST — same calendar as contest_api.js.
-  const CONTEST_EPOCH = Date.UTC(2026, 8, 5, 1, 30);
-  const CONTEST_WINDOW = 36 * HOUR;
+  const HOUR = 3600e3, DAY = 24 * HOUR;
 
   // Prices are placeholders until the business sets them.
   const PLANS = {
@@ -61,8 +58,7 @@
     student_annual: { plan: 'student_annual', label: 'Annual', amount_paise: 149900, months: 12 }
   };
 
-  // The contest mock owns the clock when it is loaded, so ?now= testing
-  // moves contest locking here too.
+  // Server time when contest_api.js is loaded (it syncs with the API).
   function now() { return root.ContestAPI ? root.ContestAPI.now() : Date.now(); }
   function iso(t) { return new Date(t).toISOString(); }
   function addMonths(t, m) { const d = new Date(t); d.setUTCMonth(d.getUTCMonth() + m); return d.getTime(); }
@@ -73,22 +69,7 @@
     if (db) return db;
     try { db = JSON.parse(localStorage.getItem(DB_KEY)); } catch (e) { db = null; }
     if (!db || db.v !== DB_VERSION) { db = seed(); save(); }
-    if (db.bank_pending && root.ContestAPI && root.ContestAPI.mockQuestionSet) { fillBank(); save(); }
     return db;
-  }
-  // Seeded contests take their questions from the contest mock's bank. If the
-  // seed ran on a page without contest_api.js, they are filled in on the
-  // first page that has it.
-  function fillBank() {
-    db.contests.forEach(c => {
-      if (c.questions.length || !c.seeded) return;
-      const n = c.id, bank = root.ContestAPI.mockQuestionSet(n);
-      c.questions = (c.status === 'draft' ? bank.slice(0, 2) : bank).map((q, i) => ({
-        id: 'c' + n + '-q' + (i + 1), position: i + 1, area: q.area, text: q.text,
-        options: q.options.slice(), correct_index: q.correct, explanation: q.explanation
-      }));
-    });
-    db.bank_pending = false;
   }
   function save() { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) { } }
   function nextId(table) { load(); db.seq[table] = (db.seq[table] || 0) + 1; return db.seq[table]; }
@@ -106,7 +87,7 @@
     const t = Date.now();
     const d = {
       v: DB_VERSION, seq: {}, schools: [], roster: [], subscriptions: [],
-      students: [], admins: [], contests: []
+      students: [], admins: []
     };
     db = d;
     const ts = iso(t - 30 * DAY);
@@ -168,22 +149,6 @@
     d.subscriptions.push(sub({ payer_type: 'student', plan: 'student_monthly',
       starts_at: iso(t - 70 * DAY), ends_at: iso(addMonths(t - 70 * DAY, 1)), amount_paise: PLANS.student_monthly.amount_paise,
       status: 'active', payment_provider: 'razorpay', payment_ref: 'pay_MockDeleted01' }));
-
-    // Contests: every week so far is scheduled (questions from the contest
-    // mock's bank when it is loaded), and next week is a half-written draft.
-    const current = Math.max(1, Math.floor((t - CONTEST_EPOCH) / WEEK) + 1);
-    for (let n = 1; n <= current + 1; n++) {
-      const open = CONTEST_EPOCH + (n - 1) * WEEK;
-      d.contests.push({
-        id: nextId('contests'), opens_at: iso(open), closes_at: iso(open + CONTEST_WINDOW),
-        status: n === current + 1 ? 'draft' : 'scheduled',
-        scored_at: open + CONTEST_WINDOW < t ? iso(open + CONTEST_WINDOW + 60e3) : null,
-        created_by: admin.id, is_deleted: false, deleted_at: null, created_at: iso(open - 6 * DAY),
-        seeded: true, questions: []
-      });
-    }
-    d.bank_pending = true;
-    if (root.ContestAPI && root.ContestAPI.mockQuestionSet) fillBank();
     return d;
   }
   function sub(o) {
@@ -357,6 +322,9 @@
           return mock && mock.has_access ? clone(mock) : real;
         });
       },
+      // PUT /me/career — live. The career quiz's top career; career
+      // leaderboards group by it.
+      setCareer(career) { return http('PUT', '/me/career', { career: career }); },
       // PUT /me/school  — code '' / null clears it
       setSchool(code) {
         return reply(() => {

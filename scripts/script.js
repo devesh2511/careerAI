@@ -893,8 +893,8 @@
 
     // ── Save the report as a PDF ───────────────────────────────────────────
     // Deliberately the browser's own print-to-PDF rather than a canvas/PDF
-    // library: no third-party script has to be fetched (so the page's "nothing
-    // is sent anywhere" promise still holds offline), the text in the PDF stays
+    // library: no third-party script has to be fetched (so it works offline
+    // and nothing about the report leaves the device), the text in the PDF stays
     // selectable and searchable, and it costs one function. The layout rules
     // live in the @media print block in style.css.
     function cqSavePdf() {
@@ -949,6 +949,10 @@
 
     function cqRenderResults(data, isDemo) {
       appResults = data; // make available to dashboard, results, progress pages
+      // Career leaderboards group by the top career, so the server needs it
+      // (PUT /me/career). Sent every time; a failure only delays the board.
+      const top = data.top_careers && data.top_careers[0];
+      if (top && isLoggedIn() && CareerAPI.me.setCareer) CareerAPI.me.setCareer(top.title).catch(() => { });
       document.getElementById('air-personality-type').textContent = data.personality_type;
       document.getElementById('air-personality-desc').textContent = data.personality_desc;
       document.getElementById('air-stream-val').textContent = data.stream_recommendation;

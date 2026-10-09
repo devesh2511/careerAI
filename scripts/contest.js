@@ -2,7 +2,8 @@
     // WEEKLY APTITUDE CONTEST — UI
     // quiz.html        → the contest itself (ct* functions)
     // app.html#/progress → global + career leaderboards (lb* functions)
-    // All data comes from window.ContestAPI (scripts/contest_api.js).
+    // All data comes from window.ContestAPI (scripts/contest_api.js), which
+    // calls careerAPI.
     // ══════════════════════════════════════════════════════════════
 
     // ── Shared formatting ──
@@ -75,10 +76,24 @@
     }
     function ctError(err) {
       ctLabel('Weekly Aptitude Contest');
-      ctSet('<div class="quiz-card ct-center"><div class="ct-emoji">⚠️</div>' +
-        '<h2 class="ct-h">Something went wrong</h2>' +
-        '<p class="ct-p">' + ctEsc(err && err.message || 'Please try again.') + '</p>' +
-        '<button class="btn btn-primary" onclick="ctInit()">Try again</button></div>');
+      ctSet('<div class="quiz-card ct-center">' + ctErrorBody(err, 'ctInit()') + '</div>');
+    }
+
+    // The server checks the session and the plan on every contest call, so
+    // a 401 or 402 can arrive even after the page's own access check passed.
+    function ctErrorBody(err, retry) {
+      const msg = '<p class="ct-p">' + ctEsc(err && err.message || 'Please try again.') + '</p>';
+      if (err && err.code === 'payment_required') {
+        return '<div class="ct-emoji">🔒</div><h2 class="ct-h">The contest needs an active plan</h2>' + msg +
+          '<button class="btn btn-primary" onclick="show(\'paywall\')">See plans</button>';
+      }
+      if (err && err.code === 'unauthenticated') {
+        return '<div class="ct-emoji">👋</div><h2 class="ct-h">Please log in again</h2>' +
+          '<p class="ct-p">Your session has ended.</p>' +
+          '<button class="btn btn-primary" onclick="show(\'auth\')">Log in</button>';
+      }
+      return '<div class="ct-emoji">⚠️</div><h2 class="ct-h">Something went wrong</h2>' + msg +
+        '<button class="btn btn-primary" onclick="' + retry + '">Try again</button>';
     }
 
     // Entry point for quiz.html. ?review=N shows a closed contest's answers.
@@ -89,7 +104,8 @@
       ctSet('<div class="ct-loading">Loading this week’s contest…</div>');
       ContestAPI.getState().then(st => {
         const c = st.contest, a = st.attempt;
-        if (c.status === 'upcoming') ctUpcoming(st);
+        if (!c) ctNoContest(st);
+        else if (c.status === 'upcoming') ctUpcoming(st);
         else if (a.status === 'submitted') ctSubmitted(c, a);
         else if (a.status === 'in_progress') ctBegin(c.id);
         else ctIntro(st);
@@ -136,6 +152,20 @@
         '<button class="btn btn-ghost" onclick="show(\'progress\')">View leaderboards</button>' +
         '</div></div>');
       ctStartTicker(ctInit);
+    }
+
+    // No contest is scheduled yet (the admins add each week's).
+    function ctNoContest(st) {
+      ctLabel('Weekly Aptitude Contest');
+      ctSet(
+        '<div class="quiz-card ct-center">' +
+        '<div class="ct-emoji">🗓️</div>' +
+        '<h2 class="ct-h">The next contest isn’t scheduled yet</h2>' +
+        '<p class="ct-p">A new 5-question contest opens every <strong>Saturday 7:00 AM</strong> and closes <strong>Sunday 7:00 PM IST</strong>. Check back soon.</p>' +
+        '<div class="ct-actions">' +
+        (st.latest_published ? '<a class="btn btn-primary" href="?review=' + st.latest_published.id + '">See Contest #' + st.latest_published.number + ' results</a>' : '') +
+        '<button class="btn btn-ghost" onclick="show(\'progress\')">View leaderboards</button>' +
+        '</div></div>');
     }
 
     function ctBegin(id) {
@@ -328,8 +358,10 @@
         lbDraw();
       }).catch(err => {
         if (seq !== lbSeq) return;
-        root.innerHTML = '<div class="card lb-empty"><p>Couldn’t load the leaderboards: ' + ctEsc(err.message) +
-          '</p><button class="btn btn-primary btn-sm" onclick="lbRender()">Retry</button></div>';
+        root.innerHTML = '<div class="card lb-empty">' + (err.code === 'payment_required' || err.code === 'unauthenticated'
+          ? ctErrorBody(err, 'lbRender()')
+          : '<p>Couldn’t load the leaderboards: ' + ctEsc(err.message) +
+            '</p><button class="btn btn-primary btn-sm" onclick="lbRender()">Retry</button>') + '</div>';
       });
     }
 
@@ -349,22 +381,28 @@
         '<button class="filter-chip' + (lbScope === 'career' ? ' active' : '') + '" role="tab" aria-selected="' + (lbScope === 'career') + '" onclick="lbSetScope(\'career\')">' +
         (career ? ctEsc(lbEmoji(career) + ' ' + career) : '🎯 My career') + '</button>' +
         '</div>' +
-        (ContestAPI.demo ? '<span class="badge badge-orange" title="No backend yet — other students are generated sample data">Demo data</span>' : '') +
         '</div>' +
         lbBody() +
         lbHistory();
       ctStartTicker(lbRender);
     }
 
-    function lbEmoji(title) {
+    // The career list lives in riasec_careers.js; the server's emoji is the
+    // fallback for a career that isn't in it.
+    function lbEmoji(title, fallback) {
       const c = (typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : []).find(x => x.title === title);
-      return c ? c.emoji : '🎯';
+      return c ? c.emoji : fallback || '🎯';
     }
 
     function lbStatus(st) {
       const c = st.contest, a = st.attempt;
       let cls, icon, title, sub, btn;
-      if (c.status === 'upcoming') {
+      if (!c) {
+        cls = 'is-soon'; icon = '🗓️';
+        title = 'The next contest isn’t scheduled yet';
+        sub = 'A new contest runs every Saturday 7 AM – Sunday 7 PM IST';
+        btn = '';
+      } else if (c.status === 'upcoming') {
         cls = 'is-soon'; icon = '🗓️';
         title = 'Contest #' + c.number + ' opens ' + ctWhen(c.opens_at);
         sub = 'Starts in <strong data-until="' + c.opens_at + '"></strong> · new contest every Saturday 7 AM – Sunday 7 PM IST';
@@ -400,7 +438,7 @@
       }
       if (!state.published_count) {
         return '<div class="card lb-empty"><div class="ct-emoji">🏁</div>' +
-          '<h3>No results yet</h3><p>The first leaderboard appears when Contest #1 closes on Sunday at 7:00 PM IST.</p></div>';
+          '<h3>No results yet</h3><p>The first leaderboard appears when the first contest closes on Sunday at 7:00 PM IST.</p></div>';
       }
       const active = lbPeriod === 'live' ? live : week;
       const scopeName = lbScope === 'career' ? ctEsc(week.career) : 'all students';
@@ -438,7 +476,7 @@
       const row = r => '<tr class="' + (r.is_me ? 'is-me' : '') + '">' +
         '<td class="lb-pos">' + (['🥇', '🥈', '🥉'][r.rank - 1] || r.rank) + '</td>' +
         '<td><div class="lb-name">' + ctEsc(r.name) + (r.is_me ? ' <span class="badge badge-purple">You</span>' : '') + '</div>' +
-        (showCareer ? '<div class="lb-career">' + ctEsc(r.career_emoji + ' ' + (r.career || 'Career not set')) + '</div>' : '') + '</td>' +
+        (showCareer ? '<div class="lb-career">' + ctEsc((r.career ? lbEmoji(r.career, r.career_emoji) : '🎯') + ' ' + (r.career || 'Career not set')) + '</div>' : '') + '</td>' +
         '<td class="lb-num"><strong>' + r.score + '</strong></td>' +
         '<td class="lb-num lb-hide-sm">' + r.correct + '/' + r.total_questions + '</td>' +
         '<td class="lb-num">' + ctDuration(r.time_taken_s) + '</td></tr>';
