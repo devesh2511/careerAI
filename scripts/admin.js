@@ -345,7 +345,7 @@
       admView().innerHTML = '<div class="adm-loading">Loading…</div>';
       const views = {
         overview: admOverview, contests: r.id ? admContestEditor : admContests,
-        schools: r.id ? admSchoolDetail : admSchools, students: admStudents, admins: admAdmins
+        schools: r.id ? admSchoolDetail : admSchools, students: r.id ? admStudentDetail : admStudents, admins: admAdmins
       };
       const p = (views[r.view] || admOverview)(r, seq);
       if (p && p.catch) p.catch(err => admFail(seq, err));
@@ -889,8 +889,10 @@
           const actions = admStudentTab === 'deleted'
             ? '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ')">Restore</button>' +
               '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',true)">Hard delete</button>'
-            : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',false)">Delete</button>';
-          return '<tr><td><b>' + admEsc(s.full_name) + '</b><div class="adm-sub">Leaderboard: ' + admEsc(s.leaderboard_name) + '</div></td>' +
+            : '<button class="btn btn-ghost btn-sm" onclick="admGo(\'students/' + s.id + '\')">Payments</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',false)">Delete</button>';
+          return '<tr><td><button class="adm-link" onclick="admGo(\'students/' + s.id + '\')">' + admEsc(s.full_name) + '</button>' +
+            '<div class="adm-sub">Leaderboard: ' + admEsc(s.leaderboard_name) + '</div></td>' +
             '<td>' + admEsc(s.email) + '</td>' +
             '<td>' + (s.school ? admEsc(s.school.name) + '<div class="adm-sub adm-mono">' + admEsc(s.school.school_code) + '</div>' : '<span style="color:var(--muted);">—</span>') + '</td>' +
             '<td>' + (admStudentTab === 'deleted' ? '<span class="badge badge-red">Deleted ' + admEsc(admDay(s.deleted_at)) + '</span>' : admAccessBadge(s.access)) + '</td>' +
@@ -911,10 +913,102 @@
       }).catch(err => admFail(seq, err));
     }
 
+    // A hard-deleted student's page no longer exists, so go back to the list.
     function admDeleteStudent(id, name, hardOnly) {
       admConfirmDelete({
         kind: 'student', name: name, hardOnly: hardOnly,
-        run: mode => CareerAPI.admin.students.remove(id, mode), done: () => admRoute()
+        run: mode => CareerAPI.admin.students.remove(id, mode),
+        done: mode => { if (mode === 'hard' && admParse().id) admGo('students'); else admRoute(); }
+      });
+    }
+
+    // ── One student: access and individual payments (#/students/:id) ──
+    // Students pay outside the website; recording the payment ID here is
+    // what gives them access.
+    const ADM_PAID_VIA = [
+      { value: 'upi', label: 'UPI' }, { value: 'bank_transfer', label: 'Bank transfer' },
+      { value: 'razorpay', label: 'Razorpay' }, { value: 'cash', label: 'Cash' }, { value: 'other', label: 'Other' }
+    ];
+    const ADM_STUDENT_PLANS = [{ value: 'student_annual', label: 'Annual', months: 12 }, { value: 'student_monthly', label: 'Monthly', months: 1 }];
+
+    function admStudentAccess(s) {
+      const a = s.access;
+      if (s.is_deleted) return 'This student is <b>soft-deleted</b>: they can\'t log in until restored.';
+      if (a.has_access && a.source === 'school') return 'Covered by <b>' + admEsc(a.school.name) + '</b> until ' + admEsc(admLastDay(a.ends_at)) + '.';
+      if (a.has_access) return 'Individual plan active until <b>' + admEsc(admLastDay(a.ends_at)) + '</b>.';
+      return 'No access (' + admEsc(ADM_REASON[a.reason] || a.reason) + '). Record their payment below to give them access.';
+    }
+
+    function admStudentDetail(r, seq) {
+      return Promise.all([CareerAPI.admin.students.get(r.id), CareerAPI.admin.students.payments(r.id)]).then(([s, rows]) => {
+        const n = admEsc(JSON.stringify(s.full_name));
+        const actions = s.is_deleted
+          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ')">Restore</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',true)">Hard delete</button>'
+          : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',false)">Delete student</button>';
+        const t = admNow();
+        const list = rows.map(x => {
+          const badge = x.current ? '<span class="badge badge-green">Current</span>'
+            : Date.parse(x.starts_at) > t ? '<span class="badge badge-blue">Upcoming</span>' : '<span class="badge badge-purple">Past</span>';
+          const plan = ADM_STUDENT_PLANS.find(p => p.value === x.plan);
+          const via = ADM_PAID_VIA.find(p => p.value === x.payment_provider);
+          return '<tr><td>' + admEsc(admDay(x.starts_at)) + ' – ' + admEsc(admLastDay(x.ends_at)) + '</td>' +
+            '<td>' + admEsc(plan ? plan.label : x.plan) + '</td>' +
+            '<td class="adm-num">' + admEsc(admRupees(x.amount_paise)) + '</td><td>' + admEsc(via ? via.label : x.payment_provider) + '</td>' +
+            '<td><span class="adm-mono">' + admEsc(x.payment_ref) + '</span></td><td>' + badge + '</td></tr>';
+        });
+        admPaint(seq,
+          admTopbar(admEsc(s.full_name),
+            admEsc(s.email) + ' · ' + (s.school ? admEsc(s.school.name) + ' <span class="adm-mono">' + admEsc(s.school.school_code) + '</span>' : 'no school') +
+            ' &nbsp;' + admAccessBadge(s.access), actions, '<a href="#/students">Students</a> / ' + admEsc(s.full_name)) +
+          '<div class="adm-note' + (s.is_deleted || !s.access.has_access ? ' adm-banner-lock' : '') + '">' + admStudentAccess(s) + '</div>' +
+          '<div class="adm-toolbar"><div class="adm-hint" style="margin:0;">Payments made outside the website. They\'re kept for tax (GST) records, even if this student is hard-deleted. No refunds.</div>' +
+          (s.is_deleted ? '' : '<button class="btn btn-primary btn-sm" onclick="admStudentPaymentModal(\'' + s.id + '\')">+ Record payment</button>') + '</div>' +
+          admTable([{ label: 'Covers' }, { label: 'Plan' }, { label: 'Amount', cls: 'adm-num' }, { label: 'Paid via' }, { label: 'Payment ID' }, { label: '' }], list,
+            'No payments recorded. When this student pays, record the payment ID here and they get access.'));
+      });
+    }
+
+    // 'YYYY-MM-DD' + months → the last day covered, e.g. 2026-10-10 + 12 → 2027-10-09.
+    function admLastDayAfter(start, months) {
+      const p = String(start || '').split('-').map(Number);
+      if (p.length !== 3 || p.some(isNaN)) return '';
+      const d = new Date(Date.UTC(p[0], p[1] - 1 + months, p[2] - 1));
+      return d.toISOString().slice(0, 10);
+    }
+
+    function admStudentPaymentModal(studentId) {
+      const today = admIstDate(admNow());
+      admModal({
+        title: 'Record student payment', submit: 'Record payment',
+        body: '<div class="adm-form-grid">' +
+          admField('Plan', 'plan', 'student_annual', { select: ADM_STUDENT_PLANS }) +
+          admField('Paid via', 'payment_provider', 'upi', { select: ADM_PAID_VIA }) +
+          admField('Access starts', 'starts_at', today, { type: 'date' }) +
+          admField('Last day covered', 'ends_at', admLastDayAfter(today, 12), { type: 'date' }) +
+          admField('Amount paid (₹)', 'amount_rupees', '', { type: 'number', attrs: ' min="0" step="1" inputmode="numeric"', placeholder: 'e.g. 1499' }) +
+          admField('Payment ID', 'payment_ref', '', { mono: true, placeholder: 'UPI reference / UTR / receipt no.' }) +
+          '</div><div class="adm-hint">The student gets access for these dates as soon as you record it. The same payment ID can\'t be recorded twice.</div>',
+        // Changing the plan or the start date moves the last day to match.
+        onOpen: form => {
+          const sync = () => {
+            const d = admFormData(form);
+            const plan = ADM_STUDENT_PLANS.find(p => p.value === d.plan);
+            form.querySelector('[name=ends_at]').value = admLastDayAfter(d.starts_at, plan.months);
+          };
+          form.querySelector('[name=plan]').addEventListener('change', sync);
+          form.querySelector('[name=starts_at]').addEventListener('change', sync);
+        },
+        onSubmit: form => {
+          const d = admFormData(form);
+          // Dates are IST days; the plan ends at the start of the day after the last day covered.
+          const start = d.starts_at ? new Date(Date.parse(d.starts_at + 'T00:00:00+05:30')).toISOString() : '';
+          const end = d.ends_at ? new Date(Date.parse(d.ends_at + 'T00:00:00+05:30') + 86400e3).toISOString() : '';
+          return CareerAPI.admin.students.recordPayment(studentId, {
+            plan: d.plan, starts_at: start, ends_at: end, amount_rupees: d.amount_rupees,
+            payment_provider: d.payment_provider, payment_ref: d.payment_ref
+          }).then(() => { admToast('Payment recorded. The student now has access.'); admRoute(); });
+        }
       });
     }
 

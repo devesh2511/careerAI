@@ -9,16 +9,16 @@
 // LIVE: the endpoints the backend has built call the production API at
 // API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
 //   POST /auth/register   POST /auth/login   POST /auth/logout
-//   GET  /me              GET  /me/access      PUT /me/career
+//   GET  /me              GET  /me/access      PUT /me/career    PUT /me/school
 //   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
 // As more endpoints ship, move their methods from reply(...) to http(...).
 //
-// Everything else is still a MOCK SERVER that runs in the browser and keeps
+// Payments happen outside the website: an admin records each one in the
+// admin panel, and that is what grants access. There is no checkout here.
+//
+// Only DELETE /me is still a MOCK SERVER that runs in the browser and keeps
 // its tables in localStorage. A live login copies the student into it (see
-// shadow()), so the mocked screens — school change, billing — keep working.
-// Its access check follows the same rule as the database: active individual
-// plan, OR School ID + email on that school's roster + an active school plan
-// (§6.4). Schools and plans added in the live admin panel are not in it.
+// shadow()) so it can find them.
 //
 // Errors reject with an Error carrying .status (HTTP) and .code (API code).
 //
@@ -233,46 +233,10 @@
     return w.length === 1 ? w[0] : w[0] + ' ' + w[w.length - 1][0].toUpperCase() + '.';
   }
 
-  function liveSchool(id) { return db.schools.find(s => s.id === id && !s.is_deleted) || null; }
   function schoolByCode(code) {
     const c = normCode(code);
     return db.schools.find(s => s.school_code === c && !s.is_deleted && s.status === 'active') || null;
   }
-  function onRoster(schoolId, email) {
-    return db.roster.some(r => r.school_id === schoolId && lower(r.email) === lower(email));
-  }
-  function activeSub(pred) {
-    const t = now();
-    return db.subscriptions
-      .filter(s => s.status === 'active' && Date.parse(s.starts_at) <= t && t < Date.parse(s.ends_at) && pred(s))
-      .sort((a, b) => Date.parse(b.ends_at) - Date.parse(a.ends_at))[0] || null;
-  }
-
-  // The access check (§6.4), plus the reason the paywall needs.
-  function accessOf(st) {
-    const own = activeSub(s => s.student_id === st.id);
-    const sch = st.school_id ? liveSchool(st.school_id) : null;
-    const schOk = sch && sch.status === 'active';
-    const listed = sch ? onRoster(sch.id, st.email) : false;
-    const schSub = schOk && listed ? activeSub(s => s.school_id === sch.id) : null;
-    const school = sch ? { name: sch.name, school_code: sch.school_code } : null;
-    if (schSub) return { has_access: true, source: 'school', reason: null, school: school, ends_at: schSub.ends_at, plan: schSub.plan };
-    if (own) return { has_access: true, source: 'individual', reason: null, school: school, ends_at: own.ends_at, plan: own.plan };
-    let reason = 'no_school';
-    if (sch && !listed) reason = 'not_on_roster';
-    else if (sch) reason = 'school_not_subscribed';
-    return { has_access: false, source: null, reason: reason, school: school, ends_at: null, plan: null };
-  }
-
-  function studentDTO(st) {
-    const sch = st.school_id ? liveSchool(st.school_id) : null;
-    return {
-      id: st.id, full_name: st.full_name, leaderboard_name: leaderboardName(st.full_name), email: st.email,
-      school: sch ? { name: sch.name, school_code: sch.school_code } : null,
-      current_career: st.current_career, created_at: st.created_at
-    };
-  }
-
   function me() {
     const id = sessionGet(STUDENT_SESSION);
     const st = id && db.students.find(s => s.id === id && !s.is_deleted);
@@ -311,33 +275,14 @@
     me: {
       // GET /me — live
       get() { return http('GET', '/me').then(r => { shadow(r.student); return r; }); },
-      // GET /me/access — live. Billing and school changes are still mocked, so
-      // a plan bought or a school joined in the mock also grants access.
-      access() {
-        return http('GET', '/me/access').then(real => {
-          if (real.has_access) return real;
-          load();
-          const st = db.students.find(s => s.id === sessionGet(STUDENT_SESSION) && !s.is_deleted);
-          const mock = st && accessOf(st);
-          return mock && mock.has_access ? clone(mock) : real;
-        });
-      },
+      // GET /me/access — live
+      access() { return http('GET', '/me/access'); },
       // PUT /me/career — live. The career quiz's top career; career
       // leaderboards group by it.
       setCareer(career) { return http('PUT', '/me/career', { career: career }); },
-      // PUT /me/school  — code '' / null clears it
+      // PUT /me/school — live; code '' / null clears it. → { student, access }
       setSchool(code) {
-        return reply(() => {
-          const st = me();
-          if (!String(code || '').trim()) st.school_id = null;
-          else {
-            const s = schoolByCode(code);
-            if (!s) fail(400, 'unknown_school_id', 'We couldn\'t find that School ID. Check it with your school.', { field: 'school_code' });
-            st.school_id = s.id;
-          }
-          save();
-          return { student: studentDTO(st), access: accessOf(st) };
-        });
+        return http('PUT', '/me/school', { school_code: code || null }).then(r => { shadow(r.student); return r; });
       },
       // DELETE /me  — a soft delete; an admin can restore it
       remove() {
@@ -346,38 +291,6 @@
           softDelete(st); save();
           sessionSet(STUDENT_SESSION, null);
           return { ok: true };
-        });
-      }
-    },
-
-    billing: {
-      // POST /billing/checkout
-      checkout(plan) {
-        return reply(() => {
-          const st = me();
-          const p = PLANS[plan];
-          if (!p) fail(400, 'bad_plan', 'Unknown plan.');
-          if (accessOf(st).has_access) fail(409, 'already_has_access', 'You already have access.');
-          const s = sub({ payer_type: 'student', student_id: st.id, plan: p.plan, starts_at: iso(now()),
-            ends_at: iso(addMonths(now(), p.months)), amount_paise: p.amount_paise, status: 'pending',
-            payment_provider: 'razorpay', payment_ref: 'order_Mock' + Math.random().toString(36).slice(2, 12) });
-          db.subscriptions.push(s); save();
-          return { order_id: s.payment_ref, amount_paise: s.amount_paise, currency: 'INR', plan: p.plan };
-        });
-      },
-      // Mock-only: stands in for the Razorpay checkout + POST /billing/webhook.
-      mockPay(orderId, succeed) {
-        return reply(() => {
-          const st = me();
-          const s = db.subscriptions.find(x => x.payment_ref === orderId && x.student_id === st.id);
-          if (!s || s.status !== 'pending') fail(404, 'not_found', 'No such order.');
-          s.status = succeed ? 'active' : 'failed';
-          if (succeed) {             // the plan runs from the moment payment lands
-            s.starts_at = iso(now());
-            s.ends_at = iso(addMonths(now(), PLANS[s.plan].months));
-          }
-          s.updated_at = iso(now()); save();
-          return { status: s.status, access: accessOf(st) };
         });
       }
     },
@@ -466,10 +379,24 @@
       students: {
         // GET /admin/students?deleted=&q=
         list(opts) { return http('GET', '/admin/students' + query({ deleted: opts && opts.deleted, q: opts && opts.q })); },
+        // GET /admin/students/:id
+        get(id) { return http('GET', '/admin/students/' + encodeURIComponent(id)); },
         // DELETE /admin/students/:id?mode=soft|hard
         remove(id, mode) { return http('DELETE', '/admin/students/' + encodeURIComponent(id) + query({ mode: mode })); },
         // POST /admin/students/:id/restore
-        restore(id) { return http('POST', '/admin/students/' + encodeURIComponent(id) + '/restore'); }
+        restore(id) { return http('POST', '/admin/students/' + encodeURIComponent(id) + '/restore'); },
+        // GET /admin/students/:id/subscriptions — their individual payments
+        payments(id) { return http('GET', '/admin/students/' + encodeURIComponent(id) + '/subscriptions'); },
+        // POST /admin/students/:id/subscriptions — records a payment the student
+        // made outside the website. The form takes rupees; the API takes paise.
+        recordPayment(id, body) {
+          const rupees = body.amount_rupees === '' || body.amount_rupees == null ? NaN : Number(body.amount_rupees);
+          return http('POST', '/admin/students/' + encodeURIComponent(id) + '/subscriptions', {
+            plan: body.plan, starts_at: body.starts_at, ends_at: body.ends_at,
+            amount_paise: Number.isFinite(rupees) ? Math.round(rupees * 100) : null,
+            payment_provider: body.payment_provider, payment_ref: body.payment_ref
+          }).catch(e => { if (e.field === 'amount_paise') e.field = 'amount_rupees'; throw e; });
+        }
       },
 
       admins: {

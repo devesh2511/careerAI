@@ -283,9 +283,12 @@
 
     // ── Paywall (pages/paywall.html) ──
     // Shown whenever the access check fails. Explains why (no School ID,
-    // email not on the school's list, school not paying) and sells an
-    // individual plan. Payments are non-refundable.
-    let pwPlan = 'student_annual';
+    // email not on the school's list, school not paying) and how to get an
+    // individual plan. There is no checkout: students pay outside the
+    // website, send us the payment ID, and an admin records it, which is
+    // what grants access. Payments are non-refundable.
+    // Where students send their payment ID. Blank → "the CareerAI team".
+    const PW_PAYMENT_CONTACT = '';
     let pwNext = 'dashboard';
 
     function pwInit() {
@@ -297,7 +300,7 @@
       const root = document.getElementById('pw-root');
       root.innerHTML = '<div class="card pw-center"><div class="al-spinner"></div><p>Checking your access…</p></div>';
       Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
-        root.innerHTML = a.has_access ? pwAllSet(a) : pwHero(m.student, a) + pwReason(m.student, a) + pwPlans();
+        root.innerHTML = a.has_access ? pwAllSet(a) : pwHero(m.student, a) + pwReason(m.student, a) + pwPlans(m.student);
       }, err => {
         if (err.status === 401) { show('auth'); return; }
         root.innerHTML = '<div class="card pw-center"><p>' + esc(err.message) + '</p>' +
@@ -372,103 +375,37 @@
       });
     }
 
-    function pwPlans() {
+    function pwPlans(st) {
       const P = CareerAPI.plans, a = P.student_annual, m = P.student_monthly;
       const saving = Math.round((1 - a.amount_paise / (m.amount_paise * 12)) * 100);
       const card = (p, price, per, note, badge) =>
-        '<button type="button" class="card pw-plan' + (pwPlan === p.plan ? ' selected' : '') + '" ' +
-        'aria-pressed="' + (pwPlan === p.plan) + '" onclick="pwPick(\'' + p.plan + '\')">' +
+        '<div class="card pw-plan">' +
         (badge ? '<span class="badge badge-green">' + badge + '</span>' : '') +
         '<div class="pw-plan-name">' + p.label + '</div>' +
         '<div class="pw-price">' + price + ' <small>' + per + '</small></div>' +
-        '<div class="pw-plan-note">' + note + '</div></button>';
-      const chosen = P[pwPlan];
+        '<div class="pw-plan-note">' + note + '</div></div>';
+      const contact = PW_PAYMENT_CONTACT ? '<b>' + esc(PW_PAYMENT_CONTACT) + '</b>' : 'the CareerAI team';
       return '<div class="pw-plans">' +
         card(a, rupees(a.amount_paise), '/ year', 'That\'s ' + rupees(a.amount_paise / 12) + ' a month', 'Save ' + saving + '%') +
         card(m, rupees(m.amount_paise), '/ month', 'Pay month by month') + '</div>' +
         '<ul class="pw-includes"><li>Career quiz and full results</li><li>Weekly aptitude contest</li>' +
         '<li>Global and career leaderboards</li><li>Career explorer and roadmaps</li>' +
         '<li>AI career chat</li><li>Progress tracking</li></ul>' +
-        '<div class="pw-pay"><div class="form-alert" id="pw-pay-alert" role="alert"></div>' +
-        '<button class="btn btn-primary btn-lg" id="pw-pay-btn" onclick="pwCheckout()">Pay ' +
-        rupees(chosen.amount_paise) + ' →</button>' +
-        '<div class="pw-fineprint">Your plan starts as soon as payment goes through and runs for ' +
-        (chosen.months === 12 ? '12 months' : '1 month') + '. Payments are non-refundable.</div></div>';
-    }
-
-    function pwPick(plan) {
-      pwPlan = plan;
-      const host = document.querySelector('.pw-plans');
-      // Re-draw just the plans block so the reason card keeps any typed School ID.
-      const tmp = document.createElement('div');
-      tmp.innerHTML = pwPlans();
-      host.parentNode.querySelectorAll('.pw-plans, .pw-includes, .pw-pay').forEach(n => n.remove());
-      document.getElementById('pw-root').append(...tmp.childNodes);
-    }
-
-    function pwCheckout() {
-      const btn = document.getElementById('pw-pay-btn');
-      document.getElementById('pw-pay-alert').textContent = '';
-      setBusy(btn, true);
-      CareerAPI.billing.checkout(pwPlan).then(order => {
-        setBusy(btn, false);
-        pwOpenSheet(order);
-      }, err => {
-        setBusy(btn, false);
-        if (err.code === 'already_has_access') { pwRender(); return; }
-        document.getElementById('pw-pay-alert').textContent = err.message;
-      });
-    }
-
-    // Stand-in for the Razorpay checkout window. The real one is Razorpay's
-    // own script; its success callback is followed by the server webhook.
-    function pwOpenSheet(order) {
-      const el = document.createElement('div');
-      el.className = 'pay-overlay';
-      el.id = 'pay-overlay';
-      el.innerHTML = '<div class="pay-sheet" role="dialog" aria-modal="true" aria-label="Payment">' +
-        '<div class="pay-head"><span>💳 Razorpay</span><button class="btn btn-ghost btn-sm" onclick="pwCloseSheet()" ' +
-        'aria-label="Cancel payment">✕</button></div><div class="pay-body">' +
-        '<div style="font-size:13px;color:var(--muted);">CareerAI · ' + esc(CareerAPI.plans[order.plan].label) + ' plan</div>' +
-        '<div class="pay-amount">' + rupees(order.amount_paise) + '</div>' +
-        '<div class="pay-demo">Demo checkout: no real money moves. Pick what the payment should do.</div>' +
-        '<div class="pay-actions">' +
-        '<button class="btn btn-primary" onclick="pwFinish(\'' + order.order_id + '\', true, this)">Pay ' + rupees(order.amount_paise) + '</button>' +
-        '<button class="btn btn-ghost" onclick="pwFinish(\'' + order.order_id + '\', false, this)">Simulate a failed payment</button>' +
-        '</div></div></div>';
-      document.body.appendChild(el);
-    }
-
-    function pwCloseSheet() {
-      const el = document.getElementById('pay-overlay');
-      if (el) el.remove();
-    }
-
-    function pwFinish(orderId, succeed, btn) {
-      setBusy(btn, true);
-      CareerAPI.billing.mockPay(orderId, succeed).then(r => {
-        pwCloseSheet();
-        if (r.status === 'active') {
-          document.getElementById('pw-root').innerHTML = pwSuccess(r.access);
-          return;
-        }
-        document.getElementById('pw-pay-alert').textContent =
-          'Your payment didn\'t go through, and you haven\'t been charged. Please try again.';
-      }, err => {
-        pwCloseSheet();
-        document.getElementById('pw-pay-alert').textContent = err.message;
-      });
+        '<div class="card pw-reason pw-how"><div class="pw-reason-icon">💳</div><div style="flex:1;">' +
+        '<h3>How to pay</h3>' +
+        '<ol class="pw-steps">' +
+        '<li>Contact ' + contact + ' for payment details, and pay for the plan you want (UPI or bank transfer).</li>' +
+        '<li>Send us your <b>payment ID</b> (UPI reference or UTR) and the email you registered with: <b>' + esc(st.email) + '</b>.</li>' +
+        '<li>We activate your plan once the payment is confirmed. Then press <b>Check again</b>.</li>' +
+        '</ol>' +
+        '<div class="pw-school-form"><button class="btn btn-primary" onclick="pwRender()">Check again</button></div>' +
+        '<div class="pw-fineprint">Your plan runs from the day it\'s activated. Payments are non-refundable.</div>' +
+        '</div></div>';
     }
 
     function pwContinue() {
       return '<button class="btn btn-primary btn-lg" onclick="show(\'' + pwNext + '\')">' +
         (pwNext === 'onboarding' ? 'Set up my profile →' : 'Go to my dashboard →') + '</button>';
-    }
-
-    function pwSuccess(a) {
-      return '<div class="card pw-center"><div class="pw-emoji">🎉</div><h2>You\'re in!</h2>' +
-        '<p>Your ' + esc(CareerAPI.plans[a.plan] ? CareerAPI.plans[a.plan].label.toLowerCase() : '') +
-        ' plan is active until <b>' + longDate(a.ends_at) + '</b>.</p>' + pwContinue() + '</div>';
     }
 
     function pwAllSet(a) {

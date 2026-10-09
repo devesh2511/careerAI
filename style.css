@@ -6759,16 +6759,8 @@ button.quiz-option {
 
 .pw-plan {
   position: relative;
-  cursor: pointer;
   text-align: left;
-  font-family: inherit;
   color: var(--text);
-  width: 100%;
-}
-
-.pw-plan.selected {
-  border-color: var(--accent);
-  box-shadow: var(--ring), var(--shadow-lg);
 }
 
 .pw-plan-name {
@@ -6820,13 +6812,20 @@ button.quiz-option {
   font-weight: 800;
 }
 
-.pw-pay {
+.pw-how {
   margin-top: 22px;
-  text-align: center;
 }
 
-.pw-pay .btn {
-  min-width: 260px;
+.pw-steps {
+  margin: 8px 0 4px;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.pw-steps b {
+  color: var(--text);
 }
 
 .pw-fineprint {
@@ -6854,67 +6853,6 @@ button.quiz-option {
   margin-bottom: 20px;
 }
 
-/* Stand-in for the Razorpay checkout window */
-.pay-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 10, 25, .55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 200;
-}
-
-.pay-sheet {
-  width: 100%;
-  max-width: 380px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-}
-
-.pay-head {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 700;
-}
-
-.pay-body {
-  padding: 20px;
-}
-
-.pay-amount {
-  font-size: 28px;
-  font-weight: 800;
-  margin: 4px 0 14px;
-}
-
-.pay-demo {
-  font-size: 12px;
-  color: var(--orange-text);
-  background: rgba(251, 146, 60, .08);
-  border: 1px solid rgba(251, 146, 60, .3);
-  border-radius: 10px;
-  padding: 8px 12px;
-  margin-bottom: 16px;
-  line-height: 1.5;
-}
-
-.pay-actions {
-  display: grid;
-  gap: 8px;
-}
-
-.pay-actions .btn {
-  width: 100%;
-}
-
 /* Settings → School ID inline editor */
 .st-edit {
   display: flex;
@@ -6940,10 +6878,5 @@ button.quiz-option {
 
   .pw-school-form {
     flex-direction: column;
-  }
-
-  .pw-pay .btn {
-    min-width: 0;
-    width: 100%;
   }
 }
