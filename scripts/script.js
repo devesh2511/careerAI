@@ -1805,20 +1805,42 @@
       lbRender();  // weekly contest leaderboards (scripts/contest.js)
       if (!appResults) return;
       const d = appResults, top = d.top_careers[0];
-      // Update the Class 10 row in "Top Match Evolution"
-      const evol = document.getElementById('pg-evolution');
-      if (!evol) return;
-      // Re-render evolution table
-      const items = evol.querySelectorAll('div[style*="align-items:center"]');
-      if (items[2]) { // Class 10 row (index 2)
-        items[2].innerHTML =
-          '<span style="color:var(--accent2);width:60px;font-weight:700;">Class 10</span>' +
-          '<span style="font-weight:700;">' + top.emoji + ' ' + top.title + '</span>' +
-          '<span style="color:var(--accent2);font-weight:800;margin-left:auto;">' + top.match_pct + '% ✦</span>';
-      }
+      pgRenderEvolution([d]);
+      pgLoadEvolution();
       // AI note
       const note = document.querySelector('#pg-ai-note div:last-child');
       if (note) note.textContent =
         '"Your profile points strongly toward ' + d.personality_type.replace('The ', '') + '. ' +
         top.title + ' is your top career at ' + top.match_pct + '%. Stream recommendation: ' + d.stream_recommendation + '."';
+    }
+
+    // "Top Match Evolution" compares the student's 2 saved career quiz runs
+    // (GET /me/career-quiz/runs, newest first). A run this tab hasn't saved
+    // yet (state.quizRun) is newer than the server's, so it becomes Latest and
+    // the server's newest becomes Previous. Until the fetch answers — or if
+    // it fails — only this tab's run is shown, as Latest.
+    let pgEvolutionReq = 0;
+    function pgLoadEvolution() {
+      if (!isLoggedIn() || !window.CareerAPI || !CareerAPI.me.careerQuizRuns) return;
+      const req = ++pgEvolutionReq;
+      CareerAPI.me.careerQuizRuns().then(r => {
+        if (req !== pgEvolutionReq) return;
+        const saved = (r.results || []).map(run => run.results).filter(Boolean);
+        const runs = loadState().quizRun && appResults ? [appResults].concat(saved) : saved;
+        if (runs.length) pgRenderEvolution(runs.slice(0, 2));
+      }, () => { });
+    }
+
+    // runs: appResults objects, newest first.
+    function pgRenderEvolution(runs) {
+      const box = document.getElementById('pg-evolution-rows');
+      if (!box) return;
+      const row = (label, top, latest) => !top ? '' :
+        '<div style="display:flex;align-items:center;gap:16px;font-size:13px;">' +
+        '<span style="color:' + (latest ? 'var(--accent2);font-weight:700' : 'var(--muted)') + ';width:64px;">' + label + '</span>' +
+        '<span style="font-weight:' + (latest ? 700 : 600) + ';">' + esc((top.emoji || '') + ' ' + top.title) + '</span>' +
+        '<span style="color:' + (latest ? 'var(--accent2);font-weight:800' : '#a8a3ff;font-weight:700') + ';margin-left:auto;">' +
+        esc(top.match_pct) + '%' + (latest ? ' ✦' : '') + '</span></div>';
+      const topOf = d => d && d.top_careers && d.top_careers[0];
+      box.innerHTML = row('Previous', topOf(runs[1]), false) + row('Latest', topOf(runs[0]), true);
     }

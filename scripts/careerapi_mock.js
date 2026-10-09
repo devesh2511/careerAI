@@ -285,6 +285,8 @@
       saveCareerQuiz(run) { return http('POST', '/me/career-quiz', run); },
       // GET /me/career-quiz/latest — live. → { result } (null before the first run)
       latestCareerQuiz() { return http('GET', '/me/career-quiz/latest'); },
+      // GET /me/career-quiz/runs — live. → { results } (the kept 2 runs, newest first)
+      careerQuizRuns() { return http('GET', '/me/career-quiz/runs'); },
       // PUT /me/school — live; code '' / null clears it. → { student, access }
       setSchool(code) {
         return http('PUT', '/me/school', { school_code: code || null }).then(r => { shadow(r.student); return r; });
