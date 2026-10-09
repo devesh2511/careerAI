@@ -1,7 +1,7 @@
     // ══════════════════════════════════════════════════════════════
     // WEEKLY APTITUDE CONTEST — UI
     // quiz.html        → the contest itself (ct* functions)
-    // app.html#/progress → global + career leaderboards (lb* functions)
+    // app.html#/contests → global + career leaderboards (lb* functions)
     // All data comes from window.ContestAPI (scripts/contest_api.js), which
     // calls careerAPI.
     // ══════════════════════════════════════════════════════════════
@@ -149,7 +149,7 @@
         '<p class="ct-p ct-small">Opens ' + ctWhen(c.opens_at) + '</p>' +
         '<div class="ct-actions">' +
         (st.latest_published ? '<a class="btn btn-primary" href="?review=' + st.latest_published.id + '">See Contest #' + st.latest_published.number + ' results</a>' : '') +
-        '<button class="btn btn-ghost" onclick="show(\'progress\')">View leaderboards</button>' +
+        '<button class="btn btn-ghost" onclick="show(\'contests\')">View leaderboards</button>' +
         '</div></div>');
       ctStartTicker(ctInit);
     }
@@ -164,7 +164,7 @@
         '<p class="ct-p">A new 5-question contest opens every <strong>Saturday 7:00 AM</strong> and closes <strong>Sunday 7:00 PM IST</strong>. Check back soon.</p>' +
         '<div class="ct-actions">' +
         (st.latest_published ? '<a class="btn btn-primary" href="?review=' + st.latest_published.id + '">See Contest #' + st.latest_published.number + ' results</a>' : '') +
-        '<button class="btn btn-ghost" onclick="show(\'progress\')">View leaderboards</button>' +
+        '<button class="btn btn-ghost" onclick="show(\'contests\')">View leaderboards</button>' +
         '</div></div>');
     }
 
@@ -281,7 +281,7 @@
         '<div class="ct-count" data-until="' + c.closes_at + '"></div>' +
         '<div class="ct-small">' + ctWhen(c.closes_at) + '</div>' +
         '</div>' +
-        '<div class="ct-actions"><button class="btn btn-primary" onclick="show(\'progress\')">Go to leaderboards</button></div>' +
+        '<div class="ct-actions"><button class="btn btn-primary" onclick="show(\'contests\')">Go to leaderboards</button></div>' +
         '</div>');
       ctStartTicker(() => { location.href = '?review=' + c.id; });
     }
@@ -322,7 +322,7 @@
               '<div class="ct-expl"><strong>Why:</strong> ' + ctEsc(q.explanation) + '</div>' +
               '</div>';
           }).join('') +
-          '<div class="ct-actions"><button class="btn btn-primary" onclick="show(\'progress\')">View leaderboards</button>' +
+          '<div class="ct-actions"><button class="btn btn-primary" onclick="show(\'contests\')">View leaderboards</button>' +
           '<a class="btn btn-ghost" href="quiz.html">This week’s contest</a></div>');
       }).catch(err => {
         if (err.code === 'not_published' || err.code === 'not_found') {
@@ -335,7 +335,7 @@
     }
 
     // ══════════════════════════════════════════════════════════════
-    // LEADERBOARDS (app.html#/progress)
+    // LEADERBOARDS (app.html#/contests)
     // ══════════════════════════════════════════════════════════════
     let lbScope = 'global';   // 'global' | 'career'
     let lbPeriod = 'week';    // 'week' (latest closed contest) | 'live' (all contests)

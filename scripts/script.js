@@ -23,7 +23,7 @@
     };
 
     // These are .page divs inside app.html — they still switch in place.
-    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'roadmap', 'chat', 'progress', 'settings'];
+    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'roadmap', 'chat', 'contests', 'settings'];
 
     // Which file are we on? Set via <body data-page="...">
     const CURRENT_PAGE = (document.body && document.body.dataset.page) || 'landing';
@@ -171,7 +171,7 @@
       if (pageId === 'dashboard') syncDashboard();
       else if (pageId === 'results') syncResults();
       else if (pageId === 'explorer') syncExplorer();
-      else if (pageId === 'progress') syncProgress();
+      else if (pageId === 'contests') syncProgress();
       else if (pageId === 'settings') syncSettings();
     }
 
@@ -194,7 +194,8 @@
     function initPage() {
       switch (CURRENT_PAGE) {
         case 'app': {
-          const hash = (location.hash || '').replace(/^#\/?/, '');
+          let hash = (location.hash || '').replace(/^#\/?/, '');
+          if (hash === 'progress') hash = 'contests';  // old address of this page
           navTo(APP_PAGES.includes(hash) ? hash : 'dashboard');
           syncUser();
           break;

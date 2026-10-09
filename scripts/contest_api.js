@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════
 // WEEKLY APTITUDE CONTEST — DATA LAYER
 //
-// Every contest screen (quiz.html, the leaderboards on app.html#/progress)
+// Every contest screen (quiz.html, the leaderboards on app.html#/contests)
 // talks to the contest ONLY through window.ContestAPI. Each method calls
 // the careerAPI endpoint of the same name in docs/aptitude-contest-backend.md
 // and resolves with its JSON body unchanged.
