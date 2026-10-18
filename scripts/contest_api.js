@@ -120,11 +120,12 @@
     // GET /contest/:id/review — only after the contest closes.
     getReview(id) { return http('GET', '/contest/' + encodeURIComponent(id) + '/review'); },
 
-    // GET /leaderboard?scope=global|career&period=week|live[&contest_id=][&limit=]
-    // period=week defaults to the latest closed contest.
+    // GET /leaderboard?scope=global|career&period=week|live[&career=][&contest_id=][&limit=]
+    // period=week defaults to the latest closed contest; career (scope=career
+    // only) is one of getState().careers and defaults to the current career.
     getLeaderboard(opts) {
       const o = opts || {};
-      return http('GET', '/leaderboard' + query({ scope: o.scope, period: o.period, contest_id: o.contest_id, limit: o.limit }));
+      return http('GET', '/leaderboard' + query({ scope: o.scope, period: o.period, career: o.scope === 'career' ? o.career : null, contest_id: o.contest_id, limit: o.limit }));
     },
 
     // GET /me/contest-history — one row per closed contest, newest first.

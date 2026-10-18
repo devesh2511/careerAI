@@ -338,6 +338,7 @@
     // LEADERBOARDS (app.html#/contests)
     // ══════════════════════════════════════════════════════════════
     let lbScope = 'global';   // 'global' | 'career'
+    let lbCareer = null;      // the career board shown when lbScope is 'career'
     let lbPeriod = 'week';    // 'week' (latest closed contest) | 'live' (all contests)
     let lbData = null;        // { state, week, live, history }
     let lbSeq = 0;            // drops responses from superseded requests
@@ -349,8 +350,8 @@
       if (!lbData) root.innerHTML = '<div class="ct-loading">Loading leaderboards…</div>';
       Promise.all([
         ContestAPI.getState(),
-        ContestAPI.getLeaderboard({ scope: lbScope, period: 'week' }),
-        ContestAPI.getLeaderboard({ scope: lbScope, period: 'live' }),
+        ContestAPI.getLeaderboard({ scope: lbScope, period: 'week', career: lbCareer }),
+        ContestAPI.getLeaderboard({ scope: lbScope, period: 'live', career: lbCareer }),
         ContestAPI.getHistory()
       ]).then(([state, week, live, history]) => {
         if (seq !== lbSeq) return;
@@ -358,6 +359,8 @@
         lbDraw();
       }).catch(err => {
         if (seq !== lbSeq) return;
+        // A retaken quiz can drop the career this board was on: start over on the current one.
+        if (err.code === 'invalid' && lbCareer) { lbCareer = null; lbRender(); return; }
         root.innerHTML = '<div class="card lb-empty">' + (err.code === 'payment_required' || err.code === 'unauthenticated'
           ? ctErrorBody(err, 'lbRender()')
           : '<p>Couldn’t load the leaderboards: ' + ctEsc(err.message) +
@@ -365,21 +368,27 @@
       });
     }
 
-    function lbSetScope(s) { if (s !== lbScope) { lbScope = s; lbRender(); } }
+    function lbSetScope(s) { if (s !== lbScope) { lbScope = s; lbCareer = null; lbRender(); } }
+    function lbSetCareer(c) { if (lbScope !== 'career' || c !== lbCareer) { lbScope = 'career'; lbCareer = c; lbRender(); } }
     function lbSetPeriod(p) { if (p !== lbPeriod) { lbPeriod = p; lbDraw(); } }
 
     function lbDraw() {
       const root = document.getElementById('lb-root');
       if (!root || !lbData) return;
-      const { state } = lbData;
-      const career = state.career;
+      const { state, week } = lbData;
+      // One chip per suggested career (GET /contest/state → careers), current career first.
+      const careers = state.careers && state.careers.length ? state.careers : state.career ? [state.career] : [];
+      const shown = lbScope === 'career' ? week.career : null;
+      const chip = (on, label, click, attr) => '<button class="filter-chip' + (on ? ' active' : '') + '" role="tab" aria-selected="' + on + '"' +
+        (attr || '') + ' onclick="' + click + '">' + label + '</button>';
       root.innerHTML =
         lbStatus(state) +
         '<div class="lb-bar">' +
         '<div class="lb-tabs" role="tablist" aria-label="Leaderboard">' +
-        '<button class="filter-chip' + (lbScope === 'global' ? ' active' : '') + '" role="tab" aria-selected="' + (lbScope === 'global') + '" onclick="lbSetScope(\'global\')">🌍 Global</button>' +
-        '<button class="filter-chip' + (lbScope === 'career' ? ' active' : '') + '" role="tab" aria-selected="' + (lbScope === 'career') + '" onclick="lbSetScope(\'career\')">' +
-        (career ? ctEsc(lbEmoji(career) + ' ' + career) : '🎯 My career') + '</button>' +
+        chip(lbScope === 'global', '🌍 Global', 'lbSetScope(\'global\')') +
+        (careers.length
+          ? careers.map(c => chip(c === shown, ctEsc(lbEmoji(c) + ' ' + c), 'lbSetCareer(this.dataset.career)', ' data-career="' + ctEsc(c) + '"')).join('')
+          : chip(lbScope === 'career', '🎯 My career', 'lbSetScope(\'career\')')) +
         '</div>' +
         '</div>' +
         lbBody() +
@@ -450,7 +459,9 @@
         '<div class="lb-table-head"><div>' +
         '<div class="lb-table-title">' + (lbPeriod === 'live' ? 'Live ranking' : 'Contest #' + week.contest.number) + ' · ' + scopeName + '</div>' +
         '<div class="lb-table-sub">' + active.total_participants + ' student' + (active.total_participants === 1 ? '' : 's') +
-        ' · ranked by score, then time taken</div></div>' +
+        ' · ranked by score, then time taken' +
+        (lbScope === 'career' && week.career !== state.career ? ' · you’re ranked against students aiming for this career' : '') +
+        '</div></div>' +
         '<div class="lb-seg" role="tablist">' +
         '<button class="' + (lbPeriod === 'week' ? 'active' : '') + '" role="tab" aria-selected="' + (lbPeriod === 'week') + '" onclick="lbSetPeriod(\'week\')">This week</button>' +
         '<button class="' + (lbPeriod === 'live' ? 'active' : '') + '" role="tab" aria-selected="' + (lbPeriod === 'live') + '" onclick="lbSetPeriod(\'live\')">Live</button>' +
