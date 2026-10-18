@@ -32,7 +32,7 @@
       <aside class="sidebar">
         <div class="sidebar-logo">
           <div class="logo-text">Career<span>AI</span></div>
-          <div class="logo-sub">Class 10 · CBSE · Mumbai</div>
+          <div class="logo-sub" id="logo-sub"></div>
         </div>
         <nav class="nav">
           <button class="nav-item active" data-page="dashboard" onclick="navTo('dashboard',this)"><span
@@ -58,8 +58,8 @@
           <div class="user-row">
             <div class="user-avatar">A</div>
             <div class="user-info">
-              <div class="user-name">Devesh Jain</div>
-              <div class="user-class">Class 10 · CBSE</div>
+              <div class="user-name"></div>
+              <div class="user-class" id="user-class"></div>
             </div>
             <div class="user-actions">
               <button class="theme-toggle sidebar-theme" onclick="toggleTheme()" aria-label="Switch theme"
@@ -133,7 +133,7 @@
               <div class="page-title">Career Matches</div>
               <div class="page-sub">100+ careers scored for your profile · Updated 2 days ago</div>
             </div>
-            <button class="btn btn-secondary btn-sm">📥 Download Report</button>
+            <button class="btn btn-secondary btn-sm" onclick="cqDownloadReport()">📥 Download Report</button>
           </div>
           <div class="stream-banner" onclick="appResults ? exploreStream(appResults.stream_recommendation) : cqStart()">
             <div class="stream-banner-left">
@@ -315,77 +315,13 @@
         </div>
 
         <!-- ── CAREER DETAIL ── -->
+        <!-- Drawn by cdRender() in scripts/script.js for whichever career was
+             opened (cdOpen): catalogue copy from GET /careers, the fit
+             breakdown from the student's quiz, and the path from
+             GET /roadmap?career=. -->
         <div id="careerdetail" class="page">
-          <button class="back-btn" onclick="history.back();navTo('results')">← Back to
-            Matches</button>
-          <div class="cd-hero">
-            <div>
-              <div class="cd-icon" style="background:rgba(108,99,255,.12);margin-bottom:12px;">🎨</div>
-              <div class="cd-name">UX / Product Designer</div>
-              <div class="cd-badges">
-                <span class="badge badge-purple">Design</span>
-                <span class="badge badge-blue">Technology</span>
-                <span class="badge badge-green">PCM + CS</span>
-              </div>
-              <p style="font-size:0.8125rem;color:var(--muted);">Spatial reasoning + creative problem-solving = your natural
-                domain</p>
-            </div>
-            <div style="text-align:right;">
-              <div class="cd-fit" style="color:#a8a3ff;">92%</div>
-              <div class="cd-fit-label">Career Fit Score</div>
-              <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
-                <button class="btn btn-primary btn-sm" onclick="navTo('roadmap')">Generate Roadmap</button>
-                <button class="btn btn-secondary btn-sm" onclick="navTo('chat')">Ask AI</button>
-              </div>
-            </div>
-          </div>
-          <div class="cd-section">
-            <h3>A Day in the Life</h3>
-            <div class="day-story">"You start your morning reviewing user research findings from interviews conducted
-              last week. By 10am you're sketching wireframes for a new onboarding flow. After lunch, you present
-              prototypes in Figma to the product team — debating whether the checkout button should be green or purple.
-              Late afternoon is spent running a usability test with real users, watching them struggle with a menu you
-              thought was obvious. You go back to the drawing board. Tomorrow you'll have a better answer."</div>
-          </div>
-          <div class="cd-section">
-            <h3>Salary Range in India</h3>
-            <div class="salary-grid">
-              <div class="salary-card">
-                <div class="salary-stage">Entry (0–2 yrs)</div>
-                <div class="salary-val" style="color:var(--accent2);">₹4–7 LPA</div>
-              </div>
-              <div class="salary-card">
-                <div class="salary-stage">Mid (3–6 yrs)</div>
-                <div class="salary-val" style="color:var(--accent);">₹10–18 LPA</div>
-              </div>
-              <div class="salary-card">
-                <div class="salary-stage">Senior (7+ yrs)</div>
-                <div class="salary-val" style="color:#fcd34d;">₹22–40 LPA</div>
-              </div>
-            </div>
-          </div>
-          <div class="cd-section">
-            <h3>Top Colleges in India</h3>
-            <div class="college-list">
-              <div class="college-row"><span class="college-row-name">NID Ahmedabad</span><span
-                  class="badge badge-purple">Design</span><span class="college-row-city">Ahmedabad</span></div>
-              <div class="college-row"><span class="college-row-name">Symbiosis Design School</span><span
-                  class="badge badge-green">Design</span><span class="college-row-city">Pune</span></div>
-              <div class="college-row"><span class="college-row-name">Srishti Institute of Art &amp; Design</span><span
-                  class="badge badge-blue">Design + Tech</span><span class="college-row-city">Bangalore</span></div>
-              <div class="college-row"><span class="college-row-name">NIFT Mumbai</span><span
-                  class="badge badge-orange">Design</span><span class="college-row-city">Mumbai</span></div>
-            </div>
-          </div>
-          <div class="cd-section">
-            <h3>Entrance Exams to Target</h3>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <span class="badge badge-purple">UCEED</span>
-              <span class="badge badge-blue">NATA</span>
-              <span class="badge badge-green">NID DAT</span>
-              <span class="badge badge-orange">CEED (PG)</span>
-            </div>
-          </div>
+          <button class="back-btn" id="cd-back" onclick="cdBack()">← Back to Matches</button>
+          <div id="cd-body"></div>
         </div>
 
         <!-- ── ROADMAP ── -->
@@ -394,7 +330,7 @@
             <div>
               <div class="page-title">5-Year Roadmap</div>
               <div class="page-sub">Your personalised career path — Class 10 to first job</div>
-            </div><button class="btn btn-secondary btn-sm">📥 Export PDF</button>
+            </div><button class="btn btn-secondary btn-sm" onclick="rmExportPdf()">📥 Export PDF</button>
           </div>
           <!-- Drawn by rmLoad() in scripts/script.js from GET /roadmaps and
                GET /roadmap?career= (careerAPI career_roadmaps table). -->
@@ -403,7 +339,7 @@
               <div class="rm-label">Target Career</div>
               <div class="rm-career" id="rm-career">Loading…</div>
             </div>
-            <select class="form-input" id="rm-select" style="width:auto;" onchange="rmShow(this.value)"
+            <select class="form-input" id="rm-select" onchange="rmShow(this.value)"
               aria-label="Target career"></select>
           </div>
           <div class="page-sub" id="rm-note" style="margin-bottom:16px;" hidden></div>
@@ -504,8 +440,9 @@
             <div class="settings-row">
               <div>
                 <div class="settings-row-label">Full Name</div>
-                <div class="settings-row-sub" id="st-name">Devesh Jain · shown on leaderboards as Devesh J.</div>
-              </div><button class="btn btn-ghost btn-sm">Edit</button>
+                <div class="settings-row-sub" id="st-name">Loading…</div>
+                <div id="st-name-edit"></div>
+              </div><button class="btn btn-ghost btn-sm" onclick="stEditName()">Edit</button>
             </div>
             <div class="settings-row">
               <div>
@@ -523,8 +460,9 @@
             <div class="settings-row">
               <div>
                 <div class="settings-row-label">Current Class</div>
-                <div class="settings-row-sub">Class 10 · CBSE · Mumbai</div>
-              </div><button class="btn btn-ghost btn-sm">Edit</button>
+                <div class="settings-row-sub" id="st-class">Loading…</div>
+                <div id="st-class-edit"></div>
+              </div><button class="btn btn-ghost btn-sm" onclick="stEditClass()">Edit</button>
             </div>
           </div>
           <div class="settings-section">
@@ -575,7 +513,7 @@
               <div>
                 <div class="settings-row-label">Clear Chat History</div>
                 <div class="settings-row-sub">Remove all AI chat messages</div>
-              </div><button class="btn btn-ghost btn-sm" style="color:var(--accent3);">Clear</button>
+              </div><button class="btn btn-ghost btn-sm" style="color:var(--accent3);" onclick="clearChat(this)">Clear</button>
             </div>
           </div>
           <!-- OpenAI Integration section removed: the app runs in demo mode

@@ -182,7 +182,9 @@
         else { pg.style.display = 'block'; pg.classList.add('active'); }
       }
       // btn is passed by the sidebar onclick; on a fresh load we look it up by data-page
-      const navBtn = btn || document.querySelector('.nav-item[data-page="' + pageId + '"]');
+      // Career detail has no sidebar entry of its own: light up where it was opened from.
+      const navPage = pageId === 'careerdetail' ? (cdFrom || 'results') : pageId;
+      const navBtn = btn || document.querySelector('.nav-item[data-page="' + navPage + '"]');
       if (navBtn) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); navBtn.classList.add('active'); }
       // Keep the hash in sync so a reload lands on the same page. The '#/' prefix
       // matters: a bare '#dashboard' matches a real element id, and the browser
@@ -198,6 +200,7 @@
       else if (pageId === 'contests') syncProgress();
       else if (pageId === 'settings') syncSettings();
       else if (pageId === 'space') spLoad();
+      else if (pageId === 'careerdetail') cdRender();
     }
 
     // ── Per-page init: replaces the old single-page bootstrap ──
@@ -224,6 +227,7 @@
           if (hash === 'progress') hash = 'contests';  // old address of this page
           navTo(APP_PAGES.includes(hash) ? hash : 'dashboard');
           syncUser();
+          cqInitPrint(appPrintTitle);
           break;
         }
         case 'onboarding': obInit(); break;
@@ -563,9 +567,12 @@
     // ── Settings: account, School ID and membership (app.html#/settings) ──
     function syncSettings() {
       if (!window.CareerAPI) return;
+      stSyncProfile();
       Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
         const st = m.student;
+        stStudent = st;
         document.getElementById('st-name').textContent = st.full_name + ' · shown on leaderboards as ' + st.leaderboard_name;
+        document.getElementById('st-name-edit').innerHTML = '';
         document.getElementById('st-email').textContent = st.email;
         document.getElementById('st-school').textContent = st.school
           ? st.school.name + ' · ' + st.school.school_code
@@ -602,13 +609,98 @@
       }, err => { document.getElementById('st-code-error').textContent = err.message; });
     }
 
-    // Sidebar name and avatar from the logged-in account.
+    // ── Settings: name, and class / board / city (the onboarding profile) ──
+    let stStudent = null, stProfile = null;
+    const ST_BOARDS = ['CBSE', 'ICSE', 'State Board'];
+
+    function stEditName() {
+      const box = document.getElementById('st-name-edit');
+      if (box.innerHTML) { box.innerHTML = ''; return; }
+      box.innerHTML = '<form class="st-edit" onsubmit="stSaveName(event)">' +
+        '<input class="form-input" id="st-name-input" maxlength="80" aria-label="Full name" />' +
+        '<button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditName()">Cancel</button></form>' +
+        '<div class="form-hint">Other students see your first name and last initial.</div>' +
+        '<div class="form-error" id="st-name-error"></div>';
+      const inp = document.getElementById('st-name-input');
+      inp.value = stStudent ? stStudent.full_name : '';
+      inp.focus();
+    }
+
+    function stSaveName(e) {
+      e.preventDefault();
+      const btn = document.getElementById('st-name-btn');
+      setBusy(btn, true);
+      CareerAPI.me.setName(val('st-name-input')).then(() => {
+        syncSettings();
+        syncUser();
+      }, err => {
+        setBusy(btn, false);
+        document.getElementById('st-name-error').textContent = err.message;
+      });
+    }
+
+    // "Class 10 · CBSE · Mumbai", or '' before onboarding.
+    function profileSummary(p) {
+      return p ? ['Class ' + p.class, p.board, p.city].filter(Boolean).join(' · ') : '';
+    }
+
+    function stSyncProfile() {
+      CareerAPI.me.profile().then(r => {
+        stProfile = r.profile;
+        document.getElementById('st-class').textContent = profileSummary(stProfile) || 'Not added yet';
+        document.getElementById('st-class-edit').innerHTML = '';
+      }, err => { document.getElementById('st-class').textContent = err.message; });
+    }
+
+    function stEditClass() {
+      const box = document.getElementById('st-class-edit');
+      if (box.innerHTML) { box.innerHTML = ''; return; }
+      const p = stProfile || {};
+      const opt = (v, label, cur) => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>';
+      box.innerHTML = '<form class="st-edit" onsubmit="stSaveClass(event)">' +
+        '<select class="form-input" id="st-class-input" aria-label="Class">' +
+        opt('10', 'Class 10', String(p.class || 10)) + opt('9', 'Class 9', String(p.class || 10)) + '</select>' +
+        '<select class="form-input" id="st-board-input" aria-label="Board">' + opt('', 'Board…', p.board || '') +
+        ST_BOARDS.map(b => opt(b, b, p.board || '')).join('') + '</select>' +
+        '<input class="form-input" id="st-city-input" maxlength="80" placeholder="City" aria-label="City" />' +
+        '<button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditClass()">Cancel</button></form>' +
+        '<div class="form-error" id="st-class-error"></div>';
+      document.getElementById('st-city-input').value = p.city || '';
+      document.getElementById('st-class-input').focus();
+    }
+
+    function stSaveClass(e) {
+      e.preventDefault();
+      const btn = document.getElementById('st-class-btn');
+      setBusy(btn, true);
+      CareerAPI.me.saveProfile({
+        class: Number(val('st-class-input')),
+        board: val('st-board-input') || null,
+        city: val('st-city-input').trim() || null
+      }).then(() => {
+        stSyncProfile();
+        syncUser();
+      }, err => {
+        setBusy(btn, false);
+        document.getElementById('st-class-error').textContent = err.message;
+      });
+    }
+
+    // Sidebar name, avatar and class line from the logged-in account.
     function syncUser() {
       if (!window.CareerAPI) return;
       CareerAPI.me.get().then(m => {
         const n = document.querySelector('.user-name'), av = document.querySelector('.user-avatar');
         if (n) n.textContent = m.student.full_name;
         if (av) av.textContent = m.student.full_name.charAt(0).toUpperCase();
+      }, () => { });
+      CareerAPI.me.profile().then(r => {
+        const text = profileSummary(r.profile);
+        const cls = document.getElementById('user-class'), sub = document.getElementById('logo-sub');
+        if (cls) cls.textContent = text.split(' · ').slice(0, 2).join(' · ');
+        if (sub) { sub.textContent = text; sub.hidden = !text; }
       }, () => { });
     }
 
@@ -692,6 +784,19 @@
         addMsg(aiReplies[replyIdx % aiReplies.length], 'ai');
         replyIdx++;
       }, 800);
+    }
+    // Settings → Clear Chat History. The chat lives only in this page, so
+    // clearing it is putting the greeting back.
+    let chatGreeting = null;
+    function clearChat(btn) {
+      const wrap = document.getElementById('chat-messages');
+      if (!wrap) return;
+      if (chatGreeting === null) chatGreeting = wrap.firstElementChild ? wrap.firstElementChild.outerHTML : '';
+      if (wrap.children.length <= 1) { if (btn) btn.textContent = 'Nothing to clear'; return; }
+      if (!confirm('Clear all AI chat messages?')) return;
+      wrap.innerHTML = chatGreeting;
+      replyIdx = 0;
+      if (btn) btn.textContent = 'Cleared ✓';
     }
     function sendSug(el) {
       document.getElementById('chat-input').value = el.textContent;
@@ -1014,6 +1119,40 @@
       if (!s.appResults) { show('careerquiz'); return; }  // no run to show
       cqRenderResults(s.appResults, s.isDemo !== false);
       cqInitPrint();
+      // Career Matches → Download Report lands here with ?print=1. The flag
+      // is dropped first so a reload or Back doesn't reopen the dialog.
+      if (new URLSearchParams(location.search).get('print') === '1') {
+        try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { }
+        setTimeout(cqSavePdf, 300);  // let fonts and the bars settle first
+      }
+    }
+
+    // Career Matches → Download Report: the report is the results page, which
+    // already has a print layout, so open it and start Save as PDF there.
+    function cqDownloadReport() {
+      if (!appResults) { cqStart(); return; }
+      location.href = routeTo('airesults') + '?print=1';
+    }
+
+    // Roadmap → Export PDF. The @media print block hides the app chrome, so
+    // only the open roadmap goes on paper.
+    function rmExportPdf() {
+      if (!document.getElementById('rm-timeline').children.length) {
+        alert('Pick a career with a roadmap first.');
+        return;
+      }
+      cqSavePdf();
+    }
+
+    // The suggested PDF filename on app.html, e.g. CareerAI-Roadmap-Civil-Engineer.
+    function appPrintTitle() {
+      const page = document.querySelector('.page.active');
+      if (page && page.id === 'roadmap') {
+        const career = document.getElementById('rm-career').textContent
+          .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return 'CareerAI-Roadmap-' + (career || cqDateStamp());
+      }
+      return 'CareerAI-' + cqDateStamp();
     }
 
     // Shown over a result saved by the previous question set (riasec-1),
@@ -1046,8 +1185,9 @@
     }
 
     // Wired once when the results page renders, so Ctrl+P / ⌘P and the
-    // button produce the same document.
-    function cqInitPrint() {
+    // button produce the same document. app.html wires it too, with
+    // appPrintTitle() naming the file.
+    function cqInitPrint(titleFn) {
       const dateEl = document.getElementById('air-print-date');
       if (dateEl) {
         dateEl.textContent = new Date().toLocaleDateString(undefined,
@@ -1065,7 +1205,7 @@
         // borrow the light one while the dialog is open.
         document.documentElement.setAttribute('data-theme', 'light');
         // Chrome and Edge seed the "Save as PDF" filename from the title.
-        document.title = 'CareerAI-Career-Report-' + cqDateStamp();
+        document.title = titleFn ? titleFn() : 'CareerAI-Career-Report-' + cqDateStamp();
       }
 
       function restore() {
@@ -1374,7 +1514,7 @@
       bannerHtml += '<div class="top-career-strip" id="db-strip">';
       d.top_careers.forEach((c, i) => {
         bannerHtml +=
-          '<div class="career-pill" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">' +
+          '<div class="career-pill" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
           '<span style="font-size:1.125rem;">' + c.emoji + '</span>' +
           '<div><div class="career-pill-name">' + c.title + '</div></div>' +
           '<div class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + c.match_pct + '%</div>' +
@@ -1440,7 +1580,7 @@
         const color = PCT_COLORS[i];
         const div = document.createElement('div');
         div.className = 'career-card';
-        div.onclick = () => navTo('careerdetail', null);
+        div.onclick = () => cdOpen(c.title);
         div.innerHTML =
           '<div class="career-rank ' + (i < 2 ? 'top' : '') + '">' + (i + 1) + '</div>' +
           '<div class="career-icon-wrap" style="background:' + ICON_BG[i] + ';">' + c.emoji + '</div>' +
@@ -1454,6 +1594,141 @@
           '<div class="pct-mini-bar"><div class="pct-mini-fill" style="width:' + c.match_pct + '%;background:' + PCT_FILL[i] + ';"></div></div>' +
           '</div>';
         list.appendChild(div);
+      });
+    }
+
+    // ── Career detail (app.html#/careerdetail) ──
+    // Opened from Career Matches, the dashboard strip and the explorer. The
+    // career is kept in the tab's state so a reload re-opens the same one;
+    // with none picked it falls back to the top match.
+    const CD_BACK = { results: 'Matches', dashboard: 'Dashboard', explorer: 'Explore Careers' };
+    let cdFrom = null, cdReq = 0;
+
+    function cdOpen(title) {
+      const here = document.querySelector('.page.active');
+      cdFrom = here && CD_BACK[here.id] ? here.id : null;
+      saveState({ cdCareer: title });
+      navTo('careerdetail');
+    }
+
+    function cdBack() { navTo(cdFrom || 'results'); }
+
+    // Catalogue row first (it has the RIASEC profile, subjects and domains);
+    // a quiz-run career that has since left the catalogue still shows from
+    // what the run saved.
+    function cdCareerData(title) {
+      const db = typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : [];
+      const tops = (appResults && appResults.top_careers) || [];
+      const cat = db.find(c => c.title === title) || null;
+      const top = tops.find(c => c.title === title) || null;
+      if (!cat && !top) return null;
+      return { title: title, cat: cat, top: top, base: cat || top, rank: top ? tops.indexOf(top) : -1 };
+    }
+
+    function cdRender() {
+      const body = document.getElementById('cd-body');
+      const back = document.getElementById('cd-back');
+      back.textContent = '← Back to ' + (CD_BACK[cdFrom] || 'Matches');
+      const tops = (appResults && appResults.top_careers) || [];
+      const picked = loadState().cdCareer;
+      const d = cdCareerData(picked) || (tops[0] && cdCareerData(tops[0].title));
+      if (!d) {
+        body.innerHTML =
+          '<div class="db-empty"><div class="db-empty-icon">🧭</div>' +
+          '<h3>Pick a career to see its details</h3>' +
+          '<p>Take the career quiz to get your matches, or browse every career in the explorer.</p>' +
+          '<button class="btn btn-primary btn-lg" onclick="navTo(\'explorer\')">Explore Careers →</button></div>';
+        return;
+      }
+
+      const c = d.base, profile = exStudentProfile();
+      const fit = profile && d.cat ? rsCareerFit(profile, d.cat) : null;
+      // The quiz's own figure when this is one of the student's matches, so
+      // the page agrees with Career Matches.
+      const pct = d.top ? d.top.match_pct : fit ? Math.round(fit.fit * 100) : null;
+      const band = pct === null ? null : d.rank >= 0 ? d.rank : exBand(pct);
+
+      let html =
+        '<div class="cd-hero"><div>' +
+        '<div class="cd-icon" style="background:' + (band === null ? 'var(--surface2)' : ICON_BG[band]) +
+        ';margin-bottom:12px;">' + esc(c.emoji || '🎯') + '</div>' +
+        '<div class="cd-name">' + esc(c.title) + '</div>' +
+        '<div class="cd-badges">' +
+        (c.field ? '<span class="badge badge-purple">' + esc(c.field) + '</span>' : '') +
+        (c.stream ? '<span class="badge ' + cqStreamBadge(c.stream) + '">' + esc(c.stream) + '</span>' : '') +
+        '</div>' +
+        '<p style="font-size:0.8125rem;color:var(--muted);">' + esc(c.why || '') + '</p>' +
+        '</div><div style="text-align:right;margin-left:auto;flex-shrink:0;">' +
+        (pct === null
+          ? '<div class="cd-fit" style="color:var(--muted);">—</div><div class="cd-fit-label">Take the quiz to see your fit</div>'
+          : '<div class="cd-fit" style="color:' + PCT_COLORS[band] + ';">' + esc(pct) + '%</div>' +
+          '<div class="cd-fit-label">' + esc(rsFitLabel(pct)) + '</div>') +
+        '<div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">' +
+        (d.rank >= 0
+          ? '<button class="btn btn-secondary btn-sm" data-career="' + esc(c.title) +
+          '" onclick="spCareer=this.dataset.career;navTo(\'space\')">📰 News &amp; jobs</button>'
+          : '') +
+        (pct === null ? '<button class="btn btn-primary btn-sm" onclick="cqStart()">Take the quiz</button>' : '') +
+        '</div></div></div>';
+
+      // Why it fits: the three layers the match % is blended from.
+      if (fit) {
+        const layer = (label, part, hint) =>
+          '<div class="salary-card"><div class="salary-stage">' + label + '</div>' +
+          '<div class="salary-val">' + (part === null ? '—' : Math.round(part * 100) + '%') + '</div>' +
+          '<div class="cd-hint">' + hint + '</div></div>';
+        html += '<div class="cd-section"><h3>How it fits you</h3><div class="salary-grid">' +
+          layer('Interests', fit.parts.interest, 'What you enjoy doing vs. the work') +
+          layer('World', fit.parts.domain, 'The area you want to work in') +
+          layer('Subjects', fit.parts.subjects, 'Your strong subjects vs. what it needs') +
+          '</div></div>';
+      }
+
+      // The kind of work: the career's three strongest interest areas, with
+      // the ones that are also in the student's own top three marked.
+      if (d.cat && d.cat.riasec) {
+        const mine = String((appResults && appResults.riasec && appResults.riasec.code) || '').split('');
+        const dims = RS_DIMS.slice().sort((a, b) => (d.cat.riasec[b] || 0) - (d.cat.riasec[a] || 0)).slice(0, 3);
+        html += '<div class="cd-section"><h3>What the work involves</h3><div class="college-list">' +
+          dims.map(k =>
+            '<div class="college-row"><span class="college-row-name">' + RS_DIM_EMOJI[k] + ' ' + esc(RS_DIM_PLAIN[k]) +
+            (mine.includes(k) ? ' <span class="badge badge-green" style="margin-left:8px;">One of your strengths</span>' : '') +
+            '</span><span class="college-row-city">' + esc(RS_DIM_MEANING[k]) + '</span></div>').join('') +
+          '</div></div>';
+      }
+
+      const subjects = ((d.cat && d.cat.subjects) || []).map(k => RS_SUBJECTS[k]).filter(Boolean);
+      const worlds = ((d.cat && d.cat.domains) || []).map(k => RS_DOMAINS[k]).filter(Boolean);
+      html += '<div class="cd-section"><h3>At a glance</h3><div class="salary-grid">' +
+        '<div class="salary-card"><div class="salary-stage">Starting salary</div>' +
+        '<div class="salary-val" style="color:var(--accent2);">' + esc(c.salary || '—') + '</div></div>' +
+        '<div class="salary-card"><div class="salary-stage">Class 11 stream</div>' +
+        '<div class="salary-val" style="color:var(--accent);">' + esc(c.stream || '—') + '</div></div>' +
+        '<div class="salary-card"><div class="salary-stage">World</div>' +
+        '<div class="salary-val" style="color:#fcd34d;">' +
+        (worlds.length ? worlds.map(w => w.emoji).join(' ') : '—') + '</div>' +
+        '<div class="cd-hint">' + esc(worlds.map(w => w.label).join(' · ')) + '</div></div>' +
+        '</div></div>';
+      if (subjects.length) {
+        html += '<div class="cd-section"><h3>Subjects to focus on</h3><div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+          subjects.map((s, i) => '<span class="badge ' + ['badge-purple', 'badge-blue', 'badge-green'][i % 3] + '">' +
+            s.emoji + ' ' + esc(s.label) + '</span>').join('') + '</div></div>';
+      }
+
+      html += '<div class="cd-section"><h3>Your path from Class 10</h3>' +
+        '<div class="page-sub" id="cd-rm-note">Loading roadmap…</div><div class="timeline" id="cd-timeline"></div></div>';
+      body.innerHTML = html;
+
+      const req = ++cdReq;
+      CareerAPI.me.roadmap(c.title).then(r => {
+        if (req !== cdReq) return;
+        document.getElementById('cd-rm-note').hidden = true;
+        document.getElementById('cd-timeline').innerHTML = rmTimeline(r.roadmap.steps);
+      }, err => {
+        if (req !== cdReq) return;
+        document.getElementById('cd-rm-note').textContent = err.code === 'not_found'
+          ? 'We\'re still writing the roadmap for ' + c.title + '.'
+          : err.message;
       });
     }
 
@@ -1684,11 +1959,9 @@
       const c = item.career, pct = item.match_pct;
       const band = pct === null ? null : exBand(pct);
       const div = document.createElement('div');
-      // is-static: these cards are informational. The career detail page is
-      // written for one specific career, so sending all of them there would
-      // just show the wrong job.
-      div.className = 'explore-card is-static';
+      div.className = 'explore-card';
       div.title = c.why;   // the one-line reason, without stretching every card
+      div.onclick = () => cdOpen(c.title);
       div.innerHTML =
         '<div class="explore-icon" style="background:' +
         (band === null ? 'var(--surface2)' : ICON_BG[band]) + ';">' + c.emoji + '</div>' +
@@ -2066,19 +2339,24 @@
       CareerAPI.me.roadmap(career).then(r => {
         if (req !== rmReq) return;
         rmNote('');
-        // The first stage is "now", so it shows as reached.
-        document.getElementById('rm-timeline').innerHTML = r.roadmap.steps.map((s, i) =>
-          '<div class="tl-item' + (i === 0 ? ' done' : '') + '"><div class="tl-dot"></div><div class="tl-card">' +
-          '<div class="tl-year">' + esc(s.period) + '</div>' +
-          '<div class="tl-title">' + esc(s.title) + '</div>' +
-          '<div class="tl-actions">' + (s.actions || []).map(a => '<div class="tl-action">' + esc(a) + '</div>').join('') +
-          '</div></div></div>').join('');
+        document.getElementById('rm-timeline').innerHTML = rmTimeline(r.roadmap.steps);
       }, err => {
         if (req !== rmReq) return;
         rmNote(err.code === 'not_found'
           ? 'We\'re still writing the roadmap for ' + career + '. Pick another of your matches above.'
           : err.message);
       });
+    }
+
+    // Also drawn on the career detail page. The first stage is "now", so it
+    // shows as reached.
+    function rmTimeline(steps) {
+      return steps.map((s, i) =>
+        '<div class="tl-item' + (i === 0 ? ' done' : '') + '"><div class="tl-dot"></div><div class="tl-card">' +
+        '<div class="tl-year">' + esc(s.period) + '</div>' +
+        '<div class="tl-title">' + esc(s.title) + '</div>' +
+        '<div class="tl-actions">' + (s.actions || []).map(a => '<div class="tl-action">' + esc(a) + '</div>').join('') +
+        '</div></div></div>').join('');
     }
 
     function rmMessage(text) {

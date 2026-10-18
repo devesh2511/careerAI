@@ -10,7 +10,8 @@
 // API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
 //   POST /auth/register   POST /auth/login   POST /auth/logout
 //   POST /auth/forgot-password   POST /auth/reset-password
-//   GET  /me              GET  /me/access      PUT /me/career    PUT /me/school
+//   GET  /me   PUT /me    GET  /me/access      PUT /me/career    PUT /me/school
+//   GET  /me/profile      PUT  /me/profile
 //   GET  /roadmaps        GET  /roadmap?career=     GET /careers
 //   GET  /career-news?career=
 //   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
@@ -291,8 +292,17 @@
     me: {
       // GET /me — live
       get() { return http('GET', '/me').then(r => { shadow(r.student); return r; }); },
+      // PUT /me — live. Changes the name (and so the leaderboard name). → { student }
+      setName(fullName) {
+        return http('PUT', '/me', { full_name: fullName }).then(r => { shadow(r.student); return r; });
+      },
       // GET /me/access — live
       access() { return http('GET', '/me/access'); },
+      // GET /me/profile — live. → { profile } (null before onboarding)
+      profile() { return http('GET', '/me/profile'); },
+      // PUT /me/profile — live. class is required; other answers only change
+      // when sent. → { profile }
+      saveProfile(fields) { return http('PUT', '/me/profile', fields); },
       // PUT /me/career — live. The career quiz's top career; career
       // leaderboards group by it.
       setCareer(career) { return http('PUT', '/me/career', { career: career }); },

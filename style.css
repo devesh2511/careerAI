@@ -2965,11 +2965,6 @@ button.filter-chip {
   margin-bottom: 12px;
 }
 
-/* Explorer cards are informational — nothing to click, so no pointer. */
-.explore-card.is-static {
-  cursor: default;
-}
-
 /* ─────────────────────── EXPLORER SEARCH / FILTER / SORT ─────────────────────── */
 /* One line above the grid. Everything that narrows the list lives in the
    drawer, so the page does not open with a screenful of controls. */
@@ -3460,6 +3455,14 @@ body.ex-filters-open .ex-drawer {
   letter-spacing: -.4px;
 }
 
+/* One line under a career detail tile saying what the figure measures */
+.cd-hint {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
 .college-list {
   display: flex;
   flex-direction: column;
@@ -3500,8 +3503,22 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px 20px;
   margin-bottom: 28px;
   box-shadow: var(--shadow), var(--sheen);
+}
+
+.roadmap-target > div {
+  min-width: 0;
+}
+
+/* A long career name in the selected option sizes the select to its text,
+   which pushed it past the card (and the page) on phones. Cap it. */
+.roadmap-target select {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 
 .rm-label {
@@ -5337,6 +5354,16 @@ body.nav-open .sidebar-overlay {
     justify-content: center;
   }
 
+  .roadmap-target {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 18px;
+  }
+
+  .roadmap-target select {
+    width: 100%;
+  }
+
   /* ── Landing page ── */
   .land-nav {
     padding: 10px 14px;
@@ -5954,6 +5981,24 @@ body.nav-open .sidebar-overlay {
 
   .air-print-head {
     display: flex;
+  }
+
+  /* app.html (Roadmap → Export PDF): only the open page goes on paper */
+  .sidebar,
+  .sidebar-overlay,
+  .mobile-topbar,
+  .main-content .topbar .btn,
+  .roadmap-target select {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .tl-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   /* Gradient-clipped headings print as blank space wherever
@@ -7082,7 +7127,15 @@ button.quiz-option {
 
 .st-edit .form-input {
   max-width: 220px;
+}
+
+/* School IDs are upper-case; names and cities are typed as-is */
+.st-edit #st-code {
   text-transform: uppercase;
+}
+
+.st-edit select.form-input {
+  width: auto;
 }
 
 @media (max-width: 640px) {
