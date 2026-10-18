@@ -6792,6 +6792,78 @@ button.quiz-option {
   display: none;
 }
 
+.form-alert-ok {
+  color: var(--text);
+  background: rgba(46, 204, 113, .08);
+  border-color: rgba(46, 204, 113, .35);
+}
+
+/* Forgot password (pages/auth.html) */
+.auth-forgot-link {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 0.7812rem;
+}
+
+.auth-subtitle {
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.auth-copy {
+  font-size: 0.8438rem;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+
+.auth-copy strong {
+  color: var(--text);
+  word-break: break-all;
+}
+
+.auth-back {
+  text-align: center;
+  font-size: 0.7812rem;
+  color: var(--muted);
+  margin-top: 16px;
+}
+
+.auth-forgot-link a,
+.auth-back a,
+.auth-link-btn {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.auth-forgot-link a:hover,
+.auth-back a:hover,
+.auth-link-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.auth-link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-link-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.auth-code-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.25rem;
+  letter-spacing: .4em;
+  text-align: center;
+}
+
 .form-alert a {
   color: inherit;
   font-weight: 700;

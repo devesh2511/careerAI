@@ -29,11 +29,12 @@
       <div class="auth-box">
         <div class="auth-logo">Career<span>AI</span></div>
         <div class="auth-tagline">Discover the career you were born for</div>
-        <div class="auth-tabs">
+        <div class="auth-tabs" id="auth-tabs">
           <button class="auth-tab active" onclick="authTab('login',this)">Login</button>
           <button class="auth-tab" onclick="authTab('register',this)">Register</button>
         </div>
         <form id="auth-login" novalidate onsubmit="authSubmitLogin(event)">
+          <div class="form-alert form-alert-ok" id="login-ok" role="status"></div>
           <div class="form-alert" id="login-alert" role="alert"></div>
           <div class="form-group">
             <label class="form-label" for="login-email">Email</label>
@@ -43,6 +44,7 @@
             <label class="form-label" for="login-password">Password</label>
             <input class="form-input" id="login-password" type="password" autocomplete="current-password"
               placeholder="••••••••" />
+            <p class="auth-forgot-link"><a href="#" onclick="authShow('forgot'); return false;">Forgot password?</a></p>
           </div>
           <button class="btn btn-primary" id="login-btn" type="submit" style="width:100%;justify-content:center;">Login
             →</button>
@@ -85,6 +87,52 @@
           <!-- Google sign-up comes later (careerAPI docs/database-schema.md §2.2).
           <div class="auth-divider">or</div>
           <button class="google-btn" onclick="show('onboarding')">🌐 Sign up with Google</button> -->
+        </form>
+        <!-- Forgot password, step 1: email a 6-digit code (POST /auth/forgot-password) -->
+        <form id="auth-forgot" novalidate style="display:none;" onsubmit="authSubmitForgot(event)">
+          <div class="auth-subtitle">Reset your password</div>
+          <div class="form-alert" id="forgot-alert" role="alert"></div>
+          <p class="auth-copy">Enter the email you log in with and we'll send you a 6-digit code.</p>
+          <div class="form-group">
+            <label class="form-label" for="forgot-email">Email</label>
+            <input class="form-input" id="forgot-email" type="email" autocomplete="email" placeholder="you@email.com" />
+            <div class="form-error" id="forgot-email-error"></div>
+          </div>
+          <button class="btn btn-primary" id="forgot-btn" type="submit" style="width:100%;justify-content:center;">Send
+            code →</button>
+          <p class="auth-back"><a href="#" onclick="authShow('login'); return false;">← Back to log in</a></p>
+        </form>
+        <!-- Forgot password, step 2: code + new password (POST /auth/reset-password) -->
+        <form id="auth-reset" novalidate style="display:none;" onsubmit="authSubmitReset(event)">
+          <div class="auth-subtitle">Choose a new password</div>
+          <div class="form-alert" id="reset-alert" role="alert"></div>
+          <p class="auth-copy">If <strong id="reset-to"></strong> has a CareerAI account, we've emailed it a code.
+            It expires in 15 minutes. Check your spam folder if you can't find it.</p>
+          <div class="form-group">
+            <label class="form-label" for="reset-code">6-digit code</label>
+            <input class="form-input auth-code-input" id="reset-code" type="text" inputmode="numeric"
+              autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+            <div class="form-error" id="reset-code-error"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reset-new_password">New password</label>
+            <input class="form-input" id="reset-new_password" type="password" autocomplete="new-password"
+              placeholder="Min 8 characters" />
+            <div class="form-error" id="reset-new_password-error"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reset-confirm">Confirm new password</label>
+            <input class="form-input" id="reset-confirm" type="password" autocomplete="new-password"
+              placeholder="Type it again" />
+            <div class="form-error" id="reset-confirm-error"></div>
+          </div>
+          <button class="btn btn-primary" id="reset-btn" type="submit" style="width:100%;justify-content:center;">Reset
+            password →</button>
+          <p class="auth-back">
+            <button type="button" class="auth-link-btn" id="reset-resend-btn" onclick="authResendCode()">Resend
+              code</button>
+            · <a href="#" onclick="authShow('forgot'); return false;">Use a different email</a>
+          </p>
         </form>
         <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:20px;cursor:pointer;"
           onclick="show('landing')">← Back to home</p>

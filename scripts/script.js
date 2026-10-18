@@ -240,8 +240,7 @@
     function authTab(type, btn) {
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('auth-login').style.display = type === 'login' ? 'block' : 'none';
-      document.getElementById('auth-register').style.display = type === 'register' ? 'block' : 'none';
+      authShow(type);
     }
 
     // ── Shared bits for account screens ──
@@ -306,6 +305,122 @@
           document.getElementById('reg-' + err.field).classList.add('is-invalid');
           document.getElementById('reg-' + err.field).focus();
         } else document.getElementById('reg-alert').textContent = err.message;
+      });
+    }
+
+    // ── Auth: forgot password (pages/auth.html) ──
+    // login → forgot (email) → reset (code + new password) → back to login.
+    // The API answers forgot-password the same way for any email, so the page
+    // never says whether an account exists.
+    const AUTH_RESEND_SECONDS = 60;      // the API issues at most one code a minute
+    let authResetEmail = '';
+    let authResendTimer = null;
+
+    // Shows one of the four forms; the Login/Register tabs only show with theirs.
+    function authShow(which) {
+      ['login', 'register', 'forgot', 'reset'].forEach(k => {
+        document.getElementById('auth-' + k).style.display = k === which ? 'block' : 'none';
+      });
+      document.getElementById('auth-tabs').style.display = which === 'forgot' || which === 'reset' ? 'none' : '';
+      document.getElementById('login-ok').textContent = '';
+      if (which === 'forgot') {
+        authReset(document.getElementById('auth-forgot'), 'forgot-alert');
+        const input = document.getElementById('forgot-email');
+        if (!input.value) input.value = authResetEmail || val('login-email').trim();
+        input.focus();
+      } else if (which === 'reset') {
+        authReset(document.getElementById('auth-reset'), 'reset-alert');
+        document.getElementById('reset-to').textContent = authResetEmail;
+        document.getElementById('reset-code').focus();
+      }
+    }
+
+    // Puts err under its field when the form has one, else in the alert box.
+    function authFieldError(prefix, alertId, err) {
+      const box = err.field && document.getElementById(prefix + '-' + err.field + '-error');
+      if (box) {
+        box.textContent = err.message;
+        document.getElementById(prefix + '-' + err.field).classList.add('is-invalid');
+        document.getElementById(prefix + '-' + err.field).focus();
+      } else document.getElementById(alertId).textContent = err.message;
+    }
+
+    // Counts down on the Resend link so a click inside the API's cooldown
+    // doesn't look like it sent a code when it silently didn't.
+    function authStartResendTimer() {
+      const btn = document.getElementById('reset-resend-btn');
+      let left = AUTH_RESEND_SECONDS;
+      clearInterval(authResendTimer);
+      const tick = () => {
+        btn.disabled = left > 0;
+        btn.textContent = left > 0 ? 'Resend code in ' + left + 's' : 'Resend code';
+        if (left-- <= 0) clearInterval(authResendTimer);
+      };
+      tick();
+      authResendTimer = setInterval(tick, 1000);
+    }
+
+    function authSubmitForgot(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('forgot-btn');
+      const email = val('forgot-email').trim();
+      authReset(form, 'forgot-alert');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return authFieldError('forgot', 'forgot-alert', { field: 'email', message: 'Please enter a valid email.' });
+      }
+      authResetEmail = email;
+      setBusy(btn, true);
+      CareerAPI.auth.forgotPassword({ email: email }).then(() => {
+        setBusy(btn, false);
+        document.getElementById('auth-reset').reset();
+        authShow('reset');
+        authStartResendTimer();
+      }, err => {
+        setBusy(btn, false);
+        authFieldError('forgot', 'forgot-alert', err);
+      });
+    }
+
+    function authResendCode() {
+      const btn = document.getElementById('reset-resend-btn');
+      authReset(document.getElementById('auth-reset'), 'reset-alert');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      CareerAPI.auth.forgotPassword({ email: authResetEmail }).then(() => {
+        authStartResendTimer();
+        document.getElementById('reset-code').focus();
+      }, err => {
+        btn.disabled = false;
+        btn.textContent = 'Resend code';
+        document.getElementById('reset-alert').textContent = err.message;
+      });
+    }
+
+    function authSubmitReset(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('reset-btn');
+      const code = val('reset-code').replace(/\s+/g, '');
+      const password = val('reset-new_password');
+      authReset(form, 'reset-alert');
+      const bad = (field, message) => authFieldError('reset', 'reset-alert', { field: field, message: message });
+      if (!/^\d{6}$/.test(code)) return bad('code', 'Enter the 6-digit code from the email.');
+      if (password.length < 8) return bad('new_password', 'Password must be at least 8 characters.');
+      if (password.length > 200) return bad('new_password', 'Password must be at most 200 characters.');
+      if (password !== val('reset-confirm')) return bad('confirm', "The passwords don't match.");
+      setBusy(btn, true);
+      CareerAPI.auth.resetPassword({ email: authResetEmail, code: code, new_password: password }).then(() => {
+        setBusy(btn, false);
+        clearInterval(authResendTimer);
+        form.reset();
+        authTab('login', document.querySelectorAll('.auth-tab')[0]);
+        document.getElementById('login-email').value = authResetEmail;
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-password').focus();
+        document.getElementById('login-ok').textContent = 'Password changed. Log in with your new password.';
+      }, err => {
+        setBusy(btn, false);
+        authFieldError('reset', 'reset-alert', err);
+        if (err.code === 'invalid_code') document.getElementById('reset-code').select();
       });
     }
 

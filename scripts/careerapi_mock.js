@@ -9,6 +9,7 @@
 // LIVE: the endpoints the backend has built call the production API at
 // API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
 //   POST /auth/register   POST /auth/login   POST /auth/logout
+//   POST /auth/forgot-password   POST /auth/reset-password
 //   GET  /me              GET  /me/access      PUT /me/career    PUT /me/school
 //   GET  /roadmaps        GET  /roadmap?career=     GET /careers
 //   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
@@ -272,6 +273,14 @@
       logout() {
         const end = () => sessionSet(STUDENT_SESSION, null);
         return http('POST', '/auth/logout').then(r => { end(); return r; }, e => { end(); throw e; });
+      },
+      // POST /auth/forgot-password — live; always { ok: true }, account or not
+      forgotPassword(body) { return http('POST', '/auth/forgot-password', { email: body.email }); },
+      // POST /auth/reset-password — live; ends every session of that student
+      resetPassword(body) {
+        return http('POST', '/auth/reset-password',
+          { email: body.email, code: body.code, new_password: body.new_password })
+          .then(r => { sessionSet(STUDENT_SESSION, null); return r; });
       },
       // Is there a session at all? (No round trip.) The cookie is httpOnly, so
       // this is the flag set at login; a 401 from the API clears it.
