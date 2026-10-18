@@ -10,6 +10,7 @@
 // API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
 //   POST /auth/register   POST /auth/login   POST /auth/logout
 //   GET  /me              GET  /me/access      PUT /me/career    PUT /me/school
+//   GET  /roadmaps        GET  /roadmap?career=
 //   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
 // As more endpoints ship, move their methods from reply(...) to http(...).
 //
@@ -137,7 +138,7 @@
       return s;
     }
     student({ email: 'ananya.sharma@dps.edu.in', full_name: 'Ananya Sharma', school_id: dps.id, current_career: 'UX Designer' });
-    student({ email: 'rohan.mehta@dps.edu.in', full_name: 'Rohan Mehta', school_id: dps.id, current_career: 'Software Engineer' });
+    student({ email: 'rohan.mehta@dps.edu.in', full_name: 'Rohan Mehta', school_id: dps.id, current_career: 'Computer Science Engineer (Software & Systems)' });
     student({ email: 'priya.k@kvpowai.edu.in', full_name: 'Priya Kulkarni', school_id: kv.id });
     student({ email: 'rahul.verma@gmail.com', full_name: 'Rahul Verma' });
     const arjun = student({ email: 'arjun.nair@gmail.com', full_name: 'Arjun Nair', current_career: 'Data Scientist' });
@@ -287,6 +288,10 @@
       latestCareerQuiz() { return http('GET', '/me/career-quiz/latest'); },
       // GET /me/career-quiz/runs — live. → { results } (the kept 2 runs, newest first)
       careerQuizRuns() { return http('GET', '/me/career-quiz/runs'); },
+      // GET /roadmaps — live. → { roadmaps: [{ career, emoji }] } for the picker
+      roadmaps() { return http('GET', '/roadmaps'); },
+      // GET /roadmap?career= — live. → { roadmap: { career, emoji, steps } }; 404 not_found if none
+      roadmap(career) { return http('GET', '/roadmap' + query({ career: career })); },
       // PUT /me/school — live; code '' / null clears it. → { student, access }
       setSchool(code) {
         return http('PUT', '/me/school', { school_code: code || null }).then(r => { shadow(r.student); return r; });

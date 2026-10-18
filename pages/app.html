@@ -91,7 +91,7 @@
           <div class="topbar">
             <div>
               <div class="page-title" id="db-title">Welcome to CareerAI 👋</div>
-              <div class="page-sub" id="db-sub">Take the 20-question quiz to discover careers that fit you.</div>
+              <div class="page-sub" id="db-sub">Take the 25-question quiz to discover careers that fit you.</div>
             </div>
             <button class="btn btn-primary btn-sm" id="db-cta-btn" onclick="cqStart()">Take Career Quiz →</button>
           </div>
@@ -191,7 +191,7 @@
               <div class="career-rank">3</div>
               <div class="career-icon-wrap" style="background:rgba(56,189,248,.1);">💻</div>
               <div class="career-info">
-                <div class="career-name">Software Engineer</div>
+                <div class="career-name">Computer Science Engineer</div>
                 <div class="career-field">Technology · Computer Science</div>
                 <div class="career-reason">"Coding hobby + Maths strength = strong foundation for CS."</div>
               </div>
@@ -394,81 +394,18 @@
               <div class="page-sub">Your personalised career path — Class 10 to first job</div>
             </div><button class="btn btn-secondary btn-sm">📥 Export PDF</button>
           </div>
+          <!-- Drawn by rmLoad() in scripts/script.js from GET /roadmaps and
+               GET /roadmap?career= (careerAPI career_roadmaps table). -->
           <div class="roadmap-target">
             <div>
               <div class="rm-label">Target Career</div>
-              <div class="rm-career">🎨 UX / Product Designer</div>
+              <div class="rm-career" id="rm-career">Loading…</div>
             </div>
-            <select class="form-input" style="width:auto;">
-              <option>UX / Product Designer</option>
-              <option>Architect</option>
-              <option>Software Engineer</option>
-            </select>
+            <select class="form-input" id="rm-select" style="width:auto;" onchange="rmShow(this.value)"
+              aria-label="Target career"></select>
           </div>
-          <div class="timeline">
-            <div class="tl-item done">
-              <div class="tl-dot"></div>
-              <div class="tl-card">
-                <div class="tl-year">Now · Class 10</div>
-                <div class="tl-title">Build your foundation</div>
-                <div class="tl-actions">
-                  <div class="tl-action">Score well in Maths &amp; Computer Science in boards</div>
-                  <div class="tl-action">Start using Figma (free) — watch beginner tutorials</div>
-                  <div class="tl-action">Build a small drawing portfolio (sketches, doodles)</div>
-                  <div class="tl-action">Explore UCEED exam pattern</div>
-                </div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-dot"></div>
-              <div class="tl-card">
-                <div class="tl-year">Class 11–12</div>
-                <div class="tl-title">Choose PCM + Computer Science · Build skills</div>
-                <div class="tl-actions">
-                  <div class="tl-action">Focus on Physics, Maths, CS — target 85%+</div>
-                  <div class="tl-action">Take online design courses (Coursera, YouTube)</div>
-                  <div class="tl-action">Enter school / inter-school design contests</div>
-                  <div class="tl-action">Prepare for UCEED &amp; NID DAT entrance exams</div>
-                </div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-dot"></div>
-              <div class="tl-card">
-                <div class="tl-year">After Boards · Gap / Entrance Prep</div>
-                <div class="tl-title">Target design college entrances</div>
-                <div class="tl-actions">
-                  <div class="tl-action">Appear for UCEED (IITs), NID DAT, CEPT entrance</div>
-                  <div class="tl-action">Build a polished digital portfolio (Behance / Dribbble)</div>
-                  <div class="tl-action">Take a short UI/UX bootcamp if time permits</div>
-                </div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-dot"></div>
-              <div class="tl-card">
-                <div class="tl-year">College · B.Des (4 years)</div>
-                <div class="tl-title">NID · Symbiosis · Srishti · NIFT or B.Tech + Design Minor</div>
-                <div class="tl-actions">
-                  <div class="tl-action">Intern at a design studio after Year 2</div>
-                  <div class="tl-action">Freelance small projects for experience &amp; income</div>
-                  <div class="tl-action">Build industry network via design meetups</div>
-                </div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-dot"></div>
-              <div class="tl-card">
-                <div class="tl-year">First Job</div>
-                <div class="tl-title">Junior UX Designer — ₹4–7 LPA starting</div>
-                <div class="tl-actions">
-                  <div class="tl-action">Apply to startups, design studios, product companies</div>
-                  <div class="tl-action">Top recruiters: Swiggy, Zomato, PhonePe, ThoughtWorks</div>
-                  <div class="tl-action">Senior Designer at ₹15–25 LPA in 4–5 years</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="page-sub" id="rm-note" style="margin-bottom:16px;" hidden></div>
+          <div class="timeline" id="rm-timeline"></div>
         </div>
 
         <!-- ── AI CHAT ── -->
@@ -605,7 +542,7 @@
             <div class="settings-row">
               <div>
                 <div class="settings-row-label">Retake Career Interest Quiz</div>
-                <div class="settings-row-sub">Answer 20 questions again and get updated AI career results</div>
+                <div class="settings-row-sub">Take the quiz again and get updated AI career results</div>
               </div><button class="btn btn-primary btn-sm" onclick="cqStart()">Start Quiz →</button>
             </div>
             <div class="settings-row">

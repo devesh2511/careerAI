@@ -4875,6 +4875,85 @@ body.ex-filters-open .ex-drawer {
   color: var(--accent2-text);
 }
 
+/* The student's worlds from Part 2 — same chip as "You may enjoy", tinted
+   with the accent so the two rows read as different things. */
+.air-domains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.air-domain-chip {
+  padding: 7px 13px;
+  background: var(--accent-weak);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+/* Words under a career's match %, e.g. "Strong fit" */
+.air-fit-label {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* All four streams ranked — same card as the interest profile */
+.air-streams {
+  background: linear-gradient(180deg, var(--card-top), transparent 45%), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow), var(--sheen);
+}
+
+.air-stream-row + .air-stream-row {
+  margin-top: 14px;
+}
+
+.air-stream-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.air-stream-row-top .air-stream-row-head {
+  font-weight: 800;
+}
+
+.air-stream-row-pct {
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.air-stream-row-top .air-stream-row-pct {
+  color: var(--accent);
+}
+
+.air-stream-row-reason {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Retake prompt over a result from the old question set */
+.cq-retake {
+  margin-bottom: 20px;
+}
+
 /* Masthead for the PDF only — the @media print block reveals it */
 .air-print-head {
   display: none;

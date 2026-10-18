@@ -1,9 +1,10 @@
 // ══════════════════════════════════════════════════════════════
 // RIASEC QUIZ ENGINE
 //
-// Implements riasec/riasec_career_quiz_documentation.md:
-//   20 questions → hidden 6-D weight vectors → R/I/A/S/E/C percentages
-//   → top-3 code → cosine match against the career database
+// Implements riasec/riasec_career_quiz_documentation.md (riasec-2):
+//   20 scenario questions → hidden 6-D weights → R/I/A/S/E/C percentages → top-3 code
+//   5 "which world" questions → domain preferences (digital, machines...)
+//   → interest pattern + domain matched against the career database
 //   → minimum-fit filter → diversity filter → careers to explore.
 //
 // Replaces the five-trait (A/B/C/D/E) model in quiz_engine.js. The six
@@ -30,7 +31,7 @@
 
   // Saved with every quiz run (POST /me/career-quiz), so a run can be
   // re-scored later. Bump it whenever scoring or the career data changes.
-  const RS_ENGINE_VERSION = 'riasec-1';
+  const RS_ENGINE_VERSION = 'riasec-2';
 
   const RS_DIMS = ['R', 'I', 'A', 'S', 'E', 'C'];
 
@@ -75,261 +76,315 @@
   };
 
   // ══════════════════════════════════════════════════════════════
-  // THE 20 QUESTIONS  (doc section 3)
+  // THE QUESTIONS  (riasec-2)
   //
-  // Every option carries a hidden weight vector summing to 1.0, so one
-  // selection is always worth exactly one option no matter how many
-  // dimensions it touches. Blended weights are deliberate (doc section 4:
-  // "Do not make every answer equal to exactly one letter").
+  // Three parts, always shown in this order (25 questions, ~6 minutes):
   //
-  // maxSelect — how many options the student may tick. Q20 is choose-1
-  // (doc section 3); the rest allow up to 2.
+  // Part 1 — 18 scenario questions. Each is a different everyday situation
+  //   with six options, one for each RIASEC area; the student picks up to
+  //   two (one for the two "choose 1" questions). Rules that keep it
+  //   accurate, all checked by rsValidateQuestions():
+  //   - One option per area, each giving its own area RS_PRIMARY_WEIGHT, so
+  //     every area has the same ceiling.
+  //   - The remaining weight goes to ONE NEIGHBOUR on Holland's hexagon
+  //     (R-I-A-S-E-C-R), because neighbouring areas really are related.
+  //     Each area hands its secondary weight to each of its two neighbours
+  //     equally often, so no area collects "free" points from the others:
+  //     a student answering at random gets a flat profile, not a biased one.
+  //   - Unambiguous wording: hands-on (R) options say they are physical
+  //     ("with tools", "unscrew it"), and coding options are investigative.
+  //   - No repeats: every question is a different situation, and no option
+  //     restates another question's option.
+  //
+  // Part 2 — 5 "which world" questions that measure the DOMAIN a student
+  //   wants to work in (RS_DOMAINS). RIASEC says what kind of work someone
+  //   enjoys; it cannot tell software from mechanical engineering, or a
+  //   biotech lab from a physics lab. The domain layer does that.
+  //   D1-D4 each show four domains, every domain appears exactly twice, and
+  //   D5 asks directly.
+  //
+  // Part 3 — 2 subject questions: which subjects come easily (self-rated
+  //   strength, the light version of the aptitude section Indian tests
+  //   use) and which the student would happily study for two more years.
+  //   They feed the stream ranking and nudge careers whose key subjects
+  //   the student is strong in.
   // ══════════════════════════════════════════════════════════════
+
+  // The weight an option gives its own area; the rest goes to one neighbour.
+  const RS_PRIMARY_WEIGHT = 0.8;
+
+  // Holland's hexagon: each area's two neighbours.
+  const RS_HEXAGON = 'RIASEC';
+  function rsNeighbours(d) {
+    const i = RS_HEXAGON.indexOf(d);
+    return [RS_HEXAGON[(i + 5) % 6], RS_HEXAGON[(i + 1) % 6]];
+  }
+  // Steps apart on the hexagon: 1 adjacent, 2 alternate, 3 opposite.
+  function rsHexDistance(a, b) {
+    const d = Math.abs(RS_HEXAGON.indexOf(a) - RS_HEXAGON.indexOf(b));
+    return Math.min(d, 6 - d);
+  }
+
+  // Domains, written for a Class 9-10 reader. The emoji and label are what
+  // the student sees on the result screen.
+  const RS_DOMAINS = {
+    digital:  { label: 'Code, AI & the digital world', emoji: '💻' },
+    machines: { label: 'Machines, vehicles & space', emoji: '⚙️' },
+    life:     { label: 'Health, the body & biology', emoji: '🧬' },
+    planet:   { label: 'Nature, climate & energy', emoji: '🌍' },
+    built:    { label: 'Buildings, cities & spaces', emoji: '🏙️' },
+    money:    { label: 'Business, money & markets', emoji: '💼' },
+    people:   { label: 'People, minds & society', emoji: '🤝' },
+    media:    { label: 'Stories, art, media & games', emoji: '🎬' },
+  };
+  const RS_DOMAIN_KEYS = Object.keys(RS_DOMAINS);
+
+  // School subjects for Part 3, as a Class 9-10 student knows them.
+  const RS_SUBJECTS = {
+    maths:     { label: 'Maths', emoji: '➗' },
+    physics:   { label: 'Physics', emoji: '🧲' },
+    chemistry: { label: 'Chemistry', emoji: '⚗️' },
+    biology:   { label: 'Biology', emoji: '🌱' },
+    computers: { label: 'Computers / IT', emoji: '💻' },
+    languages: { label: 'English & other languages', emoji: '📖' },
+    social:    { label: 'History, Geography & Civics', emoji: '🗺️' },
+    economics: { label: 'Economics & business', emoji: '📊' },
+    arts:      { label: 'Art, music & design', emoji: '🎨' },
+  };
+  const RS_SUBJECT_KEYS = Object.keys(RS_SUBJECTS);
+
+  // Part 1 question. opts: [text, area, neighbour] — the option gives its
+  // area RS_PRIMARY_WEIGHT and the neighbour the rest.
+  function rsChoice(id, area, q, maxSelect, opts) {
+    return {
+      id: id, part: 1, type: 'choice', area: area, maxSelect: maxSelect, q: q,
+      opts: opts.map(o => {
+        const w = {};
+        w[o[1]] = RS_PRIMARY_WEIGHT;
+        w[o[2]] = Math.round((1 - RS_PRIMARY_WEIGHT) * 100) / 100;
+        return { text: o[0], w: w };
+      })
+    };
+  }
+
   const RS_QUESTIONS = [
+    rsChoice('Q1', '🔬 Science Fair', 'Your class is entering the science fair. Which job do you want?', 2, [
+      ['Build the working model with tools', 'R', 'I'],
+      ['Design the experiment and analyse the results', 'I', 'A'],
+      ['Make the display and poster look amazing', 'A', 'S'],
+      ['Explain the project to visitors so they really get it', 'S', 'A'],
+      ['Pitch the project to the judges to win', 'E', 'S'],
+      ['Keep the logbook of every measurement', 'C', 'R'],
+    ]),
+    rsChoice('Q2', '📱 Build an App', 'You and your friends are making an app. Which role would you take?', 2, [
+      ['Build the gadget the app controls', 'R', 'I'],
+      ['Write the code that makes it work', 'I', 'R'],
+      ['Design the screens and how it looks', 'A', 'I'],
+      ['Help users who get stuck', 'S', 'E'],
+      ['Plan how to get the first 10,000 users', 'E', 'C'],
+      ['Test every feature and log each bug', 'C', 'R'],
+    ]),
+    rsChoice('Q3', '🔧 Broken Machine', 'The washing machine at home breaks down. What would you want to do?', 2, [
+      ['Take it apart and repair it', 'R', 'I'],
+      ['Work out exactly why it failed', 'I', 'R'],
+      ['Sketch a better design for it', 'A', 'I'],
+      ['Help the family manage until it is fixed', 'S', 'E'],
+      ['Get the best deal on a repair or a new one', 'E', 'C'],
+      ['Find the warranty card and service records', 'C', 'R'],
+    ]),
+    rsChoice('Q4', '🌅 Free Saturday', 'You have a whole free Saturday. What sounds best?', 2, [
+      ['Build something in the garage or garden', 'R', 'C'],
+      ['Watch a documentary about how the universe works', 'I', 'A'],
+      ['Draw, write, make music or edit a video', 'A', 'I'],
+      ['Help a friend with something they are stuck on', 'S', 'A'],
+      ['Plan a small event or sell something online', 'E', 'C'],
+      ['Sort out your room, files or collection', 'C', 'R'],
+    ]),
+    rsChoice('Q5', '💍 Family Wedding', 'Your cousin’s wedding is coming up and everyone has a job. Which one do you take?', 2, [
+      ['Set up the lights, the stage and the sound system', 'R', 'C'],
+      ['Solve the seating puzzle so no feuding relatives sit together', 'I', 'A'],
+      ['Design the decorations and the invitation cards', 'A', 'S'],
+      ['Look after the elderly relatives and the little kids', 'S', 'E'],
+      ['Bargain with the caterer and decorator for the best deal', 'E', 'C'],
+      ['Keep the guest list, gifts and budget in order', 'C', 'E'],
+    ]),
+    rsChoice('Q6', '👥 Group Trouble', 'Your group project is going badly. What would you do first?', 2, [
+      ['Grab the tools and fix the part that is broken', 'R', 'I'],
+      ['Figure out what is really going wrong', 'I', 'R'],
+      ['Suggest a completely new idea', 'A', 'I'],
+      ['Make sure everyone is okay and talking again', 'S', 'E'],
+      ['Take charge and decide who does what', 'E', 'S'],
+      ['Make a checklist with deadlines and track it', 'C', 'E'],
+    ]),
+    rsChoice('Q7', '▶️ Video Pick', 'Which video would you click on first?', 2, [
+      ['How to build an engine from scrap parts', 'R', 'I'],
+      ['How a computer program learned to beat chess champions', 'I', 'A'],
+      ['How animators bring a film character to life', 'A', 'I'],
+      ['How one teacher changed a village school', 'S', 'E'],
+      ['How a teenager built a ₹1 crore business', 'E', 'C'],
+      ['How to plan and track your money like a pro', 'C', 'E'],
+    ]),
+    rsChoice('Q8', '🏆 Prize Money', 'You win ₹10,000 in a competition. What would you do with it?', 2, [
+      ['Buy tools or parts to build something', 'R', 'C'],
+      ['Buy a telescope, a microscope or a coding course', 'I', 'R'],
+      ['Buy a camera, an instrument or art supplies', 'A', 'I'],
+      ['Use it to help someone who needs it', 'S', 'A'],
+      ['Invest it to start a small business', 'E', 'C'],
+      ['Save it and track every rupee', 'C', 'E'],
+    ]),
+    rsChoice('Q9', '🏫 School Club', 'Which school club would you join?', 2, [
+      ['Robotics or model-making club', 'R', 'I'],
+      ['Science or coding club', 'I', 'R'],
+      ['Drama, art or music club', 'A', 'S'],
+      ['Peer mentors or community service club', 'S', 'E'],
+      ['Debate or entrepreneurship club', 'E', 'S'],
+      ['The school magazine’s editing and fact-checking team', 'C', 'E'],
+    ]),
+    rsChoice('Q10', '🙋 Friends Ask You', 'Friends usually come to you when they need…', 2, [
+      ['Something fixed or put together', 'R', 'C'],
+      ['A tricky question explained', 'I', 'A'],
+      ['Fresh ideas for a creative project', 'A', 'S'],
+      ['Someone to talk to', 'S', 'A'],
+      ['Someone to take charge and decide', 'E', 'S'],
+      ['Someone who remembers the dates, details and plans', 'C', 'E'],
+    ]),
+    rsChoice('Q11', '📚 Dream Subject', 'If you could add one new subject at school, which would it be?', 2, [
+      ['Hands-on making with wood, metal and electronics', 'R', 'I'],
+      ['Solving real mysteries with science', 'I', 'A'],
+      ['Creating games, films and music', 'A', 'I'],
+      ['Understanding people and how to help them', 'S', 'A'],
+      ['Running your own business', 'E', 'C'],
+      ['Organising anything perfectly: plans, money and data', 'C', 'R'],
+    ]),
+    rsChoice('Q12', '💬 Best Compliment', 'Which compliment would make you proudest?', 1, [
+      ['“You can fix anything!”', 'R', 'I'],
+      ['“How did you figure that out so fast?”', 'I', 'A'],
+      ['“That is so original!”', 'A', 'S'],
+      ['“You really helped me.”', 'S', 'E'],
+      ['“You are a natural leader.”', 'E', 'S'],
+      ['“You never miss a detail.”', 'C', 'R'],
+    ]),
+    rsChoice('Q13', '🎲 Team Game', 'In a team adventure game, which role do you play?', 2, [
+      ['The builder who makes the base and the gear', 'R', 'C'],
+      ['The strategist who cracks the puzzles', 'I', 'A'],
+      ['The storyteller who invents the world', 'A', 'S'],
+      ['The healer who keeps the team going', 'S', 'A'],
+      ['The captain who calls the shots', 'E', 'S'],
+      ['The one who tracks the points and supplies', 'C', 'R'],
+    ]),
+    rsChoice('Q14', '☀️ Summer Internship', 'You can do a two-week summer internship. Where?', 2, [
+      ['In a workshop or garage', 'R', 'C'],
+      ['In a science lab', 'I', 'R'],
+      ['In a design studio', 'A', 'I'],
+      ['At a children’s NGO', 'S', 'A'],
+      ['In sales and marketing at a startup', 'E', 'S'],
+      ['In a company’s accounts office', 'C', 'E'],
+    ]),
+    rsChoice('Q15', '📦 New Gadget', 'A new gadget arrives at home. What do you do first?', 2, [
+      ['Unscrew it to see the parts inside', 'R', 'I'],
+      ['Look up how the technology actually works', 'I', 'R'],
+      ['Customise how it looks', 'A', 'I'],
+      ['Show your grandparents how to use it', 'S', 'A'],
+      ['Work out whether you could resell it for more', 'E', 'C'],
+      ['Read the manual and set it up properly', 'C', 'R'],
+    ]),
+    rsChoice('Q16', '🏕️ Class Trip', 'On a class camping trip, which job is yours?', 2, [
+      ['Pitch the tents and handle the gear', 'R', 'C'],
+      ['Find out about the rocks, plants and wildlife around the camp', 'I', 'R'],
+      ['Take the photos and make the trip video', 'A', 'S'],
+      ['Do first aid and keep everyone cheerful', 'S', 'A'],
+      ['Lead the group and make the calls', 'E', 'S'],
+      ['Plan the route, timings and budget', 'C', 'R'],
+    ]),
+    rsChoice('Q17', '🌳 Messy Park', 'The park near your home is a mess. How would you help?', 2, [
+      ['Repair the benches and plant new trees', 'R', 'C'],
+      ['Survey what is wrong and why it keeps happening', 'I', 'R'],
+      ['Paint a mural and redesign the space', 'A', 'S'],
+      ['Get the neighbours together for a clean-up', 'S', 'E'],
+      ['Convince the local council to pay for it', 'E', 'S'],
+      ['Set up a rota for who cleans when', 'C', 'E'],
+    ]),
+    rsChoice('Q18', '📰 Future Headline', 'Ten years from now, which headline about you would you love to read?', 1, [
+      ['“Young mechanic’s workshop repairs 10,000 electric scooters”', 'R', 'C'],
+      ['“Scientist discovers a faster way to detect disease”', 'I', 'A'],
+      ['“Debut film wins a national award”', 'A', 'S'],
+      ['“Volunteer tutor helps 1,000 kids pass their exams”', 'S', 'E'],
+      ['“Startup founder lands a ₹50 crore investment”', 'E', 'C'],
+      ['“New system saves the city’s hospitals ₹10 crore”', 'C', 'E'],
+    ]),
+
+    // ── Part 2: domain. Each pick scores its domain; D5 is the direct
+    // question and counts double (`points`).
     {
-      id: 'Q1', area: 'Project Choice', maxSelect: 2,
-      q: 'Which project would you choose?',
+      id: 'D1', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 1,
+      q: 'A news app lets you follow only two topics. Which would you pick?',
       opts: [
-        { text: 'Build a working model', w: { R: 0.80, I: 0.20 } },
-        { text: 'Investigate how something works', w: { I: 0.85, R: 0.15 } },
-        { text: 'Create a poster or video', w: { A: 0.85, E: 0.15 } },
-        { text: 'Help solve a community problem', w: { S: 0.80, E: 0.20 } },
-        { text: 'Start a small business', w: { E: 0.85, C: 0.15 } },
-        { text: 'Make a clear plan and checklist for it', w: { C: 0.85, I: 0.15 } },
+        { text: 'New AI tools, apps and gadgets', domain: 'digital' },
+        { text: 'Electric cars, rockets and robots', domain: 'machines' },
+        { text: 'Medical breakthroughs and the human body', domain: 'life' },
+        { text: 'Climate change, wildlife and clean energy', domain: 'planet' },
       ]
     },
     {
-      id: 'Q2', area: 'Broken Machine', maxSelect: 2,
-      q: 'A machine stops working. What interests you most?',
+      id: 'D2', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 1,
+      q: 'You can spend a week shadowing one team. Which would you join?',
       opts: [
-        { text: 'Find the cause', w: { I: 0.75, R: 0.25 } },
-        { text: 'Repair it', w: { R: 0.90, I: 0.10 } },
-        // The doc's own worked example for a three-way blend.
-        { text: 'Design a better version', w: { A: 0.40, R: 0.40, I: 0.20 } },
-        { text: 'Ask users what happened', w: { S: 0.80, I: 0.20 } },
-        { text: 'Work out the cost of fixing it', w: { C: 0.75, E: 0.25 } },
+        { text: 'Architects planning a new metro station', domain: 'built' },
+        { text: 'A startup deciding how to grow and make money', domain: 'money' },
+        { text: 'Counsellors supporting students at a big school', domain: 'people' },
+        { text: 'A studio making an animated series', domain: 'media' },
       ]
     },
     {
-      id: 'Q3', area: 'School Activity', maxSelect: 2,
-      q: 'Which school activity sounds best?',
+      id: 'D3', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 1,
+      q: 'Which problem would you most like to help solve one day?',
       opts: [
-        { text: 'Science experiment', w: { I: 0.85, R: 0.15 } },
-        { text: 'Drama or music', w: { A: 0.90, S: 0.10 } },
-        { text: 'Student leadership', w: { E: 0.75, S: 0.25 } },
-        { text: 'Robotics', w: { R: 0.70, I: 0.30 } },
-        { text: 'Organising a competition', w: { C: 0.65, E: 0.35 } },
+        { text: 'Stopping hackers from stealing people’s data', domain: 'digital' },
+        { text: 'Finding a cure for a serious disease', domain: 'life' },
+        { text: 'Making crowded cities safer and easier to live in', domain: 'built' },
+        { text: 'Helping small shops and farmers earn more', domain: 'money' },
       ]
     },
     {
-      id: 'Q4', area: 'Team Problem', maxSelect: 2,
-      q: 'Your team has a difficult problem. What would you do first?',
+      id: 'D4', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 1,
+      q: 'Which of these would you most like to work on?',
       opts: [
-        { text: 'Research the problem', w: { I: 0.80, C: 0.20 } },
-        { text: 'Make something to test', w: { R: 0.75, I: 0.25 } },
-        { text: 'Think of a new idea', w: { A: 0.80, I: 0.20 } },
-        { text: 'Ask everyone what they think', w: { S: 0.85, E: 0.15 } },
-        { text: 'Take charge and make a plan', w: { E: 0.75, C: 0.25 } },
-        { text: 'Break it into clear steps and track each one', w: { C: 0.85, I: 0.15 } },
+        { text: 'A self-driving delivery robot', domain: 'machines' },
+        { text: 'Bringing a dying forest or river back to life', domain: 'planet' },
+        { text: 'A programme that helps every child learn to read', domain: 'people' },
+        { text: 'A music video or short film', domain: 'media' },
       ]
     },
     {
-      id: 'Q5', area: 'Proud Result', maxSelect: 2,
-      q: 'Which result would make you proudest?',
-      opts: [
-        { text: 'Discovering something new', w: { I: 0.85, A: 0.15 } },
-        { text: 'Building something useful', w: { R: 0.85, I: 0.15 } },
-        { text: 'Creating something beautiful', w: { A: 0.90, E: 0.10 } },
-        { text: 'Helping someone succeed', w: { S: 0.90, E: 0.10 } },
-        { text: 'Making an idea successful', w: { E: 0.85, C: 0.15 } },
-      ]
+      id: 'D5', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 2,
+      q: 'Which world would you most like your future work to be in?',
+      opts: RS_DOMAIN_KEYS.map(k => ({ text: RS_DOMAINS[k].emoji + '  ' + RS_DOMAINS[k].label, domain: k }))
+    },
+
+    // ── Part 3: subjects. `points` is how much a pick counts toward the
+    // subject's strength: finding it easy matters more than enjoying it,
+    // because Class 11 marks depend on it.
+    {
+      id: 'S1', part: 3, type: 'subject', area: '📘 Your Subjects', maxSelect: 3, points: 0.6,
+      q: 'Which subjects come most easily to you?',
+      opts: RS_SUBJECT_KEYS.map(k => ({ text: RS_SUBJECTS[k].emoji + '  ' + RS_SUBJECTS[k].label, subject: k }))
     },
     {
-      id: 'Q6', area: 'Task Choice', maxSelect: 2,
-      q: 'Which task would you enjoy most?',
-      opts: [
-        { text: 'Analyse information', w: { I: 0.70, C: 0.30 } },
-        { text: 'Work with tools', w: { R: 0.90, A: 0.10 } },
-        { text: 'Design something', w: { A: 0.80, R: 0.20 } },
-        { text: 'Teach someone', w: { S: 0.85, A: 0.15 } },
-        { text: 'Organise people and resources', w: { C: 0.65, E: 0.35 } },
-        { text: 'Check the work for mistakes and keep records', w: { C: 0.90, I: 0.10 } },
-      ]
-    },
-    {
-      id: 'Q7', area: 'Project Budget', maxSelect: 2,
-      q: 'You get ₹1,000 for a school project. What would you enjoy most?',
-      opts: [
-        { text: 'Study the problem before spending', w: { I: 0.70, C: 0.30 } },
-        { text: 'Buy materials and build something', w: { R: 0.85, E: 0.15 } },
-        { text: 'Create an attractive final product', w: { A: 0.85, E: 0.15 } },
-        { text: 'Ask students what they need', w: { S: 0.85, I: 0.15 } },
-        { text: 'Find a way to make the money grow', w: { E: 0.80, C: 0.20 } },
-      ]
-    },
-    {
-      id: 'Q8', area: 'Challenge', maxSelect: 2,
-      q: 'Which challenge sounds most exciting?',
-      opts: [
-        { text: 'Solve a mystery', w: { I: 0.85, A: 0.15 } },
-        { text: 'Fix a machine', w: { R: 0.90, I: 0.10 } },
-        { text: 'Create a game or story', w: { A: 0.85, I: 0.15 } },
-        { text: 'Help someone overcome a problem', w: { S: 0.90, I: 0.10 } },
-        { text: 'Lead a team to win', w: { E: 0.80, S: 0.20 } },
-        { text: 'Find the one error hidden in a long list', w: { C: 0.80, I: 0.20 } },
-      ]
-    },
-    {
-      id: 'Q9', area: 'Build an App', maxSelect: 2,
-      q: 'You are making a new app. Which role would you choose?',
-      opts: [
-        { text: 'Research what users need', w: { I: 0.60, S: 0.40 } },
-        { text: 'Write the technical logic', w: { I: 0.55, C: 0.25, R: 0.20 } },
-        { text: 'Design how it looks', w: { A: 0.85, I: 0.15 } },
-        { text: 'Talk to users and collect feedback', w: { S: 0.80, E: 0.20 } },
-        { text: 'Plan how to grow it', w: { E: 0.80, C: 0.20 } },
-      ]
-    },
-    {
-      id: 'Q10', area: 'Workplace', maxSelect: 2,
-      q: 'Which place would you most like to explore?',
-      opts: [
-        { text: 'Research laboratory', w: { I: 0.85, R: 0.15 } },
-        { text: 'Workshop or factory', w: { R: 0.85, I: 0.15 } },
-        { text: 'Design studio', w: { A: 0.90, E: 0.10 } },
-        { text: 'Hospital or community centre', w: { S: 0.85, I: 0.15 } },
-        { text: 'Startup or company office', w: { E: 0.75, C: 0.25 } },
-        { text: 'Accounts or records office', w: { C: 0.90, I: 0.10 } },
-      ]
-    },
-    {
-      id: 'Q11', area: 'Free Afternoon', maxSelect: 2,
-      q: 'How would you prefer to spend a free afternoon?',
-      opts: [
-        { text: 'Learn how something works', w: { I: 0.80, R: 0.20 } },
-        { text: 'Make or repair something', w: { R: 0.90, A: 0.10 } },
-        { text: 'Create a story, video, or design', w: { A: 0.90, I: 0.10 } },
-        { text: 'Meet people and help someone', w: { S: 0.90, E: 0.10 } },
-        { text: 'Plan an event or new idea', w: { E: 0.75, C: 0.25 } },
-        { text: 'Organise your notes, files, or collection', w: { C: 0.90, R: 0.10 } },
-      ]
-    },
-    {
-      id: 'Q12', area: 'Lead a Project', maxSelect: 2,
-      q: 'Your teacher asks you to lead a project. What would you enjoy most?',
-      opts: [
-        { text: 'Research the topic', w: { I: 0.80, C: 0.20 } },
-        { text: 'Make the project work', w: { R: 0.70, C: 0.30 } },
-        { text: 'Make the presentation creative', w: { A: 0.85, E: 0.15 } },
-        { text: 'Keep everyone involved', w: { S: 0.85, E: 0.15 } },
-        { text: 'Plan the team and deadline', w: { C: 0.70, E: 0.30 } },
-      ]
-    },
-    {
-      id: 'Q13', area: 'Problem Type', maxSelect: 2,
-      q: 'Which problem would you rather solve?',
-      opts: [
-        { text: 'Why is this happening?', w: { I: 0.90, A: 0.10 } },
-        { text: 'How can we physically fix it?', w: { R: 0.90, I: 0.10 } },
-        { text: 'How can we make it better-looking?', w: { A: 0.90, E: 0.10 } },
-        { text: 'How is this affecting people?', w: { S: 0.90, I: 0.10 } },
-        { text: 'How can we make this more successful?', w: { E: 0.80, C: 0.20 } },
-        { text: 'Is this information correct and in order?', w: { C: 0.90, I: 0.10 } },
-      ]
-    },
-    {
-      id: 'Q14', area: 'Try Something New', maxSelect: 2,
-      q: 'Which activity would you try first?',
-      opts: [
-        { text: 'Conduct an experiment', w: { I: 0.80, R: 0.20 } },
-        { text: 'Build a model', w: { R: 0.85, A: 0.15 } },
-        { text: 'Create a short film', w: { A: 0.85, E: 0.15 } },
-        { text: 'Volunteer to help others', w: { S: 0.90, E: 0.10 } },
-        { text: 'Sell something you made', w: { E: 0.75, R: 0.25 } },
-        { text: 'Keep accurate records for a school activity', w: { C: 0.85, S: 0.15 } },
-      ]
-    },
-    {
-      id: 'Q15', area: 'Type of Success', maxSelect: 2,
-      q: 'What kind of success feels best?',
-      opts: [
-        { text: 'Finding the correct answer', w: { I: 0.70, C: 0.30 } },
-        { text: 'Making something work', w: { R: 0.80, I: 0.20 } },
-        { text: 'Making something original', w: { A: 0.90, E: 0.10 } },
-        { text: 'Making a difference to people', w: { S: 0.90, E: 0.10 } },
-        { text: 'Reaching a big goal', w: { E: 0.80, C: 0.20 } },
-      ]
-    },
-    {
-      id: 'Q16', area: 'New Skill', maxSelect: 2,
-      q: 'You can learn one new skill. Which would you choose?',
-      opts: [
-        { text: 'Coding or data analysis', w: { I: 0.75, C: 0.25 } },
-        { text: 'Electronics or mechanics', w: { R: 0.85, I: 0.15 } },
-        { text: 'Design or animation', w: { A: 0.85, R: 0.15 } },
-        { text: 'Communication or teaching', w: { S: 0.80, E: 0.20 } },
-        { text: 'Business or leadership', w: { E: 0.85, C: 0.15 } },
-        { text: 'Accounting or careful record-keeping', w: { C: 0.90, I: 0.10 } },
-      ]
-    },
-    {
-      id: 'Q17', area: 'Help a Small Business', maxSelect: 2,
-      q: 'Your friend starts a small business. How would you help?',
-      opts: [
-        { text: 'Analyse what customers want', w: { I: 0.55, C: 0.25, E: 0.20 } },
-        { text: 'Help make the product', w: { R: 0.80, A: 0.20 } },
-        { text: 'Design the brand', w: { A: 0.85, E: 0.15 } },
-        { text: 'Talk to customers', w: { S: 0.75, E: 0.25 } },
-        { text: 'Help with pricing and growth', w: { C: 0.50, E: 0.50 } },
-      ]
-    },
-    {
-      id: 'Q18', area: 'Future Project', maxSelect: 2,
-      q: 'Which future project sounds most exciting?',
-      opts: [
-        { text: 'Discover a new solution', w: { I: 0.85, A: 0.15 } },
-        { text: 'Build a useful machine', w: { R: 0.85, I: 0.15 } },
-        { text: 'Create something people remember', w: { A: 0.90, E: 0.10 } },
-        { text: "Improve people's lives", w: { S: 0.90, I: 0.10 } },
-        { text: 'Build a successful company', w: { E: 0.85, C: 0.15 } },
-      ]
-    },
-    {
-      id: 'Q19', area: 'Learning Style', maxSelect: 2,
-      q: 'When learning something difficult, which sounds most like you?',
-      opts: [
-        { text: 'Ask "why?" and research', w: { I: 0.85, A: 0.15 } },
-        { text: 'Try it yourself', w: { R: 0.85, I: 0.15 } },
-        { text: 'Find a creative way to understand it', w: { A: 0.85, I: 0.15 } },
-        { text: 'Discuss it with someone', w: { S: 0.90, E: 0.10 } },
-        { text: 'Make a plan and work towards the goal', w: { C: 0.70, E: 0.30 } },
-      ]
-    },
-    {
-      // Choose 1 — doc section 3.
-      id: 'Q20', area: 'Career Day', maxSelect: 1,
-      q: 'Which career-day session would you attend first?',
-      opts: [
-        { text: 'Science and research', w: { I: 0.80, R: 0.20 } },
-        { text: 'Engineering and technology', w: { R: 0.70, I: 0.30 } },
-        { text: 'Design and media', w: { A: 0.85, E: 0.15 } },
-        { text: 'Healthcare and education', w: { S: 0.80, I: 0.20 } },
-        { text: 'Business and entrepreneurship', w: { E: 0.80, C: 0.20 } },
-      ]
+      id: 'S2', part: 3, type: 'subject', area: '📘 Your Subjects', maxSelect: 3, points: 0.4,
+      q: 'Which subjects would you happily study for two more years?',
+      opts: RS_SUBJECT_KEYS.map(k => ({ text: RS_SUBJECTS[k].emoji + '  ' + RS_SUBJECTS[k].label, subject: k }))
     },
   ];
 
   // ══════════════════════════════════════════════════════════════
   // PER-DIMENSION MAXIMA  (doc section 6)
   //
-  // "Because different questions have different answer structures, use a
-  // pre-calculated maximum possible score for each dimension."
-  //
   // Each question contributes a total of exactly 1.0 split across the
-  // ticked options, so the most a question can give one dimension is the
-  // largest weight any single option assigns it — ticking a second option
-  // halves the first and can only dilute it. The ceiling is therefore the
-  // sum over questions of the best single option for that dimension.
+  // ticked options, so the most a question can give one area is the largest
+  // weight any single option gives it — ticking a second option halves the
+  // first and can only dilute it. The ceiling is the sum of those over the
+  // Part 1 questions; with every option's own area at RS_PRIMARY_WEIGHT it
+  // is the same for all six areas.
   //
   // Computed rather than hardcoded so editing a weight can never leave a
   // stale maximum behind (which would let a score exceed 100%).
@@ -338,6 +393,7 @@
     const Q = questions || RS_QUESTIONS;
     const max = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
     Q.forEach(q => {
+      if (q.type !== 'choice') return;
       RS_DIMS.forEach(d => {
         let best = 0;
         q.opts.forEach(o => { if ((o.w[d] || 0) > best) best = o.w[d] || 0; });
@@ -347,12 +403,31 @@
     return max;
   }
 
+  // The most a domain can score: every question it appears in, picked.
+  function rsComputeDomainMaxima(questions) {
+    const Q = questions || RS_QUESTIONS;
+    const max = {};
+    RS_DOMAIN_KEYS.forEach(k => { max[k] = 0; });
+    Q.forEach(q => {
+      if (q.type !== 'domain') return;
+      q.opts.forEach(o => { if (max[o.domain] !== undefined) max[o.domain] += q.points || 1; });
+    });
+    return max;
+  }
+
   // ══════════════════════════════════════════════════════════════
-  // SCORING  (doc sections 5 & 6)
+  // SCORING
   //
-  // Selection factor: 1 pick → 1.0, 2 picks → 0.5 each. A question's total
-  // contribution is always 1.0, so ticking more answers never earns extra
-  // points (product rule 6).
+  // Part 1: selection factor 1 pick → 1.0, 2 picks → 0.5 each. A question's
+  // total contribution is always 1.0, so ticking more answers never earns
+  // extra points (product rule 6).
+  //
+  // Part 2: each pick adds the question's `points` to the picked domain;
+  // picking two counts both, because domain scores are only ever used
+  // relative to the student's own strongest domain.
+  //
+  // Part 3: each pick adds the question's `points` to the subject, so a
+  // subject that is both easy and enjoyed scores 1.0.
   //
   // `answers` is an array parallel to the question list; each entry is
   // { indices: [...] } holding the ORIGINAL option indices — the renderer
@@ -361,7 +436,12 @@
   function rsScore(answers, questions) {
     const Q = questions || RS_QUESTIONS;
     const maxima = rsComputeMaxima(Q);
+    const domainMaxima = rsComputeDomainMaxima(Q);
     const raw = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+    const domainRaw = {};
+    RS_DOMAIN_KEYS.forEach(k => { domainRaw[k] = 0; });
+    const subjects = {};
+    RS_SUBJECT_KEYS.forEach(k => { subjects[k] = 0; });
     let answered = 0;
 
     Q.forEach((q, i) => {
@@ -372,13 +452,35 @@
         .slice(0, q.maxSelect);
       if (!picks.length) return;
 
-      const factor = 1 / picks.length;   // doc section 5
-      picks.forEach(idx => {
-        const w = q.opts[idx].w;
-        for (const d in w) if (raw[d] !== undefined) raw[d] += w[d] * factor;
-      });
+      if (q.type === 'choice') {
+        const factor = 1 / picks.length;   // doc section 5
+        picks.forEach(idx => {
+          const w = q.opts[idx].w;
+          for (const d in w) if (raw[d] !== undefined) raw[d] += w[d] * factor;
+        });
+      } else if (q.type === 'domain') {
+        picks.forEach(idx => {
+          const k = q.opts[idx].domain;
+          if (domainRaw[k] !== undefined) domainRaw[k] += q.points || 1;
+        });
+      } else if (q.type === 'subject') {
+        picks.forEach(idx => {
+          const k = q.opts[idx].subject;
+          if (subjects[k] !== undefined) subjects[k] += q.points || 1;
+        });
+      }
       answered++;
     });
+
+    // Domain preference relative to the student's own favourite (1.0), so
+    // a student who ticks two options everywhere is not "more interested"
+    // than one who ticks one.
+    const domainTop = Math.max.apply(null, RS_DOMAIN_KEYS.map(k => domainRaw[k]));
+    const domains = {};
+    RS_DOMAIN_KEYS.forEach(k => { domains[k] = domainTop > 0 ? domainRaw[k] / domainTop : 0; });
+    const domainRanked = RS_DOMAIN_KEYS
+      .map(k => ({ key: k, label: RS_DOMAINS[k].label, emoji: RS_DOMAINS[k].emoji, score: domains[k] }))
+      .sort((x, y) => y.score - x.score);
 
     // Percentage of the ceiling for that dimension (doc section 6).
     const pct = {};
@@ -400,13 +502,34 @@
     const d1 = ranked[0].pct - ranked[1].pct;
     const spread = ranked[0].pct - ranked[5].pct;
 
+    // Differentiation (Healy & Mourton): the spread of the six scores. A
+    // student whose answers are scattered evenly has no real interest
+    // shape, and the code would be invented by tie-breaking.
+    const mean = RS_DIMS.reduce((t, d) => t + pct[d], 0) / RS_DIMS.length;
+    const sd = Math.sqrt(RS_DIMS.reduce((t, d) => t + (pct[d] - mean) * (pct[d] - mean), 0) / RS_DIMS.length);
+    const flat = sd < RS_FLAT_SD;
+
+    // Consistency (Holland): top two areas side by side on the hexagon is
+    // the usual pattern; opposite areas (e.g. R and S) are a rarer mix
+    // worth talking through.
+    const hex = rsHexDistance(ranked[0].dim, ranked[1].dim);
+    const consistency = hex === 1 ? 'high' : hex === 2 ? 'medium' : 'low';
+
     return {
       raw, pct, ranked, maxima, code, answered,
-      d1, spread,
+      domainRaw, domainMaxima, domains, domainRanked,
+      subjects,
+      d1, spread, sd, flat, consistency,
       close: rsCloseGroups(ranked),
-      confidence: d1 >= 12 || spread >= 40 ? 'high' : d1 >= 5 ? 'medium' : 'low'
+      confidence: flat ? 'low' : d1 >= 12 || spread >= 40 ? 'high' : d1 >= 5 ? 'medium' : 'low'
     };
   }
+
+  // Below this standard deviation of the six area scores the profile is
+  // treated as flat. Set by simulating the quiz: about 85% of students who
+  // pick options at random fall below 9, while over 90% of students who
+  // pick their two favourite areas even 40% of the time land above it.
+  const RS_FLAT_SD = 9;
 
   // ── Close scores (doc section 8) ─────────────────────────────────────────
   // "Difference <= 5 points → treat as close". Groups adjacent ranked
@@ -490,33 +613,85 @@
     return ((r + 1) / 2) * 100;
   }
 
-  // ── The extra-signal hook (doc section 11) ───────────────────────────────
-  // Career Score = 50% interest + 20% strengths + 15% work style + 15% values.
-  // Only the interest layer exists today, so interest carries the full
-  // weight. Adding a layer means giving it a weight here and a matching
-  // scorer in `extras` — the ranking code below does not change.
-  const RS_FIT_WEIGHTS = { interest: 1.00, strengths: 0, workStyle: 0, values: 0 };
+  // ── Domain match ─────────────────────────────────────────────────────────
+  // How much the student wants to work in this career's world, 0-1. A
+  // career lists its main domain first; a second domain counts slightly
+  // less, so "Drone Engineer" (machines, digital) suits a digital student
+  // without beating "Computer Science Engineer" for them.
+  const RS_SECOND_DOMAIN = 0.8;
 
-  // extras: { strengths?: (career)=>0..1, workStyle?: (career)=>0..1, values?: ... }
-  function rsCareerFit(studentPct, career, extras, weights) {
+  // null when the student has no world scores (a result saved before Part 2
+  // existed), so the layer is left out rather than counted as zero.
+  function rsDomainFit(domains, career) {
+    const list = career.domains || [];
+    if (!domains) return null;
+    if (!list.length) return 0;
+    let best = 0;
+    list.forEach((k, i) => {
+      const v = (domains[k] || 0) * (i === 0 ? 1 : RS_SECOND_DOMAIN);
+      if (v > best) best = v;
+    });
+    return best;
+  }
+
+  // ── Subject match ────────────────────────────────────────────────────────
+  // How strong the student is in the subjects a career leans on, 0-1, with
+  // their own strongest subject = 1. A career's first subject counts most.
+  // null when there are no subject answers; a career that any subject can
+  // lead to (no `subjects`) is neutral.
+  function rsSubjectFit(subjects, career) {
+    if (!subjects) return null;
+    const top = Math.max.apply(null, RS_SUBJECT_KEYS.map(k => subjects[k] || 0));
+    const list = career.subjects || [];
+    if (top <= 0 || !list.length) return 0.5;
+    let total = 0, used = 0;
+    list.forEach((k, i) => {
+      const w = i === 0 ? 2 : 1;
+      total += w * (subjects[k] || 0) / top;
+      used += w;
+    });
+    return total / used;
+  }
+
+  // ── Fit weights (doc section 11) ─────────────────────────────────────────
+  // Interest pattern says what kind of work the student enjoys, the world
+  // says where they want to do it, and subjects say whether the road there
+  // suits them. Interest leads: it is the best-validated predictor of career
+  // satisfaction (O*NET, Strong, SDS all match on it). Adding a layer later
+  // (work style, values) means giving it a weight here and a scorer in
+  // `extras` — the ranking code below does not change.
+  const RS_FIT_WEIGHTS = { interest: 0.55, domain: 0.30, subjects: 0.15, workStyle: 0, values: 0 };
+
+  // scoring: the rsScore() result.
+  // extras: { workStyle?: (career)=>0..1, values?: (career)=>0..1 }
+  function rsCareerFit(scoring, career, extras, weights) {
     const W = weights || RS_FIT_WEIGHTS;
-    // Interest match is expressed on the same 0-1 scale as the other three
-    // layers so the weighted blend stays meaningful when they are added.
-    const parts = { interest: rsSimilarityToPct(rsPatternSimilarity(studentPct, career.riasec)) / 100 };
-    ['strengths', 'workStyle', 'values'].forEach(k => {
-      parts[k] = extras && typeof extras[k] === 'function' ? extras[k](career) : 0;
+    // Every layer is on a 0-1 scale so the weighted blend stays meaningful.
+    // A layer the student has no answers for is null and drops out.
+    const parts = {
+      interest: rsSimilarityToPct(rsPatternSimilarity(scoring.pct, career.riasec)) / 100,
+      domain: rsDomainFit(scoring.domains, career),
+      subjects: rsSubjectFit(scoring.subjects, career)
+    };
+    ['workStyle', 'values'].forEach(k => {
+      parts[k] = extras && typeof extras[k] === 'function' ? extras[k](career) : null;
     });
     let total = 0, used = 0;
     for (const k in parts) {
       const w = W[k] || 0;
-      if (w > 0) { total += w * parts[k]; used += w; }
+      if (w > 0 && parts[k] !== null) { total += w * parts[k]; used += w; }
     }
     // Renormalise so a partially-configured weighting still yields 0..1.
     return { fit: used > 0 ? total / used : 0, parts };
   }
 
   // ── Minimum-fit rule (doc section 13) ───────────────────────────────────
-  const RS_MIN_FIT = 70;
+  // On the blended scale an unrelated interest pattern (0.5) in the
+  // student's favourite world scores about 68, and a near-perfect interest
+  // match in a world they did not pick scores about 62. 65 keeps the first
+  // (an undecided student still gets careers in the world they chose) and
+  // drops the second.
+  const RS_MIN_FIT = 65;
 
   // ── Diversity rule (doc section 14) ─────────────────────────────────────
   // "Do not return five almost-identical careers when several strong
@@ -525,6 +700,11 @@
   // skipped by the cap stay available as backfill, so a genuinely narrow
   // profile still gets a full list rather than a short one.
   const RS_MAX_PER_FAMILY = 2;
+  // Variety must not cost accuracy: a family may take ONE extra slot when
+  // every career from another family is more than this many points behind.
+  // Otherwise a student who clearly wants software would lose "Computer
+  // Science Engineer" to a much weaker match just for variety.
+  const RS_VARIETY_MARGIN = 5;
 
   function rsMatchCareers(scoring, database, options) {
     const o = options || {};
@@ -534,7 +714,7 @@
     const limit = o.limit === undefined ? 5 : o.limit;
 
     const scored = db.map(c => {
-      const { fit, parts } = rsCareerFit(scoring.pct, c, o.extras, o.weights);
+      const { fit, parts } = rsCareerFit(scoring, c, o.extras, o.weights);
       return { career: c, match_pct: Math.round(fit * 100), fit, parts };
     }).sort((x, y) => y.fit - x.fit ||
       // Deterministic tiebreak so equal matches never reorder run to run.
@@ -551,14 +731,22 @@
     // yields the most diverse shortlist the qualified pool can support and
     // never silently allows a single family to take more room than it had
     // to. A hard cap is still available via maxPerFamily on its own.
+    const famOf = s => s.career.family || s.career.title;
     const take = cap => {
       const perFamily = {};
       const picked = [];
       for (let i = 0; i < qualified.length && picked.length < limit; i++) {
         const s = qualified[i];
-        const fam = s.career.family || s.career.title;
+        const fam = famOf(s);
         const n = perFamily[fam] || 0;
-        if (n < cap) { perFamily[fam] = n + 1; picked.push(s); }
+        if (n >= cap) {
+          if (n > cap) continue;
+          // The best later career from a family that still has room.
+          const alt = qualified.slice(i + 1).find(x => (perFamily[famOf(x)] || 0) < cap && famOf(x) !== fam);
+          if (alt && alt.match_pct >= s.match_pct - RS_VARIETY_MARGIN) continue;
+        }
+        perFamily[fam] = n + 1;
+        picked.push(s);
       }
       return picked;
     };
@@ -615,9 +803,16 @@
       ? (Math.random() * 0xFFFFFFFF) >>> 0
       : seed >>> 0;
     const rand = rsMulberry32(s);
+    // Shuffled within each part; Part 1 always comes before Part 2.
+    const parts = [...new Set(Q.map(q => q.part || 1))].sort((a, b) => a - b);
+    const questionOrder = [];
+    parts.forEach(p => {
+      const idx = Q.map((q, i) => i).filter(i => (Q[i].part || 1) === p);
+      rsShuffled(idx.length, rand).forEach(j => questionOrder.push(idx[j]));
+    });
     return {
       seed: s,
-      questionOrder: rsShuffled(Q.length, rand),
+      questionOrder: questionOrder,
       optionOrder: Q.map(q => rsShuffled(q.opts.length, rand))
     };
   }
@@ -629,37 +824,89 @@
     const Q = questions || RS_QUESTIONS;
     const problems = [];
     const primaryCount = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+    const domainCount = {};
+    RS_DOMAIN_KEYS.forEach(k => { domainCount[k] = 0; });
+    // secondary[area][neighbour]: how often an option of `area` hands its
+    // remaining weight to that neighbour.
+    const secondary = {};
+    RS_DIMS.forEach(d => { secondary[d] = {}; rsNeighbours(d).forEach(n => { secondary[d][n] = 0; }); });
+    const seenIds = {}, seenText = {};
 
     Q.forEach(q => {
       const label = q.id || q.q.slice(0, 20);
+      if (seenIds[q.id]) problems.push(label + ': duplicate id');
+      seenIds[q.id] = true;
+      if (seenText[q.q]) problems.push(label + ': same wording as ' + seenText[q.q]);
+      seenText[q.q] = label;
       if (!q.maxSelect || q.maxSelect < 1) problems.push(label + ': maxSelect must be >= 1');
-      q.opts.forEach((o, j) => {
-        const keys = Object.keys(o.w || {});
-        if (!keys.length) { problems.push(label + ' opt ' + j + ': no weights'); return; }
-        const sum = keys.reduce((s, k) => s + o.w[k], 0);
-        if (Math.abs(sum - 1) > 1e-9) {
-          problems.push(label + ' opt ' + j + ': weights sum to ' + sum.toFixed(3) + ', expected 1');
-        }
-        keys.forEach(k => {
-          if (RS_DIMS.indexOf(k) === -1) {
-            problems.push(label + ' opt ' + j + ': unknown dimension "' + k + '"');
-          }
-        });
-        // Which dimension this option most represents.
-        const top = keys.reduce((a, b) => (o.w[b] > o.w[a] ? b : a), keys[0]);
-        if (primaryCount[top] !== undefined) primaryCount[top]++;
-      });
-    });
 
-    // Every dimension needs somewhere to score as a primary signal,
-    // otherwise a student strong in that area can never top out on it.
-    RS_DIMS.forEach(d => {
-      if (!primaryCount[d]) {
-        problems.push('no option anywhere is primarily ' + d + ' (' + RS_DIM_NAMES[d] + ')');
+      if (q.type === 'choice') {
+        // One option per area, each giving its own area RS_PRIMARY_WEIGHT:
+        // that is what keeps every area on the same ceiling.
+        const inQuestion = {};
+        q.opts.forEach((o, j) => {
+          const keys = Object.keys(o.w || {});
+          if (!keys.length) { problems.push(label + ' opt ' + j + ': no weights'); return; }
+          const sum = keys.reduce((t, k) => t + o.w[k], 0);
+          if (Math.abs(sum - 1) > 1e-9) {
+            problems.push(label + ' opt ' + j + ': weights sum to ' + sum.toFixed(3) + ', expected 1');
+          }
+          keys.forEach(k => {
+            if (RS_DIMS.indexOf(k) === -1) problems.push(label + ' opt ' + j + ': unknown dimension "' + k + '"');
+          });
+          const top = keys.reduce((a, b) => (o.w[b] > o.w[a] ? b : a), keys[0]);
+          if (Math.abs(o.w[top] - RS_PRIMARY_WEIGHT) > 1e-9) {
+            problems.push(label + ' opt ' + j + ': own area weighs ' + o.w[top] + ', expected ' + RS_PRIMARY_WEIGHT);
+          }
+          if (inQuestion[top]) problems.push(label + ': two options are mainly ' + top);
+          inQuestion[top] = true;
+          if (primaryCount[top] !== undefined) primaryCount[top]++;
+          keys.filter(k => k !== top).forEach(k => {
+            if (!secondary[top] || secondary[top][k] === undefined) {
+              problems.push(label + ' opt ' + j + ': ' + k + ' is not next to ' + top + ' on the hexagon');
+            } else {
+              secondary[top][k]++;
+            }
+          });
+        });
+        RS_DIMS.forEach(d => { if (!inQuestion[d]) problems.push(label + ': no option for ' + d); });
+      } else if (q.type === 'domain') {
+        const inQuestion = {};
+        q.opts.forEach((o, j) => {
+          if (domainCount[o.domain] === undefined) {
+            problems.push(label + ' opt ' + j + ': unknown domain "' + o.domain + '"');
+            return;
+          }
+          if (inQuestion[o.domain]) problems.push(label + ': domain "' + o.domain + '" offered twice');
+          inQuestion[o.domain] = true;
+          domainCount[o.domain]++;
+        });
+      } else if (q.type === 'subject') {
+        q.opts.forEach((o, j) => {
+          if (!RS_SUBJECTS[o.subject]) problems.push(label + ' opt ' + j + ': unknown subject "' + o.subject + '"');
+        });
+      } else {
+        problems.push(label + ': unknown question type "' + q.type + '"');
       }
     });
 
-    return { problems, primaryCount, maxima: rsComputeMaxima(Q) };
+    // Every area must split its secondary weight evenly between its two
+    // neighbours, or some areas would collect more "free" points than
+    // others and a random answerer would no longer come out flat.
+    RS_DIMS.forEach(d => {
+      const [a, b] = rsNeighbours(d);
+      if (secondary[d][a] !== secondary[d][b]) {
+        problems.push(d + ' gives its neighbours unequal secondary weight: ' + JSON.stringify(secondary[d]));
+      }
+    });
+
+    // Equal appearances per domain keeps no world favoured by the questions.
+    const dc = RS_DOMAIN_KEYS.map(k => domainCount[k]);
+    if (Math.min.apply(null, dc) !== Math.max.apply(null, dc)) {
+      problems.push('domains appear an unequal number of times: ' + JSON.stringify(domainCount));
+    }
+
+    return { problems, primaryCount, domainCount, secondary, maxima: rsComputeMaxima(Q) };
   }
 
   function rsValidateCareers(database) {
@@ -674,6 +921,16 @@
       ['emoji', 'field', 'stream', 'salary', 'family', 'why'].forEach(k => {
         if (!c[k]) problems.push(label + ': missing ' + k);
       });
+      if (!Array.isArray(c.domains) || !c.domains.length || c.domains.length > 2) {
+        problems.push(label + ': needs one or two domains');
+      } else {
+        c.domains.forEach(k => {
+          if (!RS_DOMAINS[k]) problems.push(label + ': unknown domain "' + k + '"');
+        });
+      }
+      if (!Array.isArray(c.subjects)) problems.push(label + ': needs a subjects list (may be empty)');
+      else c.subjects.forEach(k => { if (!RS_SUBJECTS[k]) problems.push(label + ': unknown subject "' + k + '"'); });
+      if (!Object.keys(rsCareerStreams(c)).length) problems.push(label + ': stream "' + c.stream + '" names no Class 11 stream');
       if (!c.riasec) { problems.push(label + ': no riasec vector'); return; }
       RS_DIMS.forEach(d => {
         const v = c.riasec[d];
@@ -732,7 +989,16 @@
     CE: { type: 'The Process Manager', desc: 'You like running things properly: clear plans, clear numbers, clear results. You are drawn to work where good organisation decides the outcome.' },
   };
 
+  // Shown instead of a two-letter type when the profile is flat: a type
+  // picked by tie-breaking would tell the student something untrue.
+  const RS_FLAT_PROFILE = {
+    type: 'The All-Round Explorer',
+    desc: 'Your answers spread across many kinds of work, with no clear favourite yet. That is common at your age. ' +
+      'Your careers below lean on the worlds and subjects you chose. Try the quiz again in a few months, or talk it through with a counsellor.'
+  };
+
   function rsProfileFor(scoring) {
+    if (scoring.flat) return Object.assign({ key: 'flat' }, RS_FLAT_PROFILE);
     const key = scoring.ranked[0].dim + scoring.ranked[1].dim;
     const p = RS_PROFILES[key];
     // Every ordered pair of six distinct letters is present, so this only
@@ -741,29 +1007,122 @@
       : { key: key, type: 'The Multi-Interest Explorer', desc: 'Your interests spread across several areas rather than concentrating in one.' };
   }
 
-  // ── Stream recommendation ────────────────────────────────────────────────
-  // Derived from the shortlist instead of being hand-mapped per profile:
-  // whichever Class 11 stream the best-fitting careers actually require,
-  // weighted so the top match counts most. A career listing "PCM / Arts"
-  // votes for both.
-  function rsStreamFor(shortlist) {
-    if (!shortlist || !shortlist.length) return { stream: 'Any', tally: {} };
-    const tally = {};
-    shortlist.forEach((s, i) => {
-      const weight = shortlist.length - i;   // rank 1 counts most
-      String(s.career.stream).split('/').forEach(tok => {
-        const k = tok.trim();
-        if (!k || k === 'Any' || k === 'ITI') return;
-        tally[k] = (tally[k] || 0) + weight;
-      });
+  // ── Stream ranking ───────────────────────────────────────────────────────
+  // All four Class 11 streams are ranked, the way Indian career reports do,
+  // from two signals shown side by side:
+  //   - careers: how well the student's best-fitting careers are reached
+  //     from that stream (a career listing "PCM / PCB" counts for both;
+  //     "Any" counts half for every stream);
+  //   - subjects: how strong the student says they are in that stream's
+  //     core subjects (Part 3).
+  // `token` is the value the career catalogue and the explorer use.
+  const RS_STREAMS = [
+    { key: 'PCM', token: 'PCM', label: 'Science with Maths (PCM)',
+      subjects: { maths: 0.4, physics: 0.35, chemistry: 0.15, computers: 0.1 } },
+    { key: 'PCB', token: 'PCB', label: 'Science with Biology (PCB)',
+      subjects: { biology: 0.45, chemistry: 0.35, physics: 0.2 } },
+    { key: 'Commerce', token: 'Commerce', label: 'Commerce',
+      subjects: { economics: 0.45, maths: 0.35, languages: 0.2 } },
+    { key: 'Humanities', token: 'Arts', label: 'Humanities / Arts',
+      subjects: { social: 0.35, languages: 0.35, economics: 0.15, arts: 0.15 } },
+  ];
+  const RS_STREAM_WEIGHTS = { careers: 0.6, subjects: 0.4 };
+  // How many of the best-fitting careers vote on the stream.
+  const RS_STREAM_POOL = 12;
+
+  // Which of RS_STREAMS a career's stream text names.
+  function rsCareerStreams(career) {
+    const toks = String(career.stream || '').split('/').map(t => t.trim());
+    const out = {};
+    toks.forEach(t => {
+      if (t === 'PCM' || t === 'PCM+CS') out.PCM = 1;
+      else if (t === 'PCB') out.PCB = 1;
+      else if (t === 'Commerce') out.Commerce = 1;
+      else if (t === 'Arts') out.Humanities = 1;
+      else if (t === 'Any') RS_STREAMS.forEach(s => { if (!out[s.key]) out[s.key] = 0.5; });
     });
-    const ranked = Object.keys(tally).sort((a, b) => tally[b] - tally[a] || a.localeCompare(b));
-    if (!ranked.length) return { stream: 'Any', tally: tally };
-    // Name a second stream only when it is genuinely close behind.
-    const top = ranked[0];
-    const second = ranked[1];
-    const stream = second && tally[second] >= tally[top] * 0.75 ? top + ' / ' + second : top;
-    return { stream: stream, tally: tally };
+    return out;
+  }
+
+  function rsRankStreams(scoring, matchAll) {
+    const pool = (matchAll || []).slice(0, RS_STREAM_POOL);
+    const support = {}, count = {};
+    RS_STREAMS.forEach(s => { support[s.key] = 0; count[s.key] = 0; });
+    pool.forEach(m => {
+      const st = rsCareerStreams(m.career);
+      for (const k in st) {
+        support[k] += st[k] * m.fit;
+        if (st[k] === 1) count[k]++;
+      }
+    });
+    const topSupport = Math.max.apply(null, RS_STREAMS.map(s => support[s.key])) || 1;
+
+    const subj = scoring.subjects || null;
+    const topSubj = subj ? Math.max.apply(null, RS_SUBJECT_KEYS.map(k => subj[k] || 0)) : 0;
+
+    const streams = RS_STREAMS.map(s => {
+      const careers = support[s.key] / topSupport;
+      let subjects = null;
+      if (subj && topSubj > 0) {
+        subjects = 0;
+        for (const k in s.subjects) subjects += s.subjects[k] * (subj[k] || 0) / topSubj;
+      }
+      const score = subjects === null
+        ? careers
+        : RS_STREAM_WEIGHTS.careers * careers + RS_STREAM_WEIGHTS.subjects * subjects;
+      // The stream's core subjects the student is strong in, strongest first.
+      const strong = subj && topSubj > 0
+        ? Object.keys(s.subjects).filter(k => (subj[k] || 0) / topSubj >= 0.6)
+          .sort((a, b) => subj[b] - subj[a]).map(k => RS_SUBJECTS[k].label)
+        : [];
+      return {
+        key: s.key, token: s.token, label: s.label,
+        score: Math.round(score * 100),
+        careersScore: Math.round(careers * 100),
+        subjectsScore: subjects === null ? null : Math.round(subjects * 100),
+        careerCount: count[s.key],
+        strongSubjects: strong
+      };
+    }).sort((a, b) => b.score - a.score || a.key.localeCompare(b.key));
+
+    streams.forEach(s => { s.reason = rsStreamReason(s, pool.length); });
+    return streams;
+  }
+
+  // "Maths", "Maths and Physics", "Maths, Physics and Chemistry".
+  function rsListText(items) {
+    return items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+  }
+
+  function rsStreamReason(s, poolSize) {
+    const parts = [];
+    parts.push(s.careerCount === 0
+      ? 'none of your ' + poolSize + ' best-fit careers start here'
+      : s.careerCount === poolSize
+        ? 'all ' + poolSize + ' of your best-fit careers start here'
+        : s.careerCount + ' of your ' + poolSize + ' best-fit careers start here');
+    if (s.subjectsScore !== null) {
+      parts.push(s.strongSubjects.length
+        ? 'you are strong in ' + rsListText(s.strongSubjects)
+        : 'its core subjects are not among your strongest');
+    }
+    const t = parts.join(', and ');
+    return t.charAt(0).toUpperCase() + t.slice(1) + '.';
+  }
+
+  // The recommendation in the catalogue's stream format ("PCM", "PCB",
+  // "Commerce", "Arts"), naming a second stream only when it is close.
+  function rsStreamRecommendation(streams) {
+    if (!streams.length || streams[0].score === 0) return 'Any';
+    const a = streams[0], b = streams[1];
+    return b && a.score - b.score <= 8 ? a.token + ' / ' + b.token : a.token;
+  }
+
+  // ── Fit labels ───────────────────────────────────────────────────────────
+  // Words next to the percentage, so a student knows whether 78% is good.
+  // The bands match the explorer's fit filter.
+  function rsFitLabel(pct) {
+    return pct >= 85 ? 'Excellent fit' : pct >= 75 ? 'Strong fit' : pct >= RS_MIN_FIT ? 'Good fit' : 'Weaker fit';
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -778,25 +1137,31 @@
   function rsBuildResults(scoring, database, options) {
     const match = rsMatchCareers(scoring, database, options);
     const profile = rsProfileFor(scoring);
-    const streamInfo = rsStreamFor(match.shortlist);
+    const streams = rsRankStreams(scoring, match.all);
     const top3 = scoring.ranked.slice(0, 3);
 
     const strongest = top3.map(r => r.plain.toLowerCase()).slice(0, 2).join(' and ');
-    const streamReason = 'Your strongest areas are ' + strongest +
-      '. Most of the careers that fit that pattern start from ' + streamInfo.stream + ' in Class 11.';
+    const streamReason = (scoring.flat
+      ? 'Your interests are spread out, so this comes mostly from the worlds and subjects you chose. '
+      : 'Your strongest areas are ' + strongest + '. ') + streams[0].reason;
 
     return {
+      // Lets a saved run be recognised as coming from an older question set.
+      engine_version: RS_ENGINE_VERSION,
       // ── existing shape, consumed across app.html ──
       personality_type: profile.type,
       personality_desc: profile.desc,
-      stream_recommendation: streamInfo.stream,
+      stream_recommendation: rsStreamRecommendation(streams),
       stream_reason: streamReason,
+      // All four streams, best first (see rsRankStreams).
+      streams: streams,
       top_careers: match.shortlist.map((s, i) => ({
         rank: i + 1,
         title: s.career.title,
         emoji: s.career.emoji,
         field: s.career.field,
         match_pct: s.match_pct,
+        fit_label: rsFitLabel(s.match_pct),
         why: s.career.why,
         stream: s.career.stream,
         salary: s.career.salary
@@ -813,25 +1178,45 @@
         })),
         close: scoring.close,
         confidence: scoring.confidence,
+        flat: scoring.flat,
+        consistency: scoring.consistency,
         enjoy: rsEnjoyList(scoring),
         profileKey: profile.key,
         qualifiedCount: match.qualifiedCount,
-        consideredCount: match.all.length
+        consideredCount: match.all.length,
+        // Every world's 0-1 score, so a saved result can be re-matched
+        // against any career (the explorer does this).
+        domainScores: scoring.domains,
+        // The worlds the student picked most, strongest first. Only domains
+        // within reach of the favourite are listed.
+        domains: scoring.domainRanked
+          .filter(d => d.score >= 0.5)
+          .slice(0, 3)
+          .map(d => ({ key: d.key, label: d.label, emoji: d.emoji, score: Math.round(d.score * 100) })),
+        // Raw subject strengths, for re-matching like domainScores.
+        subjectScores: scoring.subjects
       }
     };
+  }
+
+  // True when a saved results object came from the current question set.
+  function rsIsCurrentResult(results) {
+    return !!results && results.engine_version === RS_ENGINE_VERSION;
   }
 
   return {
     RS_ENGINE_VERSION,
     RS_DIMS, RS_DIM_NAMES, RS_DIM_PLAIN, RS_DIM_EMOJI, RS_DIM_ENJOY,
     RS_DIM_MEANING,
-    RS_PROFILES, rsProfileFor, rsStreamFor, rsBuildResults,
+    RS_PROFILES, rsProfileFor, rsBuildResults,
     rsPatternSimilarity, rsSimilarityToPct,
-    RS_QUESTIONS,
-    RS_CLOSE_THRESHOLD, RS_MIN_FIT, RS_MAX_PER_FAMILY,
-    RS_FIT_WEIGHTS,
-    rsComputeMaxima, rsScore, rsCloseGroups, rsEnjoyList,
-    rsCareerFit, rsMatchCareers,
+    RS_QUESTIONS, RS_PRIMARY_WEIGHT, RS_DOMAINS, RS_DOMAIN_KEYS,
+    RS_SUBJECTS, RS_SUBJECT_KEYS, RS_HEXAGON, rsNeighbours, rsHexDistance, RS_FLAT_SD,
+    RS_STREAMS, rsCareerStreams, rsRankStreams, rsStreamRecommendation, rsFitLabel, rsSubjectFit,
+    RS_CLOSE_THRESHOLD, RS_MIN_FIT, RS_MAX_PER_FAMILY, RS_VARIETY_MARGIN,
+    RS_FIT_WEIGHTS, RS_SECOND_DOMAIN,
+    rsComputeMaxima, rsComputeDomainMaxima, rsScore, rsCloseGroups, rsEnjoyList,
+    rsDomainFit, rsCareerFit, rsMatchCareers, rsIsCurrentResult,
     rsMulberry32, rsShuffled, rsBuildOrder,
     rsValidateQuestions, rsValidateCareers,
   };

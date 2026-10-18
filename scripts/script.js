@@ -171,6 +171,7 @@
       if (pageId === 'dashboard') syncDashboard();
       else if (pageId === 'results') syncResults();
       else if (pageId === 'explorer') syncExplorer();
+      else if (pageId === 'roadmap') rmLoad();
       else if (pageId === 'contests') syncProgress();
       else if (pageId === 'settings') syncSettings();
     }
@@ -640,7 +641,7 @@
     function cqRender() {
       const { qi, q } = cqQuestionAt(cqIdx);
       const order = cqOrder.optionOrder[qi];
-      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
       const total = RS_QUESTIONS.length;
 
       document.getElementById('cq-num').textContent = 'Question ' + (cqIdx + 1) + ' of ' + total;
@@ -874,6 +875,19 @@
       cqInitPrint();
     }
 
+    // Shown over a result saved by the previous question set (riasec-1),
+    // which can't be re-scored because the questions changed.
+    function cqRetakeNotice() {
+      return '<div class="welcome-banner cq-retake no-print">' +
+        '<div class="welcome-text">' +
+        '<h2>🆕 The career quiz has been rebuilt</h2>' +
+        '<p>This result comes from the old questions. Take the new quiz for better-matched careers, ' +
+        'including new ones in AI, space, climate, biotech and more. It takes about 6 minutes.</p>' +
+        '</div>' +
+        '<button class="btn btn-primary" onclick="cqStart()">Retake the quiz →</button>' +
+        '</div>';
+    }
+
     // ── Save the report as a PDF ───────────────────────────────────────────
     // Deliberately the browser's own print-to-PDF rather than a canvas/PDF
     // library: no third-party script has to be fetched (so it works offline
@@ -940,6 +954,11 @@
       if (demoBadge) demoBadge.style.display = isDemo ? 'inline-block' : 'none';
 
       cqRenderRiasec(data.riasec);
+      cqRenderDomains(data.riasec && data.riasec.domains);
+      cqRenderStreams(data.streams);
+
+      const notice = document.getElementById('air-retake');
+      if (notice) notice.innerHTML = rsIsCurrentResult(data) ? '' : cqRetakeNotice();
 
       const list = document.getElementById('air-careers');
       list.innerHTML = '';
@@ -961,14 +980,56 @@
           '<span class="badge" style="background:var(--well);color:var(--muted);border:1px solid var(--border);"></span>' +
           '</div>' +
           '</div>' +
-          '<div class="air-pct" style="color:' + color + ';">' + c.match_pct + '%</div>';
+          '<div class="air-pct" style="color:' + color + ';">' + c.match_pct + '%' +
+          (c.fit_label ? '<div class="air-fit-label"></div>' : '') + '</div>';
         div.querySelector('.air-career-name').textContent = c.title;
         div.querySelector('.air-career-field').textContent = c.field;
         div.querySelector('.air-career-why').textContent = c.why;
+        if (c.fit_label) div.querySelector('.air-fit-label').textContent = c.fit_label;
         const badges = div.querySelectorAll('.badge');
         badges[0].textContent = c.stream;
         badges[1].textContent = '💰 ' + c.salary;
         list.appendChild(div);
+      });
+    }
+
+    // ── The four streams, ranked (rsRankStreams) ──────────────────────────
+    // One row per stream: overall bar plus the reason in words. Hidden for a
+    // result saved before streams were ranked.
+    function cqRenderStreams(streams) {
+      const wrap = document.getElementById('air-streams-wrap');
+      const el = document.getElementById('air-streams');
+      if (!wrap || !el) return;
+      el.innerHTML = '';
+      wrap.style.display = streams && streams.length ? '' : 'none';
+      (streams || []).forEach((s, i) => {
+        const row = document.createElement('div');
+        row.className = 'air-stream-row' + (i === 0 ? ' air-stream-row-top' : '');
+        row.innerHTML =
+          '<div class="air-stream-row-head"><span class="air-stream-row-name"></span>' +
+          '<span class="air-stream-row-pct">' + s.score + '%</span></div>' +
+          '<div class="air-riasec-track"><div class="air-riasec-fill" style="width:' + s.score +
+          '%;background:' + (i === 0 ? 'var(--accent)' : 'var(--accent-line)') + ';"></div></div>' +
+          '<div class="air-stream-row-reason"></div>';
+        row.querySelector('.air-stream-row-name').textContent = (i + 1) + '. ' + s.label;
+        row.querySelector('.air-stream-row-reason').textContent = s.reason;
+        el.appendChild(row);
+      });
+    }
+
+    // ── The worlds the student picked (Part 2 of the quiz) ─────────────────
+    // Hidden for a result saved before the domain questions existed.
+    function cqRenderDomains(domains) {
+      const wrap = document.getElementById('air-domains-wrap');
+      const el = document.getElementById('air-domains');
+      if (!wrap || !el) return;
+      el.innerHTML = '';
+      wrap.style.display = domains && domains.length ? '' : 'none';
+      (domains || []).forEach(d => {
+        const chip = document.createElement('span');
+        chip.className = 'air-domain-chip';
+        chip.textContent = d.emoji + ' ' + d.label;
+        el.appendChild(chip);
       });
     }
 
@@ -1058,9 +1119,15 @@
       const note = document.getElementById('air-riasec-note');
       if (note) {
         const tied = (r.close || []).find(g => g.length > 1 && g.indexOf(r.ranked[0].dim) !== -1);
-        note.textContent = tied
-          ? 'Your top areas scored very close together, so treat them as similarly strong.'
-          : 'Your strongest area stands clearly ahead of the rest.';
+        // Flat and mixed profiles come first: they change how much the
+        // bars below should be trusted.
+        note.textContent = r.flat
+          ? 'Your answers spread evenly across the areas, so no single one stands out yet.'
+          : r.consistency === 'low'
+            ? 'Your top two areas are an unusual mix. That can be a real strength; it is worth talking through with a counsellor.'
+            : tied
+              ? 'Your top areas scored very close together, so treat them as similarly strong.'
+              : 'Your strongest area stands clearly ahead of the rest.';
       }
 
       if (enjoyEl) {
@@ -1113,7 +1180,7 @@
       // ── NO RESULTS: show empty / CTA state ─────────────────────────
       if (!appResults) {
         title.textContent = 'Welcome to CareerAI 👋';
-        sub.textContent = 'Take the 20-question quiz to discover careers that fit you.';
+        sub.textContent = 'Take the 25-question quiz to discover careers that fit you.';
         ctaBtn.textContent = 'Take Career Quiz →';
         ctaBtn.onclick = cqStart;
 
@@ -1121,9 +1188,9 @@
           '<div class="db-empty">' +
           '<div class="db-empty-icon">🧭</div>' +
           '<h3>Start with the career quiz</h3>' +
-          '<p>Answer 20 quick questions and our AI will match you to the careers ' +
-          'that fit your interests, strengths, and learning style.</p>' +
-          '<button class="btn btn-primary btn-lg" onclick="cqStart()">Start the Career Quiz — 5 mins →</button>' +
+          '<p>Answer 25 quick questions and our AI will match you to the careers ' +
+          'that fit your interests and the world you want to work in.</p>' +
+          '<button class="btn btn-primary btn-lg" onclick="cqStart()">Start the Career Quiz — 6 mins →</button>' +
           '<div class="db-unlocks">' +
           '<span class="db-unlock">🎯 Ranked career matches</span>' +
           '<span class="db-unlock">🛤️ Stream recommendation</span>' +
@@ -1173,6 +1240,13 @@
           '</div>';
       });
       bannerHtml += '</div>';
+      // A result from the old question set still shows, but the student is
+      // asked to retake, and the main button becomes the retake.
+      if (!rsIsCurrentResult(d)) {
+        bannerHtml = cqRetakeNotice() + bannerHtml;
+        ctaBtn.textContent = 'Retake Career Quiz →';
+        ctaBtn.onclick = cqStart;
+      }
       main.innerHTML = bannerHtml;
 
       // Stat cards
@@ -1192,7 +1266,8 @@
         }) +
         dbStat({
           icon: '✅', tint: ICON_BG[3], color: PCT_COLORS[3],
-          val: '20', label: 'Questions Answered', sub: 'Quiz complete'
+          // The previous question set had 20 questions.
+          val: String(rsIsCurrentResult(d) ? RS_QUESTIONS.length : 20), label: 'Questions Answered', sub: 'Quiz complete'
         });
     }
 
@@ -1208,7 +1283,7 @@
           '<div style="text-align:center;padding:56px 20px;color:var(--muted);">' +
           '<div style="font-size:40px;margin-bottom:16px;">📊</div>' +
           '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">No career matches yet</div>' +
-          '<div style="font-size:14px;margin-bottom:24px;">Complete the 20-question quiz to see your personalised career rankings.</div>' +
+          '<div style="font-size:14px;margin-bottom:24px;">Complete the career quiz to see your personalised career rankings.</div>' +
           '<button class="btn btn-primary" onclick="cqStart()">Take Career Quiz →</button>' +
           '</div>';
         return;
@@ -1266,13 +1341,12 @@
     const EX_GROUPS = [
       { key: 'all', label: 'All', families: null },
       { key: 'tech', label: 'Technology', families: ['computing'] },
-      { key: 'engineering', label: 'Engineering & Trades', families: ['engineering', 'trades'] },
-      { key: 'science', label: 'Science', families: ['science'] },
-      { key: 'healthcare', label: 'Healthcare', families: ['healthcare'] },
-      { key: 'creative', label: 'Design & Arts', families: ['design', 'media-arts'] },
-      { key: 'commerce', label: 'Business & Finance', families: ['business', 'finance', 'operations'] },
-      { key: 'people', label: 'People & Society', families: ['education', 'psychology', 'social-policy'] },
-      { key: 'outdoors', label: 'Outdoors & Services', families: ['outdoor-services'] }
+      { key: 'engineering', label: 'Engineering', families: ['engineering', 'architecture', 'transport'] },
+      { key: 'healthcare', label: 'Medicine & Life Sciences', families: ['medicine', 'ayush', 'allied-health', 'psychology', 'life-science'] },
+      { key: 'commerce', label: 'Commerce & Management', families: ['accounting', 'finance', 'business', 'operations'] },
+      { key: 'creative', label: 'Design & Media', families: ['design', 'media-arts'] },
+      { key: 'people', label: 'Law & Social Sciences', families: ['law', 'social-science'] },
+      { key: 'public', label: 'Government & Public Service', families: ['public-service', 'education'] }
     ];
 
     // Class 11 streams, in the order a student is likely to look for them.
@@ -1306,15 +1380,23 @@
     // The student's six-dimensional profile, or null before the quiz.
     // riasecScores is what the quiz saves; appResults is the fallback for a
     // session stored by a build that only wrote the results payload.
-    function exStudentPct() {
+    // The student's profile in the shape rsCareerFit() takes. A result from
+    // before the world or subject questions has no scores for them; those
+    // layers are null and rsCareerFit() leaves them out.
+    function exStudentProfile() {
       const s = loadState();
-      if (s.riasecScores && s.riasecScores.pct) return s.riasecScores.pct;
-      if (appResults && appResults.riasec && appResults.riasec.pct) return appResults.riasec.pct;
-      return null;
+      const r = appResults && appResults.riasec;
+      const pct = (s.riasecScores && s.riasecScores.pct) || (r && r.pct);
+      if (!pct) return null;
+      return {
+        pct: pct,
+        domains: (r && r.domainScores) || null,
+        subjects: (r && r.subjectScores) || null
+      };
     }
 
     // Colour tracks how strong the match is, not the card's position: with a
-    // hundred-plus cards on screen, rank-based colour would say nothing.
+    // seventy-plus cards on screen, rank-based colour would say nothing.
     function exBand(pct) {
       return pct >= 85 ? 0 : pct >= 75 ? 1 : pct >= 65 ? 2 : pct >= 55 ? 3 : 4;
     }
@@ -1338,10 +1420,10 @@
 
     function exBuildList() {
       const db = typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : [];
-      const pct = exStudentPct();
+      const profile = exStudentProfile();
       return db.map(c => ({
         career: c,
-        match_pct: pct ? Math.round(rsCareerFit(pct, c).fit * 100) : null,
+        match_pct: profile ? Math.round(rsCareerFit(profile, c).fit * 100) : null,
         salary: exSalaryRange(c.salary),
         streams: exStreamsOf(c),
         // Searching the stream and the "why" line too means "PCB" or
@@ -1813,6 +1895,60 @@
       if (note) note.textContent =
         '"Your profile points strongly toward ' + d.personality_type.replace('The ', '') + '. ' +
         top.title + ' is your top career at ' + top.match_pct + '%. Stream recommendation: ' + d.stream_recommendation + '."';
+    }
+
+    // ── Roadmap (app.html#/roadmap) ──
+    // The picker lists the careers careerAPI has a roadmap for (GET /roadmaps);
+    // it opens on the student's top match when that career has one, else on
+    // the first. Each pick fetches that timeline (GET /roadmap?career=).
+    let rmCareers = null;   // [{ career, emoji }], fetched once per page load
+    let rmReq = 0;
+    function rmLoad() {
+      const sel = document.getElementById('rm-select');
+      if (!sel || !window.CareerAPI) return;
+      const list = rmCareers ? Promise.resolve(rmCareers)
+        : CareerAPI.me.roadmaps().then(r => (rmCareers = r.roadmaps || []));
+      list.then(careers => {
+        if (!careers.length) { rmMessage('No roadmaps are available yet.'); return; }
+        const top = appResults && appResults.top_careers && appResults.top_careers[0];
+        const has = name => careers.some(c => c.career === name);
+        const pick = has(sel.value) ? sel.value : top && has(top.title) ? top.title : careers[0].career;
+        sel.innerHTML = careers.map(c => '<option>' + esc(c.career) + '</option>').join('');
+        sel.value = pick;
+        rmShow(pick, top && !has(top.title) ? top.title : null);
+      }, err => rmMessage(err.message));
+    }
+
+    // missing: the student's top career when it has no roadmap yet.
+    function rmShow(career, missing) {
+      const req = ++rmReq;
+      document.getElementById('rm-timeline').innerHTML = '';
+      rmNote('');
+      CareerAPI.me.roadmap(career).then(r => {
+        if (req !== rmReq) return;
+        const rm = r.roadmap;
+        document.getElementById('rm-career').textContent = (rm.emoji ? rm.emoji + ' ' : '') + rm.career;
+        rmNote(missing ? 'There\'s no roadmap for ' + missing + ' yet — showing ' + rm.career + '.' : '');
+        // The first stage is "now", so it shows as reached.
+        document.getElementById('rm-timeline').innerHTML = rm.steps.map((s, i) =>
+          '<div class="tl-item' + (i === 0 ? ' done' : '') + '"><div class="tl-dot"></div><div class="tl-card">' +
+          '<div class="tl-year">' + esc(s.period) + '</div>' +
+          '<div class="tl-title">' + esc(s.title) + '</div>' +
+          '<div class="tl-actions">' + (s.actions || []).map(a => '<div class="tl-action">' + esc(a) + '</div>').join('') +
+          '</div></div></div>').join('');
+      }, err => { if (req === rmReq) rmMessage(err.message); });
+    }
+
+    function rmMessage(text) {
+      document.getElementById('rm-career').textContent = '—';
+      document.getElementById('rm-timeline').innerHTML = '';
+      rmNote(text);
+    }
+
+    function rmNote(text) {
+      const el = document.getElementById('rm-note');
+      el.textContent = text;
+      el.hidden = !text;
     }
 
     // "Top Match Evolution" compares the student's 2 saved career quiz runs
