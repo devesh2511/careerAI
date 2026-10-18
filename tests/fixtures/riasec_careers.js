@@ -569,6 +569,14 @@
       why: 'Giving movement and life to something that does not exist.'
     },
     {
+      title: 'Product Designer', emoji: '📐', field: 'Design + Product', family: 'design',
+      stream: 'Arts / PCM / Any', salary: '₹5–12 LPA starting',
+      riasec: { R: 65, I: 65, A: 95, S: 50, E: 55, C: 45 },
+      domains: ['media', 'digital'],
+      subjects: ['arts', 'maths', 'computers'],
+      why: 'Deciding how an everyday product looks, feels and works, from a bottle to a phone app.'
+    },
+    {
       title: 'Economist', emoji: '📉', field: 'Economics', family: 'social-science',
       stream: 'Commerce / Arts / PCM', salary: '₹5–10 LPA starting',
       riasec: { R: 10, I: 95, A: 30, S: 45, E: 55, C: 80 },
