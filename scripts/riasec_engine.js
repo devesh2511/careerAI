@@ -103,11 +103,13 @@
   //   D1-D4 each show four domains, every domain appears exactly twice, and
   //   D5 asks directly.
   //
-  // Part 3 — 2 subject questions: which subjects come easily (self-rated
-  //   strength, the light version of the aptitude section Indian tests
-  //   use) and which the student would happily study for two more years.
-  //   They feed the stream ranking and nudge careers whose key subjects
-  //   the student is strong in.
+  // Part 3 — 2 subject questions. S1 asks which subjects the student is
+  //   good at, as a scenario (which could you help a friend with?), so it
+  //   reads differently from S2, which asks what they would happily study
+  //   for two more years. S1 is self-rated strength, the light version of
+  //   the aptitude section Indian tests use; S2 is enjoyment. They feed the
+  //   stream ranking and nudge careers whose key subjects the student is
+  //   strong in.
   // ══════════════════════════════════════════════════════════════
 
   // The weight an option gives its own area; the rest goes to one neighbour.
@@ -133,8 +135,8 @@
     life:     { label: 'Health, the body & biology', emoji: '🧬' },
     planet:   { label: 'Nature, climate & energy', emoji: '🌍' },
     built:    { label: 'Buildings, cities & spaces', emoji: '🏙️' },
-    money:    { label: 'Business, money & markets', emoji: '💼' },
-    people:   { label: 'People, minds & society', emoji: '🤝' },
+    money:    { label: 'Business & money', emoji: '💼' },
+    people:   { label: 'People, the mind & society', emoji: '🤝' },
     media:    { label: 'Stories, art, media & games', emoji: '🎬' },
   };
   const RS_DOMAIN_KEYS = Object.keys(RS_DOMAINS);
@@ -168,149 +170,149 @@
   }
 
   const RS_QUESTIONS = [
-    rsChoice('Q1', '🔬 Science Fair', 'Your class is entering the science fair. Which job do you want?', 2, [
+    rsChoice('Q1', '🔬 Science Fair', 'Your class is making a project for the science fair. Which job do you want?', 2, [
       ['Build the working model with tools', 'R', 'I'],
-      ['Design the experiment and analyse the results', 'I', 'A'],
-      ['Make the display and poster look amazing', 'A', 'S'],
-      ['Explain the project to visitors so they really get it', 'S', 'A'],
-      ['Pitch the project to the judges to win', 'E', 'S'],
-      ['Keep the logbook of every measurement', 'C', 'R'],
+      ['Plan the experiment and study the results', 'I', 'A'],
+      ['Make the poster and display look amazing', 'A', 'S'],
+      ['Explain the project to visitors in a simple way', 'S', 'A'],
+      ['Present the project to the judges and try to win', 'E', 'S'],
+      ['Write down every reading and measurement', 'C', 'R'],
     ]),
-    rsChoice('Q2', '📱 Build an App', 'You and your friends are making an app. Which role would you take?', 2, [
+    rsChoice('Q2', '📱 Build an App', 'You and your friends are making a new app. Which job would you take?', 2, [
       ['Build the gadget the app controls', 'R', 'I'],
       ['Write the code that makes it work', 'I', 'R'],
       ['Design the screens and how it looks', 'A', 'I'],
-      ['Help users who get stuck', 'S', 'E'],
-      ['Plan how to get the first 10,000 users', 'E', 'C'],
-      ['Test every feature and log each bug', 'C', 'R'],
+      ['Help people who get stuck using it', 'S', 'E'],
+      ['Plan how to get the first 10,000 people to use it', 'E', 'C'],
+      ['Test every part and note down each problem', 'C', 'R'],
     ]),
-    rsChoice('Q3', '🔧 Broken Machine', 'The washing machine at home breaks down. What would you want to do?', 2, [
-      ['Take it apart and repair it', 'R', 'I'],
-      ['Work out exactly why it failed', 'I', 'R'],
-      ['Sketch a better design for it', 'A', 'I'],
+    rsChoice('Q3', '🔧 Broken Machine', 'The washing machine at home stops working. What would you want to do?', 2, [
+      ['Open it up and repair it', 'R', 'I'],
+      ['Find out exactly why it stopped working', 'I', 'R'],
+      ['Draw a better design for it', 'A', 'I'],
       ['Help the family manage until it is fixed', 'S', 'E'],
-      ['Get the best deal on a repair or a new one', 'E', 'C'],
-      ['Find the warranty card and service records', 'C', 'R'],
+      ['Find the best price for a repair or a new one', 'E', 'C'],
+      ['Find the warranty card and the old repair bills', 'C', 'R'],
     ]),
-    rsChoice('Q4', '🌅 Free Saturday', 'You have a whole free Saturday. What sounds best?', 2, [
-      ['Build something in the garage or garden', 'R', 'C'],
-      ['Watch a documentary about how the universe works', 'I', 'A'],
+    rsChoice('Q4', '🌅 Free Saturday', 'You have a full free Saturday. What sounds most fun?', 2, [
+      ['Build something at home or in the garden', 'R', 'C'],
+      ['Watch a show about how space and the universe work', 'I', 'A'],
       ['Draw, write, make music or edit a video', 'A', 'I'],
       ['Help a friend with something they are stuck on', 'S', 'A'],
       ['Plan a small event or sell something online', 'E', 'C'],
-      ['Sort out your room, files or collection', 'C', 'R'],
+      ['Tidy up your room, books or collection', 'C', 'R'],
     ]),
-    rsChoice('Q5', '💍 Family Wedding', 'Your cousin’s wedding is coming up and everyone has a job. Which one do you take?', 2, [
-      ['Set up the lights, the stage and the sound system', 'R', 'C'],
-      ['Solve the seating puzzle so no feuding relatives sit together', 'I', 'A'],
-      ['Design the decorations and the invitation cards', 'A', 'S'],
-      ['Look after the elderly relatives and the little kids', 'S', 'E'],
-      ['Bargain with the caterer and decorator for the best deal', 'E', 'C'],
-      ['Keep the guest list, gifts and budget in order', 'C', 'E'],
+    rsChoice('Q5', '💍 Family Wedding', 'Your cousin’s wedding is coming up and everyone gets a job. Which one do you take?', 2, [
+      ['Set up the lights, stage and sound system', 'R', 'C'],
+      ['Plan the seating so relatives who don’t get along sit apart', 'I', 'A'],
+      ['Design the decorations and invitation cards', 'A', 'S'],
+      ['Look after the grandparents and the little kids', 'S', 'E'],
+      ['Talk to the cook and decorator to get the best price', 'E', 'C'],
+      ['Keep track of the guest list, gifts and money', 'C', 'E'],
     ]),
     rsChoice('Q6', '👥 Group Trouble', 'Your group project is going badly. What would you do first?', 2, [
-      ['Grab the tools and fix the part that is broken', 'R', 'I'],
-      ['Figure out what is really going wrong', 'I', 'R'],
+      ['Grab the tools and fix the broken part', 'R', 'I'],
+      ['Find out what is really going wrong', 'I', 'R'],
       ['Suggest a completely new idea', 'A', 'I'],
       ['Make sure everyone is okay and talking again', 'S', 'E'],
       ['Take charge and decide who does what', 'E', 'S'],
-      ['Make a checklist with deadlines and track it', 'C', 'E'],
+      ['Make a list of tasks with dates and tick them off', 'C', 'E'],
     ]),
     rsChoice('Q7', '▶️ Video Pick', 'Which video would you click on first?', 2, [
-      ['How to build an engine from scrap parts', 'R', 'I'],
-      ['How a computer program learned to beat chess champions', 'I', 'A'],
-      ['How animators bring a film character to life', 'A', 'I'],
+      ['How to build an engine from old scrap parts', 'R', 'I'],
+      ['How a computer learned to beat chess champions', 'I', 'A'],
+      ['How cartoon characters are brought to life', 'A', 'I'],
       ['How one teacher changed a village school', 'S', 'E'],
       ['How a teenager built a ₹1 crore business', 'E', 'C'],
-      ['How to plan and track your money like a pro', 'C', 'E'],
+      ['How to plan and keep track of your money', 'C', 'E'],
     ]),
     rsChoice('Q8', '🏆 Prize Money', 'You win ₹10,000 in a competition. What would you do with it?', 2, [
       ['Buy tools or parts to build something', 'R', 'C'],
       ['Buy a telescope, a microscope or a coding course', 'I', 'R'],
-      ['Buy a camera, an instrument or art supplies', 'A', 'I'],
+      ['Buy a camera, a musical instrument or art supplies', 'A', 'I'],
       ['Use it to help someone who needs it', 'S', 'A'],
-      ['Invest it to start a small business', 'E', 'C'],
-      ['Save it and track every rupee', 'C', 'E'],
+      ['Use it to start a small business', 'E', 'C'],
+      ['Save it and keep track of every rupee', 'C', 'E'],
     ]),
     rsChoice('Q9', '🏫 School Club', 'Which school club would you join?', 2, [
       ['Robotics or model-making club', 'R', 'I'],
       ['Science or coding club', 'I', 'R'],
       ['Drama, art or music club', 'A', 'S'],
-      ['Peer mentors or community service club', 'S', 'E'],
-      ['Debate or entrepreneurship club', 'E', 'S'],
-      ['The school magazine’s editing and fact-checking team', 'C', 'E'],
+      ['Community service club, helping people in need', 'S', 'E'],
+      ['Debate or business club', 'E', 'S'],
+      ['The school magazine team that checks every fact', 'C', 'E'],
     ]),
     rsChoice('Q10', '🙋 Friends Ask You', 'Friends usually come to you when they need…', 2, [
       ['Something fixed or put together', 'R', 'C'],
-      ['A tricky question explained', 'I', 'A'],
-      ['Fresh ideas for a creative project', 'A', 'S'],
+      ['A hard question explained', 'I', 'A'],
+      ['New ideas for a creative project', 'A', 'S'],
       ['Someone to talk to', 'S', 'A'],
       ['Someone to take charge and decide', 'E', 'S'],
-      ['Someone who remembers the dates, details and plans', 'C', 'E'],
+      ['Someone who remembers dates, details and plans', 'C', 'E'],
     ]),
     rsChoice('Q11', '📚 Dream Subject', 'If you could add one new subject at school, which would it be?', 2, [
-      ['Hands-on making with wood, metal and electronics', 'R', 'I'],
+      ['Making things with wood, metal and electronics', 'R', 'I'],
       ['Solving real mysteries with science', 'I', 'A'],
-      ['Creating games, films and music', 'A', 'I'],
+      ['Making games, films and music', 'A', 'I'],
       ['Understanding people and how to help them', 'S', 'A'],
       ['Running your own business', 'E', 'C'],
-      ['Organising anything perfectly: plans, money and data', 'C', 'R'],
+      ['Keeping plans, money and data perfectly organised', 'C', 'R'],
     ]),
-    rsChoice('Q12', '💬 Best Compliment', 'Which compliment would make you proudest?', 1, [
+    rsChoice('Q12', '💬 Best Compliment', 'Which compliment would make you feel proudest?', 1, [
       ['“You can fix anything!”', 'R', 'I'],
-      ['“How did you figure that out so fast?”', 'I', 'A'],
-      ['“That is so original!”', 'A', 'S'],
+      ['“How did you work that out so fast?”', 'I', 'A'],
+      ['“That is so creative!”', 'A', 'S'],
       ['“You really helped me.”', 'S', 'E'],
-      ['“You are a natural leader.”', 'E', 'S'],
+      ['“You are a born leader.”', 'E', 'S'],
       ['“You never miss a detail.”', 'C', 'R'],
     ]),
     rsChoice('Q13', '🎲 Team Game', 'In a team adventure game, which role do you play?', 2, [
-      ['The builder who makes the base and the gear', 'R', 'C'],
-      ['The strategist who cracks the puzzles', 'I', 'A'],
-      ['The storyteller who invents the world', 'A', 'S'],
+      ['The builder who makes the base and the tools', 'R', 'C'],
+      ['The thinker who solves the puzzles', 'I', 'A'],
+      ['The storyteller who creates the game world', 'A', 'S'],
       ['The healer who keeps the team going', 'S', 'A'],
-      ['The captain who calls the shots', 'E', 'S'],
-      ['The one who tracks the points and supplies', 'C', 'R'],
+      ['The captain who makes the big decisions', 'E', 'S'],
+      ['The one who keeps count of points and supplies', 'C', 'R'],
     ]),
-    rsChoice('Q14', '☀️ Summer Internship', 'You can do a two-week summer internship. Where?', 2, [
-      ['In a workshop or garage', 'R', 'C'],
-      ['In a science lab', 'I', 'R'],
-      ['In a design studio', 'A', 'I'],
-      ['At a children’s NGO', 'S', 'A'],
-      ['In sales and marketing at a startup', 'E', 'S'],
+    rsChoice('Q14', '☀️ Summer Job', 'You can spend two weeks of your summer holidays learning at a real workplace. Where?', 2, [
+      ['At a workshop or garage', 'R', 'C'],
+      ['At a science lab', 'I', 'R'],
+      ['At a design studio', 'A', 'I'],
+      ['At an NGO that helps children', 'S', 'A'],
+      ['In the sales team of a new company', 'E', 'S'],
       ['In a company’s accounts office', 'C', 'E'],
     ]),
     rsChoice('Q15', '📦 New Gadget', 'A new gadget arrives at home. What do you do first?', 2, [
       ['Unscrew it to see the parts inside', 'R', 'I'],
-      ['Look up how the technology actually works', 'I', 'R'],
-      ['Customise how it looks', 'A', 'I'],
+      ['Read up on how it actually works', 'I', 'R'],
+      ['Decorate it or change how it looks', 'A', 'I'],
       ['Show your grandparents how to use it', 'S', 'A'],
-      ['Work out whether you could resell it for more', 'E', 'C'],
-      ['Read the manual and set it up properly', 'C', 'R'],
+      ['Check if you could sell it for more money', 'E', 'C'],
+      ['Read the instructions and set it up properly', 'C', 'R'],
     ]),
     rsChoice('Q16', '🏕️ Class Trip', 'On a class camping trip, which job is yours?', 2, [
-      ['Pitch the tents and handle the gear', 'R', 'C'],
-      ['Find out about the rocks, plants and wildlife around the camp', 'I', 'R'],
+      ['Put up the tents and carry the gear', 'R', 'C'],
+      ['Learn about the rocks, plants and animals around the camp', 'I', 'R'],
       ['Take the photos and make the trip video', 'A', 'S'],
-      ['Do first aid and keep everyone cheerful', 'S', 'A'],
-      ['Lead the group and make the calls', 'E', 'S'],
-      ['Plan the route, timings and budget', 'C', 'R'],
+      ['Do first aid and keep everyone happy', 'S', 'A'],
+      ['Lead the group and make the decisions', 'E', 'S'],
+      ['Plan the route, timings and money', 'C', 'R'],
     ]),
     rsChoice('Q17', '🌳 Messy Park', 'The park near your home is a mess. How would you help?', 2, [
-      ['Repair the benches and plant new trees', 'R', 'C'],
-      ['Survey what is wrong and why it keeps happening', 'I', 'R'],
-      ['Paint a mural and redesign the space', 'A', 'S'],
-      ['Get the neighbours together for a clean-up', 'S', 'E'],
-      ['Convince the local council to pay for it', 'E', 'S'],
-      ['Set up a rota for who cleans when', 'C', 'E'],
+      ['Fix the benches and plant new trees', 'R', 'C'],
+      ['Find out what is wrong and why it keeps happening', 'I', 'R'],
+      ['Paint a big wall painting and give the park a new look', 'A', 'S'],
+      ['Get the neighbours together to clean it up', 'S', 'E'],
+      ['Convince local officials to pay for the repairs', 'E', 'S'],
+      ['Make a timetable for who cleans when', 'C', 'E'],
     ]),
-    rsChoice('Q18', '📰 Future Headline', 'Ten years from now, which headline about you would you love to read?', 1, [
+    rsChoice('Q18', '📰 Future Headline', 'Ten years from now, which news headline about you would you love to read?', 1, [
       ['“Young mechanic’s workshop repairs 10,000 electric scooters”', 'R', 'C'],
-      ['“Scientist discovers a faster way to detect disease”', 'I', 'A'],
-      ['“Debut film wins a national award”', 'A', 'S'],
-      ['“Volunteer tutor helps 1,000 kids pass their exams”', 'S', 'E'],
-      ['“Startup founder lands a ₹50 crore investment”', 'E', 'C'],
-      ['“New system saves the city’s hospitals ₹10 crore”', 'C', 'E'],
+      ['“Scientist finds a faster way to test for disease”', 'I', 'A'],
+      ['“Young director’s first film wins a national award”', 'A', 'S'],
+      ['“Student volunteer helps 1,000 kids pass their exams”', 'S', 'E'],
+      ['“Young founder’s company gets ₹50 crore from investors”', 'E', 'C'],
+      ['“New system saves city hospitals ₹10 crore”', 'C', 'E'],
     ]),
 
     // ── Part 2: domain. Each pick scores its domain; D5 is the direct
@@ -321,18 +323,18 @@
       opts: [
         { text: 'New AI tools, apps and gadgets', domain: 'digital' },
         { text: 'Electric cars, rockets and robots', domain: 'machines' },
-        { text: 'Medical breakthroughs and the human body', domain: 'life' },
+        { text: 'New medical discoveries and the human body', domain: 'life' },
         { text: 'Climate change, wildlife and clean energy', domain: 'planet' },
       ]
     },
     {
       id: 'D2', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 1,
-      q: 'You can spend a week shadowing one team. Which would you join?',
+      q: 'You can spend a week watching one team at work. Which would you join?',
       opts: [
         { text: 'Architects planning a new metro station', domain: 'built' },
-        { text: 'A startup deciding how to grow and make money', domain: 'money' },
-        { text: 'Counsellors supporting students at a big school', domain: 'people' },
-        { text: 'A studio making an animated series', domain: 'media' },
+        { text: 'A new company working out how to grow and make money', domain: 'money' },
+        { text: 'Counsellors helping students at a big school', domain: 'people' },
+        { text: 'A studio making a cartoon series', domain: 'media' },
       ]
     },
     {
@@ -349,29 +351,29 @@
       id: 'D4', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 1,
       q: 'Which of these would you most like to work on?',
       opts: [
-        { text: 'A self-driving delivery robot', domain: 'machines' },
+        { text: 'A delivery robot that drives itself', domain: 'machines' },
         { text: 'Bringing a dying forest or river back to life', domain: 'planet' },
-        { text: 'A programme that helps every child learn to read', domain: 'people' },
+        { text: 'A plan that helps every child learn to read', domain: 'people' },
         { text: 'A music video or short film', domain: 'media' },
       ]
     },
     {
       id: 'D5', part: 2, type: 'domain', area: '🌍 Your World', maxSelect: 2, points: 2,
-      q: 'Which world would you most like your future work to be in?',
+      q: 'In which world would you most like to work one day?',
       opts: RS_DOMAIN_KEYS.map(k => ({ text: RS_DOMAINS[k].emoji + '  ' + RS_DOMAINS[k].label, domain: k }))
     },
 
     // ── Part 3: subjects. `points` is how much a pick counts toward the
-    // subject's strength: finding it easy matters more than enjoying it,
+    // subject's strength: being good at it matters more than enjoying it,
     // because Class 11 marks depend on it.
     {
       id: 'S1', part: 3, type: 'subject', area: '📘 Your Subjects', maxSelect: 3, points: 0.6,
-      q: 'Which subjects come most easily to you?',
+      q: 'A friend is stuck the night before an exam. Which subjects could you easily help them with?',
       opts: RS_SUBJECT_KEYS.map(k => ({ text: RS_SUBJECTS[k].emoji + '  ' + RS_SUBJECTS[k].label, subject: k }))
     },
     {
       id: 'S2', part: 3, type: 'subject', area: '📘 Your Subjects', maxSelect: 3, points: 0.4,
-      q: 'Which subjects would you happily study for two more years?',
+      q: 'Which subjects would you be happy to study for two more years?',
       opts: RS_SUBJECT_KEYS.map(k => ({ text: RS_SUBJECTS[k].emoji + '  ' + RS_SUBJECTS[k].label, subject: k }))
     },
   ];

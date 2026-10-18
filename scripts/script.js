@@ -1898,45 +1898,46 @@
     }
 
     // ── Roadmap (app.html#/roadmap) ──
-    // The picker lists the careers careerAPI has a roadmap for (GET /roadmaps);
-    // it opens on the student's top match when that career has one, else on
-    // the first. Each pick fetches that timeline (GET /roadmap?career=).
-    let rmCareers = null;   // [{ career, emoji }], fetched once per page load
+    // The picker lists the careers the student's career quiz suggested
+    // (appResults.top_careers, up to 5) and opens on the top match. Each pick
+    // fetches that career's timeline from careerAPI (GET /roadmap?career=);
+    // a career with no roadmap there yet answers 404 not_found.
     let rmReq = 0;
     function rmLoad() {
       const sel = document.getElementById('rm-select');
       if (!sel || !window.CareerAPI) return;
-      const list = rmCareers ? Promise.resolve(rmCareers)
-        : CareerAPI.me.roadmaps().then(r => (rmCareers = r.roadmaps || []));
-      list.then(careers => {
-        if (!careers.length) { rmMessage('No roadmaps are available yet.'); return; }
-        const top = appResults && appResults.top_careers && appResults.top_careers[0];
-        const has = name => careers.some(c => c.career === name);
-        const pick = has(sel.value) ? sel.value : top && has(top.title) ? top.title : careers[0].career;
-        sel.innerHTML = careers.map(c => '<option>' + esc(c.career) + '</option>').join('');
-        sel.value = pick;
-        rmShow(pick, top && !has(top.title) ? top.title : null);
-      }, err => rmMessage(err.message));
+      const careers = (appResults && appResults.top_careers) || [];
+      sel.hidden = !careers.length;
+      if (!careers.length) { rmMessage('Take the career quiz to see a roadmap for your top career matches.'); return; }
+      const pick = careers.some(c => c.title === sel.value) ? sel.value : careers[0].title;
+      sel.innerHTML = careers.map(c => '<option value="' + esc(c.title) + '">' +
+        esc((c.emoji ? c.emoji + ' ' : '') + c.title) + '</option>').join('');
+      sel.value = pick;
+      rmShow(pick);
     }
 
-    // missing: the student's top career when it has no roadmap yet.
-    function rmShow(career, missing) {
+    function rmShow(career) {
       const req = ++rmReq;
+      const match = ((appResults && appResults.top_careers) || []).find(c => c.title === career);
+      document.getElementById('rm-career').textContent = (match && match.emoji ? match.emoji + ' ' : '') + career;
       document.getElementById('rm-timeline').innerHTML = '';
-      rmNote('');
+      rmNote('Loading roadmap…');
       CareerAPI.me.roadmap(career).then(r => {
         if (req !== rmReq) return;
-        const rm = r.roadmap;
-        document.getElementById('rm-career').textContent = (rm.emoji ? rm.emoji + ' ' : '') + rm.career;
-        rmNote(missing ? 'There\'s no roadmap for ' + missing + ' yet — showing ' + rm.career + '.' : '');
+        rmNote('');
         // The first stage is "now", so it shows as reached.
-        document.getElementById('rm-timeline').innerHTML = rm.steps.map((s, i) =>
+        document.getElementById('rm-timeline').innerHTML = r.roadmap.steps.map((s, i) =>
           '<div class="tl-item' + (i === 0 ? ' done' : '') + '"><div class="tl-dot"></div><div class="tl-card">' +
           '<div class="tl-year">' + esc(s.period) + '</div>' +
           '<div class="tl-title">' + esc(s.title) + '</div>' +
           '<div class="tl-actions">' + (s.actions || []).map(a => '<div class="tl-action">' + esc(a) + '</div>').join('') +
           '</div></div></div>').join('');
-      }, err => { if (req === rmReq) rmMessage(err.message); });
+      }, err => {
+        if (req !== rmReq) return;
+        rmNote(err.code === 'not_found'
+          ? 'We\'re still writing the roadmap for ' + career + '. Pick another of your matches above.'
+          : err.message);
+      });
     }
 
     function rmMessage(text) {
