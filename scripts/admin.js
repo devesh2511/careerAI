@@ -337,6 +337,7 @@
       return { view: parts[0] || 'overview', id: parts[1] || null, sub: parts[2] || null };
     }
     function admRoute() {
+      if (!admRmLeaveOk()) return;
       const r = admParse();
       document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.toggle('active', n.dataset.view === r.view));
       admCloseModal();
@@ -345,6 +346,7 @@
       admView().innerHTML = '<div class="adm-loading">Loading…</div>';
       const views = {
         overview: admOverview, contests: r.id ? admContestEditor : admContests,
+        roadmaps: r.id ? admRoadmapEditor : admRoadmaps,
         schools: r.id ? admSchoolDetail : admSchools, students: r.id ? admStudentDetail : admStudents, admins: admAdmins
       };
       const p = (views[r.view] || admOverview)(r, seq);
@@ -623,6 +625,230 @@
         admRoute();
       }).catch(err => { if (!admAuthGuard(err)) alert(err.message); });
     }
+
+    // ══════════════════════════════════════════════════════════════
+    // ROADMAPS
+    // #/roadmaps lists every career; #/roadmaps/<encoded title> edits one.
+    // A save replaces the whole roadmap and students see it straight away
+    // (app.html#/roadmap). The editor sends the version it opened, so if
+    // another admin saved meanwhile the server refuses (409 roadmap_changed)
+    // instead of silently overwriting their work.
+    // ══════════════════════════════════════════════════════════════
+    const ADM_RM_TEMPLATE = ['Now · Class 10', 'Class 11–12', 'Class 12 · Entrance Exams', 'College', 'First Job'];
+    let admRmTab = 'all';
+    let admRmQuery = '';
+    let admRmList = [];
+    let admRm = null;               // { career, roadmap, steps: [{ period, title, actionsText }] }
+    let admRmDirty = false;
+    let admRmHash = '';             // the editor's hash, to ask before leaving it unsaved
+
+    function admRmTabSet(t) { admRmTab = t; admRmRefresh(); }
+    function admRmSearch(value) { admRmQuery = value; admRmRefresh(); }
+
+    function admRoadmaps(r, seq) {
+      CareerAPI.admin.roadmaps.list().then(res => {
+        admRmList = res.careers || [];
+        const missing = admRmList.filter(c => !c.has_roadmap).length;
+        admPaint(seq,
+          admTopbar('Roadmaps', 'The Class 10 → first job roadmap students see for each career. Saved changes are live straight away.') +
+          '<div class="adm-toolbar">' +
+          admTabs([{ key: 'all', label: 'All careers (' + admRmList.length + ')' }, { key: 'missing', label: 'No roadmap (' + missing + ')' }], admRmTab, 'admRmTabSet') +
+          '<input class="form-input adm-search" type="search" placeholder="Search career or field" value="' + admEsc(admRmQuery) + '" oninput="admRmSearch(this.value)" /></div>' +
+          '<div id="adm-list"></div>');
+        admRmRefresh();
+      }).catch(err => admFail(seq, err));
+    }
+
+    // Re-draws only the table, so the search box keeps focus while typing.
+    function admRmRefresh() {
+      const box = document.getElementById('adm-list');
+      if (!box) return;
+      const q = admRmQuery.trim().toLowerCase();
+      const rows = admRmList
+        .filter(c => admRmTab === 'all' || !c.has_roadmap)
+        .filter(c => !q || (c.career + ' ' + c.field).toLowerCase().includes(q))
+        .map(c => {
+          const go = 'admGo(\'roadmaps/' + encodeURIComponent(c.career).replace(/'/g, '%27') + '\')';
+          return '<tr class="adm-click" onclick="' + go + '">' +
+            '<td><b>' + admEsc(c.emoji + ' ' + c.career) + '</b><div class="adm-sub">' + admEsc(c.field) + '</div></td>' +
+            '<td>' + admEsc(c.stream) + '</td>' +
+            '<td class="adm-num">' + (c.has_roadmap ? c.step_count : '<span class="badge badge-orange">None</span>') + '</td>' +
+            '<td>' + (c.updated_at ? admEsc(admWhen(c.updated_at)) + '<div class="adm-sub">' + admEsc(c.updated_by || 'Initial content') + '</div>' : '—') + '</td>' +
+            '<td class="adm-row-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();' + go + '">' +
+            (c.has_roadmap ? 'Edit' : 'Write') + '</button></td></tr>';
+        });
+      box.innerHTML = admTable([{ label: 'Career' }, { label: 'Stream' }, { label: 'Stages', cls: 'adm-num' }, { label: 'Last updated' }, { label: '', cls: 'adm-row-actions' }],
+        rows, q ? 'No careers match "' + admEsc(admRmQuery) + '".' : 'Every career has a roadmap. ✓');
+    }
+
+    // ── Editor ──
+    function admRoadmapEditor(r, seq) {
+      let title;
+      try { title = decodeURIComponent(r.id); } catch (e) { title = r.id; }
+      CareerAPI.admin.roadmaps.get(title).then(res => {
+        if (seq !== admRenderSeq) return;
+        admRmLoad(res);
+        admRmHash = location.hash;
+        admPaint(seq, admRmHtml());
+        admRmSync();
+      }).catch(err => admFail(seq, err));
+    }
+
+    function admRmLoad(res) {
+      admRm = { career: res.career, roadmap: res.roadmap, steps: [] };
+      admRm.steps = res.roadmap
+        ? res.roadmap.steps.map(s => ({ period: s.period, title: s.title, actionsText: s.actions.join('\n') }))
+        : [];
+      admRmDirty = false;
+    }
+
+    function admRmHtml() {
+      const c = admRm.career, rm = admRm.roadmap;
+      const crumb = '<a href="#/roadmaps">Roadmaps</a> / ' + admEsc(c.title);
+      const sub = admEsc(c.field + ' · ' + c.stream + ' · ' + c.salary) +
+        (rm ? '<br>Last saved ' + admEsc(admWhen(rm.updated_at)) + ' by ' + admEsc(rm.updated_by || 'initial content') : '');
+      const actions =
+        '<button class="btn btn-ghost btn-sm" id="adm-rm-discard" onclick="admRmDiscard()">Discard changes</button>' +
+        (rm ? '<button class="btn btn-danger btn-sm" onclick="admRmDelete()">Delete roadmap</button>' : '') +
+        '<button class="btn btn-primary btn-sm" id="adm-rm-save" onclick="admRmSave()">Save roadmap</button>';
+      let html = admTopbar(admEsc(c.emoji + ' ' + c.title) + ' <span id="adm-rm-state"></span>', sub, actions, crumb) +
+        '<div class="adm-error-box" id="adm-rm-err" style="display:none;" role="alert"></div>';
+      if (!rm && !admRm.steps.length) {
+        return html + '<div class="adm-panel"><div class="adm-empty">This career has no roadmap yet, so students see "We\'re still writing the roadmap".<br><br>' +
+          '<button class="btn btn-primary btn-sm" onclick="admRmStart()">Start with the usual 5 stages</button></div></div>';
+      }
+      return html + '<div class="adm-rm-layout"><div><div id="adm-rm-stages">' + admRmStagesHtml() + '</div>' +
+        '<button class="btn btn-secondary btn-sm" onclick="admRmAdd()">+ Add stage</button></div>' +
+        '<aside class="adm-rm-preview"><div class="adm-section-title" style="margin-top:0;">What students see</div>' +
+        '<div class="timeline" id="adm-rm-preview"></div></aside></div>';
+    }
+
+    function admRmStagesHtml() {
+      const n = admRm.steps.length;
+      return admRm.steps.map((s, i) =>
+        '<div class="adm-q adm-rm-stage">' +
+        '<div class="adm-q-head"><div class="adm-q-title">Stage ' + (i + 1) + '</div><div class="adm-rm-tools">' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="admRmMove(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + ' aria-label="Move stage ' + (i + 1) + ' up">↑</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="admRmMove(' + i + ',1)"' + (i === n - 1 ? ' disabled' : '') + ' aria-label="Move stage ' + (i + 1) + ' down">↓</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="admRmRemove(' + i + ')"' + (n === 1 ? ' disabled' : '') + ' aria-label="Remove stage ' + (i + 1) + '">✕</button>' +
+        '</div></div><div class="adm-form-grid">' +
+        admRmInput(i, 'period', 'When', s.period, 60, 'e.g. Class 11–12') +
+        admRmInput(i, 'title', 'Title', s.title, 150, 'e.g. Choose PCM + Computer Science') +
+        '<div class="form-group adm-span"><label class="form-label">Actions <span style="font-weight:400;color:var(--muted);">· one per line, up to 10</span></label>' +
+        '<textarea class="form-input" rows="4" oninput="admRmEdit(' + i + ',\'actionsText\',this.value)">' + admEsc(s.actionsText) + '</textarea></div>' +
+        '</div></div>').join('');
+    }
+    function admRmInput(i, key, label, value, max, placeholder) {
+      return '<div class="form-group"><label class="form-label">' + label + '</label>' +
+        '<input class="form-input" maxlength="' + max + '" value="' + admEsc(value) + '" placeholder="' + admEsc(placeholder) + '"' +
+        ' oninput="admRmEdit(' + i + ',\'' + key + '\',this.value)" /></div>';
+    }
+
+    function admRmLines(text) { return String(text || '').split('\n').map(a => a.trim()).filter(Boolean); }
+
+    // Typing updates the state and preview without re-drawing the form (keeps focus).
+    function admRmEdit(i, key, value) {
+      admRm.steps[i][key] = value;
+      admRmDirty = true;
+      admRmSync();
+    }
+    function admRmRedraw() {
+      const box = document.getElementById('adm-rm-stages');
+      if (box) box.innerHTML = admRmStagesHtml();
+      else admView().innerHTML = admRmHtml();
+      admRmDirty = true;
+      admRmSync();
+    }
+    function admRmMove(i, d) {
+      const s = admRm.steps;
+      [s[i], s[i + d]] = [s[i + d], s[i]];
+      admRmRedraw();
+    }
+    function admRmRemove(i) {
+      const s = admRm.steps[i];
+      if ((s.title || admRmLines(s.actionsText).length) && !confirm('Remove stage ' + (i + 1) + (s.title ? ' "' + s.title + '"' : '') + '?')) return;
+      admRm.steps.splice(i, 1);
+      admRmRedraw();
+    }
+    function admRmAdd() {
+      if (admRm.steps.length >= 10) { alert('A roadmap can have at most 10 stages.'); return; }
+      admRm.steps.push({ period: '', title: '', actionsText: '' });
+      admRmRedraw();
+    }
+    function admRmStart() {
+      admRm.steps = ADM_RM_TEMPLATE.map(p => ({ period: p, title: '', actionsText: '' }));
+      admView().innerHTML = admRmHtml();
+      admRmDirty = true;
+      admRmSync();
+    }
+
+    // Unsaved badge, button states and the live preview.
+    function admRmSync() {
+      const st = document.getElementById('adm-rm-state');
+      if (st) st.innerHTML = admRmDirty ? '<span class="badge badge-orange">Unsaved changes</span>'
+        : admRm.roadmap ? '<span class="badge badge-green">Live</span>' : '<span class="badge badge-orange">No roadmap</span>';
+      const save = document.getElementById('adm-rm-save');
+      if (save) save.disabled = !admRmDirty;
+      const discard = document.getElementById('adm-rm-discard');
+      if (discard) discard.disabled = !admRmDirty;
+      const pv = document.getElementById('adm-rm-preview');
+      if (pv) pv.innerHTML = admRm.steps.map((s, i) =>
+        '<div class="tl-item' + (i === 0 ? ' done' : '') + '"><div class="tl-dot"></div><div class="tl-card">' +
+        '<div class="tl-year">' + admEsc(s.period || '…') + '</div><div class="tl-title">' + admEsc(s.title || '…') + '</div>' +
+        '<div class="tl-actions">' + admRmLines(s.actionsText).map(a => '<div class="tl-action">' + admEsc(a) + '</div>').join('') + '</div>' +
+        '</div></div>').join('');
+    }
+
+    function admRmError(msg, reload) {
+      const box = document.getElementById('adm-rm-err');
+      if (!box) { alert(msg); return; }
+      box.innerHTML = admEsc(msg) + (reload ? ' <button class="adm-link" onclick="admRmReload()">Reload their version</button>' : '');
+      box.style.display = msg ? 'block' : 'none';
+      if (msg) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function admRmSave() {
+      const btn = document.getElementById('adm-rm-save');
+      const steps = admRm.steps.map(s => ({ period: s.period.trim(), title: s.title.trim(), actions: admRmLines(s.actionsText) }));
+      admRmError('');
+      admBusy(btn, true);
+      CareerAPI.admin.roadmaps.save(admRm.career.title, steps, admRm.roadmap ? admRm.roadmap.version : null).then(res => {
+        admRmLoad(res);
+        admView().innerHTML = admRmHtml();
+        admRmSync();
+        admToast('Roadmap saved. Students see it now.');
+      }).catch(err => {
+        admBusy(btn, false);
+        if (admAuthGuard(err)) return;
+        admRmError(err.message, err.code === 'roadmap_changed');
+      });
+    }
+
+    function admRmDiscard() {
+      if (!confirm('Discard your unsaved changes?')) return;
+      admRmReload();
+    }
+    function admRmReload() {
+      admRmDirty = false;
+      admRoute();
+    }
+
+    function admRmDelete() {
+      if (!confirm('Delete the roadmap for ' + admRm.career.title + '?\n\nStudents will see "We\'re still writing the roadmap" for this career until a new one is saved.')) return;
+      CareerAPI.admin.roadmaps.remove(admRm.career.title).then(() => {
+        admToast('Roadmap deleted.');
+        admRmReload();
+      }).catch(err => { if (!admAuthGuard(err)) admRmError(err.message); });
+    }
+
+    // Ask before leaving an editor with unsaved changes (other views, tab close).
+    function admRmLeaveOk() {
+      if (!admRmDirty || location.hash === admRmHash) return true;
+      if (confirm('This roadmap has unsaved changes. Leave without saving?')) { admRmDirty = false; return true; }
+      history.replaceState(null, '', admRmHash);
+      return false;
+    }
+    window.addEventListener('beforeunload', e => { if (admRmDirty) { e.preventDefault(); e.returnValue = ''; } });
 
     // ══════════════════════════════════════════════════════════════
     // SCHOOLS

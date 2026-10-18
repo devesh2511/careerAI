@@ -427,6 +427,20 @@
         remove(id, mode) { return http('DELETE', '/admin/admins/' + encodeURIComponent(id) + query({ mode: mode })); },
         // POST /admin/admins/:id/restore
         restore(id) { return http('POST', '/admin/admins/' + encodeURIComponent(id) + '/restore'); }
+      },
+
+      // The career is a query parameter: titles like "UI/UX Designer" contain a slash.
+      roadmaps: {
+        // GET /admin/roadmaps → { careers: [AdminRoadmapRow] }, every career
+        list() { return http('GET', '/admin/roadmaps'); },
+        // GET /admin/roadmap?career= → { career, roadmap } (roadmap null when none)
+        get(career) { return http('GET', '/admin/roadmap' + query({ career: career })); },
+        // PUT /admin/roadmap?career=  { steps, version } → { career, roadmap }; 409 roadmap_changed
+        save(career, steps, version) {
+          return http('PUT', '/admin/roadmap' + query({ career: career }), { steps: steps, version: version });
+        },
+        // DELETE /admin/roadmap?career=
+        remove(career) { return http('DELETE', '/admin/roadmap' + query({ career: career })); }
       }
     },
 
