@@ -5,7 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const E = require('../scripts/riasec_engine.js');
-const { RIASEC_CAREERS } = require('../scripts/riasec_careers.js');
+const { RIASEC_CAREERS } = require('./fixtures/riasec_careers.js');
 
 const Q = E.RS_QUESTIONS;
 const PART1 = Q.filter(q => q.type === 'choice');

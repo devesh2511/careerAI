@@ -190,6 +190,41 @@
   padding: 0;
 }
 
+/* Type is set in rem throughout, so it follows the reader's browser font
+   setting. On large monitors (or a zoomed-out window) the root steps up a
+   little so the text doesn't shrink to a sliver in a wide column. Percentages
+   rather than px keep the user's own default as the baseline. */
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (min-width: 1600px) {
+  html {
+    font-size: 106.25%;
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 112.5%;
+  }
+}
+
+@media (min-width: 2400px) {
+  html {
+    font-size: 125%;
+  }
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
 body {
   font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg);
@@ -298,6 +333,7 @@ h6 {
   top: 0;
   left: 0;
   height: 100vh;
+  height: 100dvh;
   z-index: 100;
   transition: transform .3s var(--ease-out);
 }
@@ -308,7 +344,7 @@ h6 {
 }
 
 .logo-text {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 800;
   letter-spacing: -.5px;
 }
@@ -321,13 +357,17 @@ h6 {
 }
 
 .logo-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   margin-top: 2px;
 }
 
 .nav {
   flex: 1;
+  /* Short windows (landscape phones, split screens) scroll the links
+     rather than pushing the user row off the bottom */
+  min-height: 0;
+  overflow-y: auto;
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
@@ -340,7 +380,7 @@ h6 {
   gap: 10px;
   padding: 10px 12px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--muted);
   cursor: pointer;
@@ -367,7 +407,7 @@ h6 {
 }
 
 .nav-item .icon {
-  font-size: 16px;
+  font-size: 1rem;
   width: 20px;
   text-align: center;
   flex-shrink: 0;
@@ -402,7 +442,7 @@ h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   flex-shrink: 0;
   color: #fff;
@@ -415,7 +455,7 @@ h6 {
 }
 
 .user-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -423,7 +463,7 @@ h6 {
 }
 
 .user-class {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   /* The theme and logout buttons share this row; without truncation the
      class line wraps and pushes the row to two lines. */
@@ -446,7 +486,7 @@ h6 {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 15px;
+  font-size: 0.9375rem;
   padding: 4px;
   border-radius: 8px;
   line-height: 1;
@@ -469,10 +509,19 @@ h6 {
   min-width: 0;
 }
 
+/* Fluid gutters, and the column centres in whatever space the sidebar
+   leaves instead of hugging the left edge on wide screens. */
 .page {
   display: none;
-  padding: 32px 36px;
-  max-width: 1100px;
+  padding: clamp(24px, 2.6vw, 48px) clamp(20px, 3vw, 56px) 48px;
+  max-width: 1320px;
+  margin-inline: auto;
+}
+
+@media (min-width: 1800px) {
+  .page {
+    max-width: 1520px;
+  }
 }
 
 .page.active {
@@ -504,14 +553,14 @@ h6 {
 }
 
 .page-title {
-  font-size: 25px;
+  font-size: 1.5625rem;
   font-weight: 800;
   letter-spacing: -.6px;
   line-height: 1.2;
 }
 
 .page-sub {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   margin-top: 5px;
   line-height: 1.5;
@@ -525,7 +574,7 @@ h6 {
   gap: 6px;
   padding: 10px 20px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: .1px;
@@ -581,12 +630,12 @@ h6 {
 
 .btn-sm {
   padding: 7px 14px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .btn-lg {
   padding: 14px 28px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   border-radius: 12px;
 }
 
@@ -619,7 +668,7 @@ h6 {
 
 .theme-toggle .ti {
   grid-area: 1 / 1;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1;
   transition: opacity .22s var(--ease), transform .32s var(--ease-out);
 }
@@ -654,7 +703,7 @@ h6 {
 
 .sidebar-theme .ti,
 .mobile-theme .ti {
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .sidebar-theme:hover,
@@ -710,7 +759,7 @@ h6 {
 }
 
 .stat-val {
-  font-size: 29px;
+  font-size: 1.8125rem;
   font-weight: 800;
   letter-spacing: -1.2px;
   line-height: 1.1;
@@ -718,7 +767,7 @@ h6 {
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   font-weight: 700;
   text-transform: uppercase;
@@ -726,7 +775,7 @@ h6 {
 }
 
 .stat-change {
-  font-size: 12px;
+  font-size: 0.75rem;
   margin-top: 8px;
   line-height: 1.45;
 }
@@ -736,7 +785,7 @@ h6 {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1.6;
   letter-spacing: .2px;
@@ -782,7 +831,7 @@ h6 {
 }
 
 .meter-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   width: 150px;
   flex-shrink: 0;
@@ -807,7 +856,7 @@ h6 {
 }
 
 .meter-pct {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   width: 40px;
   text-align: right;
@@ -820,7 +869,7 @@ h6 {
 }
 
 .form-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -835,7 +884,7 @@ h6 {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 11px 14px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text);
   outline: none;
   font-family: inherit;
@@ -877,7 +926,7 @@ select.form-input option {
   border: 1.5px solid var(--border);
   border-radius: 999px;
   padding: 7px 15px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--muted);
   cursor: pointer;
@@ -944,7 +993,7 @@ select.form-input option {
 }
 
 .land-logo {
-  font-size: 21px;
+  font-size: 1.3125rem;
   font-weight: 800;
   letter-spacing: -.6px;
   flex-shrink: 0;
@@ -968,7 +1017,7 @@ select.form-input option {
 }
 
 .land-nav-menu a {
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 600;
   color: var(--muted);
   text-decoration: none;
@@ -1035,7 +1084,7 @@ select.form-input option {
   background: var(--accent-soft);
   border: 1px solid var(--accent-line);
   color: var(--accent-text);
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -1064,7 +1113,7 @@ select.form-input option {
 }
 
 .land-p {
-  font-size: 17.5px;
+  font-size: 1.0938rem;
   line-height: 1.65;
   color: var(--muted);
   max-width: 520px;
@@ -1085,7 +1134,7 @@ select.form-input option {
   align-items: center;
   gap: 18px;
   flex-wrap: wrap;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
@@ -1097,7 +1146,7 @@ select.form-input option {
 
 .land-reassure b {
   color: var(--accent2-text);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 /* ── Hero visual ──
@@ -1130,7 +1179,7 @@ select.form-input option {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -1138,7 +1187,7 @@ select.form-input option {
 }
 
 .lv-q {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   line-height: 1.45;
   letter-spacing: -.2px;
@@ -1154,7 +1203,7 @@ select.form-input option {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 500;
   padding: 9px 12px;
   border-radius: 10px;
@@ -1200,7 +1249,7 @@ select.form-input option {
   border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 16px;
+  font-size: 1rem;
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px var(--rim);
 }
@@ -1208,21 +1257,21 @@ select.form-input option {
 .lv-match-name {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 700;
   letter-spacing: -.1px;
 }
 
 .lv-match-name small {
   display: block;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 500;
   color: var(--muted);
   letter-spacing: 0;
 }
 
 .lv-match-pct {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
   color: var(--accent-text);
   font-variant-numeric: tabular-nums;
@@ -1255,7 +1304,7 @@ select.form-input option {
 }
 
 .fact-val {
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 900;
   letter-spacing: -1.3px;
   line-height: 1.1;
@@ -1268,7 +1317,7 @@ select.form-input option {
 }
 
 .fact-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -1291,7 +1340,7 @@ select.form-input option {
 
 .land-feat-sub {
   text-align: center;
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--muted);
   max-width: 560px;
   margin: 0 auto 52px;
@@ -1328,7 +1377,7 @@ select.form-input option {
   border-radius: 15px;
   display: grid;
   place-items: center;
-  font-size: 24px;
+  font-size: 1.5rem;
   margin-bottom: 18px;
   /* The tint comes from an .ic-* class; this adds the rim + lift */
   box-shadow: inset 0 0 0 1px var(--rim), var(--tile-lift);
@@ -1366,7 +1415,7 @@ select.form-input option {
 }
 
 .feat-card h3 {
-  font-size: 16.5px;
+  font-size: 1.0312rem;
   font-weight: 700;
   line-height: 1.45;
   letter-spacing: -.2px;
@@ -1382,7 +1431,7 @@ select.form-input option {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 500;
   padding: 9px 12px;
   border-radius: 10px;
@@ -1428,7 +1477,7 @@ select.form-input option {
   border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 16px;
+  font-size: 1rem;
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px var(--rim);
 }
@@ -1436,21 +1485,21 @@ select.form-input option {
 .lv-match-name {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 700;
   letter-spacing: -.1px;
 }
 
 .lv-match-name small {
   display: block;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 500;
   color: var(--muted);
   letter-spacing: 0;
 }
 
 .lv-match-pct {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
   color: var(--accent-text);
   font-variant-numeric: tabular-nums;
@@ -1483,7 +1532,7 @@ select.form-input option {
 }
 
 .fact-val {
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 900;
   letter-spacing: -1.3px;
   line-height: 1.1;
@@ -1496,7 +1545,7 @@ select.form-input option {
 }
 
 .fact-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -1519,7 +1568,7 @@ select.form-input option {
 
 .land-feat-sub {
   text-align: center;
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--muted);
   max-width: 560px;
   margin: 0 auto 52px;
@@ -1556,7 +1605,7 @@ select.form-input option {
   border-radius: 15px;
   display: grid;
   place-items: center;
-  font-size: 24px;
+  font-size: 1.5rem;
   margin-bottom: 18px;
   /* The tint comes from an .ic-* class; this adds the rim + lift */
   box-shadow: inset 0 0 0 1px var(--rim), var(--tile-lift);
@@ -1594,14 +1643,14 @@ select.form-input option {
 }
 
 .feat-card h3 {
-  font-size: 16.5px;
+  font-size: 1.0312rem;
   font-weight: 700;
   letter-spacing: -.3px;
   margin-bottom: 8px;
 }
 
 .feat-card p {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.65;
 }
@@ -1650,7 +1699,7 @@ select.form-input option {
   border-radius: 50%;
   background: linear-gradient(180deg, #7d75ff, #6159f2);
   color: #fff;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -1660,14 +1709,14 @@ select.form-input option {
 }
 
 .step h4 {
-  font-size: 15.5px;
+  font-size: 0.9688rem;
   font-weight: 700;
   letter-spacing: -.2px;
   margin-bottom: 6px;
 }
 
 .step p {
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--muted);
   line-height: 1.6;
 }
@@ -1708,7 +1757,7 @@ select.form-input option {
 
 .footer-blurb {
   max-width: 320px;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--muted);
   line-height: 1.7;
   margin-top: 8px;
@@ -1721,7 +1770,7 @@ select.form-input option {
 }
 
 .footer-col h5 {
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
   color: var(--text);
   text-transform: uppercase;
@@ -1731,7 +1780,7 @@ select.form-input option {
 
 .footer-col a {
   display: block;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--muted);
   text-decoration: none;
   padding: 4px 0;
@@ -1748,7 +1797,7 @@ select.form-input option {
   max-width: 1140px;
   margin: 0 auto;
   text-align: center;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
 }
 
@@ -1785,7 +1834,7 @@ select.form-input option {
 
 .auth-logo {
   text-align: center;
-  font-size: 23px;
+  font-size: 1.4375rem;
   font-weight: 900;
   letter-spacing: -.6px;
   margin-bottom: 6px;
@@ -1800,7 +1849,7 @@ select.form-input option {
 
 .auth-tagline {
   text-align: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   margin-bottom: 28px;
 }
@@ -1820,7 +1869,7 @@ select.form-input option {
   padding: 9px;
   text-align: center;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   cursor: pointer;
   color: var(--muted);
@@ -1846,7 +1895,7 @@ select.form-input option {
   align-items: center;
   gap: 12px;
   margin: 18px 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -1864,7 +1913,7 @@ select.form-input option {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 11px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text);
   cursor: pointer;
@@ -1902,14 +1951,14 @@ select.form-input option {
 }
 
 .onboard-step-count {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   font-weight: 600;
   margin-bottom: 8px;
 }
 
 .onboard-title {
-  font-size: 27px;
+  font-size: 1.6875rem;
   font-weight: 800;
   letter-spacing: -.8px;
   line-height: 1.2;
@@ -1917,7 +1966,7 @@ select.form-input option {
 }
 
 .onboard-sub {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.55;
 }
@@ -2009,7 +2058,7 @@ select.form-input option {
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .eval-step:last-child {
@@ -2023,7 +2072,7 @@ select.form-input option {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   flex-shrink: 0;
 }
 
@@ -2070,7 +2119,7 @@ select.form-input option {
   align-items: flex-start;
   gap: 10px;
   padding: 8px 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.6;
 }
 
@@ -2121,13 +2170,13 @@ select.form-input option {
 }
 
 .quiz-num {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   font-weight: 700;
 }
 
 .quiz-area {
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
   color: var(--accent-text);
   text-transform: uppercase;
@@ -2149,7 +2198,7 @@ select.form-input option {
 }
 
 .quiz-q {
-  font-size: 23px;
+  font-size: 1.4375rem;
   font-weight: 700;
   line-height: 1.4;
   letter-spacing: -.5px;
@@ -2167,7 +2216,7 @@ select.form-input option {
   border: 1.5px solid var(--border);
   border-radius: 14px;
   padding: 15px 18px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   cursor: pointer;
   transition: background .16s var(--ease), border-color .16s var(--ease),
     color .16s var(--ease), transform .16s var(--ease), box-shadow .16s var(--ease);
@@ -2201,7 +2250,7 @@ select.form-input option {
   background: var(--surface2);
   display: grid;
   place-items: center;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 800;
   color: var(--muted);
   flex-shrink: 0;
@@ -2220,7 +2269,7 @@ select.form-input option {
 }
 
 .db-empty p {
-  font-size: 14.5px;
+  font-size: 0.9062rem;
   color: var(--muted);
   line-height: 1.65;
   max-width: 420px;
@@ -2244,7 +2293,7 @@ select.form-input option {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -2267,7 +2316,7 @@ select.form-input option {
 .section-label .sl-link {
   order: 2;
   flex-shrink: 0;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
   color: var(--accent-text);
   text-transform: none;
@@ -2309,20 +2358,20 @@ select.form-input option {
   border-radius: 20px;
   display: grid;
   place-items: center;
-  font-size: 30px;
+  font-size: 1.875rem;
   background: var(--tint-1);
   box-shadow: inset 0 0 0 1px var(--rim), var(--tile-lift);
 }
 
 .db-empty h3 {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 800;
   letter-spacing: -.6px;
   margin-bottom: 8px;
 }
 
 .db-empty p {
-  font-size: 14.5px;
+  font-size: 0.9062rem;
   color: var(--muted);
   line-height: 1.65;
   max-width: 420px;
@@ -2344,7 +2393,7 @@ select.form-input option {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 600;
   color: var(--muted);
   background: var(--surface);
@@ -2375,7 +2424,7 @@ select.form-input option {
 }
 
 .welcome-text h2 {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 800;
   letter-spacing: -.6px;
   margin-bottom: 6px;
@@ -2386,7 +2435,7 @@ select.form-input option {
 }
 
 .welcome-text p {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.55;
 }
@@ -2429,21 +2478,23 @@ select.form-input option {
 }
 
 .career-pill-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
 .career-pill-pct {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
 }
 
 /* ── Quick actions ──
-   Five fixed columns: auto-fit reflows to 4 + 1 at common widths, which
-   reads as a mistake rather than as a grid. */
+   One equal-width row however many actions there are: auto-fit reflows to
+   4 + 1 at common widths, and fixed columns leave a hole when an action is
+   hidden. Smaller breakpoints switch to fixed columns. */
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 12px;
   margin-bottom: 32px;
 }
@@ -2475,7 +2526,7 @@ select.form-input option {
   border-radius: 13px;
   display: grid;
   place-items: center;
-  font-size: 21px;
+  font-size: 1.3125rem;
   line-height: 1;
   box-shadow: inset 0 0 0 1px var(--rim);
   transition: transform .2s var(--ease-out);
@@ -2486,7 +2537,7 @@ select.form-input option {
 }
 
 .qa-label {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -.1px;
@@ -2528,13 +2579,13 @@ select.form-input option {
   border-radius: 11px;
   display: grid;
   place-items: center;
-  font-size: 16px;
+  font-size: 1rem;
   margin-bottom: 14px;
   box-shadow: inset 0 0 0 1px var(--rim);
 }
 
 .stat-val {
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: -1.2px;
   line-height: 1.1;
@@ -2550,12 +2601,12 @@ select.form-input option {
 
 /* For values that are words rather than figures */
 .stat-val.is-text {
-  font-size: 20px;
+  font-size: 1.25rem;
   letter-spacing: -.7px;
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   font-weight: 700;
   text-transform: uppercase;
@@ -2563,7 +2614,7 @@ select.form-input option {
 }
 
 .stat-change {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
   margin-top: 8px;
   line-height: 1.45;
@@ -2615,7 +2666,7 @@ select.form-input option {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 6px 15px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   cursor: pointer;
@@ -2671,7 +2722,7 @@ button.filter-chip {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   flex-shrink: 0;
   color: var(--muted);
@@ -2691,7 +2742,7 @@ button.filter-chip {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 1.375rem;
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px var(--rim);
 }
@@ -2701,18 +2752,18 @@ button.filter-chip {
 }
 
 .career-name {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .career-field {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
 .career-reason {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 7px;
   font-style: italic;
@@ -2725,7 +2776,7 @@ button.filter-chip {
 }
 
 .career-pct {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 900;
 }
 
@@ -2779,7 +2830,7 @@ button.filter-chip {
 }
 
 .stream-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--blue-text);
   text-transform: uppercase;
@@ -2788,7 +2839,7 @@ button.filter-chip {
 }
 
 .stream-val {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
 }
 
@@ -2820,7 +2871,7 @@ button.filter-chip {
   background: none;
   border: none;
   padding: 12px 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text);
   outline: none;
   font-family: inherit;
@@ -2865,19 +2916,19 @@ button.filter-chip {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 1.25rem;
   margin-bottom: 14px;
   box-shadow: inset 0 0 0 1px var(--rim);
 }
 
 .explore-card h4 {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .explore-card .field {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   margin-bottom: 10px;
 }
@@ -2886,7 +2937,7 @@ button.filter-chip {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   /* Pinned to the bottom edge of the card — see .explore-card */
   margin-top: auto;
@@ -2909,7 +2960,7 @@ button.filter-chip {
 }
 
 .explore-card .ex-salary {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   margin-bottom: 12px;
 }
@@ -2950,7 +3001,7 @@ button.filter-chip {
   border: none;
   padding: 4px 2px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1;
   color: var(--muted);
   cursor: pointer;
@@ -2974,7 +3025,7 @@ button.filter-chip {
   border: 1px solid var(--border);
   border-radius: 12px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text);
   cursor: pointer;
@@ -3008,7 +3059,7 @@ button.filter-chip {
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 800;
   line-height: 18px;
   text-align: center;
@@ -3039,7 +3090,7 @@ button.filter-chip {
 }
 
 .ex-tool>span {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 800;
   letter-spacing: .6px;
   text-transform: uppercase;
@@ -3050,7 +3101,7 @@ button.filter-chip {
 .ex-select {
   width: auto;
   padding: 6px 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   background: none;
   border: none;
@@ -3086,7 +3137,7 @@ button.filter-chip {
   background: var(--accent-soft);
   border: 1px solid var(--accent-line);
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--accent-text);
 }
@@ -3094,7 +3145,7 @@ button.filter-chip {
 .ex-active-pill .exa-key {
   opacity: .7;
   font-weight: 800;
-  font-size: 10px;
+  font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: .5px;
 }
@@ -3104,7 +3155,7 @@ button.filter-chip {
   border: none;
   padding: 0 2px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1;
   color: inherit;
   opacity: .75;
@@ -3120,7 +3171,7 @@ button.filter-chip {
   border: none;
   padding: 5px 6px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   text-decoration: underline;
@@ -3191,13 +3242,13 @@ body.ex-filters-open .ex-drawer {
 }
 
 .ex-drawer-title {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 800;
 }
 
 .ex-drawer-sub {
   margin-top: 3px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -3208,7 +3259,7 @@ body.ex-filters-open .ex-drawer {
   width: 30px;
   height: 30px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   cursor: pointer;
   flex-shrink: 0;
@@ -3229,7 +3280,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .ex-group-title {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: .6px;
   text-transform: uppercase;
@@ -3305,13 +3356,13 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: 1.875rem;
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px var(--rim), var(--tile-lift);
 }
 
 .cd-name {
-  font-size: 27px;
+  font-size: 1.6875rem;
   font-weight: 800;
   letter-spacing: -.8px;
   line-height: 1.2;
@@ -3326,7 +3377,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .cd-fit {
-  font-size: 42px;
+  font-size: 2.625rem;
   font-weight: 900;
   letter-spacing: -2px;
   line-height: 1;
@@ -3336,7 +3387,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .cd-fit-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   font-weight: 600;
   text-align: right;
@@ -3347,7 +3398,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .cd-section h3 {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -3372,7 +3423,7 @@ body.ex-filters-open .ex-drawer {
   border-left: 3px solid var(--accent-line);
   border-radius: 14px;
   padding: 22px 24px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.8;
   font-style: italic;
@@ -3395,7 +3446,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .salary-stage {
-  font-size: 10.5px;
+  font-size: 0.6562rem;
   color: var(--muted);
   margin-bottom: 6px;
   font-weight: 700;
@@ -3404,7 +3455,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .salary-val {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 800;
   letter-spacing: -.4px;
 }
@@ -3423,7 +3474,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 0.8125rem;
   transition: border-color .15s var(--ease), background .15s var(--ease);
 }
 
@@ -3454,7 +3505,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .rm-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   font-weight: 600;
   margin-bottom: 4px;
@@ -3463,7 +3514,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .rm-career {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
 }
 
@@ -3524,7 +3575,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .tl-year {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
@@ -3533,7 +3584,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .tl-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   margin-bottom: 8px;
 }
@@ -3548,7 +3599,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
@@ -3604,7 +3655,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 0.875rem;
   flex-shrink: 0;
   font-weight: 700;
 }
@@ -3626,7 +3677,7 @@ body.ex-filters-open .ex-drawer {
   /* Squared-off corner nearest the avatar reads as a speech tail */
   border-radius: 16px 16px 16px 5px;
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.65;
   box-shadow: var(--shadow-sm), var(--sheen);
   animation: msgIn .28s var(--ease-out) both;
@@ -3652,7 +3703,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .msg-time {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   margin-top: 5px;
   /* Timestamp hugs the same side as its speaker's avatar */
@@ -3684,7 +3735,7 @@ body.ex-filters-open .ex-drawer {
   flex: 1;
   background: none;
   border: none;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text);
   outline: none;
   font-family: inherit;
@@ -3705,7 +3756,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 1rem;
   box-shadow: 0 4px 14px -6px rgba(108, 99, 255, .95), var(--sheen);
   transition: background .15s var(--ease), transform .15s var(--ease), box-shadow .15s var(--ease);
   flex-shrink: 0;
@@ -3733,7 +3784,7 @@ body.ex-filters-open .ex-drawer {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 6px 13px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   cursor: pointer;
   transition: background .15s var(--ease), border-color .15s var(--ease),
@@ -3786,7 +3837,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 0.875rem;
   margin: 0 auto 10px;
   position: relative;
   z-index: 1;
@@ -3806,13 +3857,13 @@ body.ex-filters-open .ex-drawer {
 }
 
 .pt-class {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .pt-date {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 
@@ -3838,7 +3889,7 @@ body.ex-filters-open .ex-drawer {
 
 .apt-label {
   width: 100px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -3866,7 +3917,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .apt-bar-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted);
   text-align: center;
   margin-top: 4px;
@@ -3886,7 +3937,7 @@ body.ex-filters-open .ex-drawer {
   padding: 15px 22px;
   border-bottom: 1px solid var(--border);
   background: var(--wash);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -3912,12 +3963,12 @@ body.ex-filters-open .ex-drawer {
 }
 
 .settings-row-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .settings-row-sub {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -3978,7 +4029,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .qc-emoji {
-  font-size: 64px;
+  font-size: 4rem;
   line-height: 1;
   margin-bottom: 20px;
   animation: bounce .6s ease-in-out;
@@ -4005,7 +4056,7 @@ body.ex-filters-open .ex-drawer {
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 20px;
@@ -4057,13 +4108,13 @@ body.ex-filters-open .ex-drawer {
 
 .cq-num-label {
   flex: 1;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--muted);
 }
 
 .cq-area-tag {
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
   color: var(--accent-text);
   text-transform: uppercase;
@@ -4106,7 +4157,7 @@ body.ex-filters-open .ex-drawer {
   box-shadow: var(--shadow-sm), var(--sheen);
   transition: border-color .16s var(--ease), background .16s var(--ease),
     transform .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.5;
   user-select: none;
@@ -4137,7 +4188,7 @@ body.ex-filters-open .ex-drawer {
   background: var(--surface2);
   display: grid;
   place-items: center;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 800;
   color: var(--muted);
   flex-shrink: 0;
@@ -4157,7 +4208,7 @@ body.ex-filters-open .ex-drawer {
 
 .cq-hint {
   text-align: center;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
   margin-top: 8px;
 }
@@ -4240,7 +4291,7 @@ body.ex-filters-open .ex-drawer {
   gap: 12px;
   padding: 11px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   transition: color .3s;
 }
@@ -4260,7 +4311,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   flex-shrink: 0;
   background: var(--surface2);
 }
@@ -4308,7 +4359,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-personality-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--accent-text);
   text-transform: uppercase;
@@ -4317,7 +4368,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-personality-type {
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: -1px;
   line-height: 1.18;
@@ -4329,7 +4380,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-personality-desc {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.7;
   max-width: 500px;
@@ -4355,7 +4406,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-stream-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -4364,7 +4415,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-stream-val {
-  font-size: 25px;
+  font-size: 1.5625rem;
   font-weight: 800;
   letter-spacing: -.8px;
   line-height: 1.15;
@@ -4372,7 +4423,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-stream-reason {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   line-height: 1.6;
 }
@@ -4417,7 +4468,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   color: var(--muted);
   flex-shrink: 0;
@@ -4431,7 +4482,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-career-icon {
-  font-size: 26px;
+  font-size: 1.625rem;
   flex-shrink: 0;
   width: 36px;
   text-align: center;
@@ -4444,27 +4495,27 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-career-name {
-  font-size: 16.5px;
+  font-size: 1.0312rem;
   font-weight: 700;
   letter-spacing: -.3px;
   margin-bottom: 3px;
 }
 
 .air-career-field {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-bottom: 7px;
 }
 
 .air-career-why {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   line-height: 1.55;
   font-style: italic;
 }
 
 .air-pct {
-  font-size: 27px;
+  font-size: 1.6875rem;
   font-weight: 900;
   letter-spacing: -1.2px;
   flex-shrink: 0;
@@ -4476,7 +4527,7 @@ body.ex-filters-open .ex-drawer {
   background: rgba(245, 158, 11, .1);
   border: 1px solid rgba(245, 158, 11, .3);
   color: var(--yellow-text);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 6px;
@@ -4505,13 +4556,13 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-riasec-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
   letter-spacing: -.2px;
 }
 
 .air-riasec-sub {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 4px;
   line-height: 1.5;
@@ -4523,7 +4574,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-riasec-code-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -4531,7 +4582,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-riasec-code {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 800;
   letter-spacing: 3px;
   color: var(--accent2-text);
@@ -4552,11 +4603,11 @@ body.ex-filters-open .ex-drawer {
   gap: 8px;
   width: 210px;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .air-riasec-emoji {
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .air-riasec-name {
@@ -4583,7 +4634,7 @@ body.ex-filters-open .ex-drawer {
 .air-riasec-pct {
   width: 46px;
   text-align: right;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   flex-shrink: 0;
 }
@@ -4595,7 +4646,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-enjoy-title {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -4604,14 +4655,14 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-career-why {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   line-height: 1.55;
   font-style: italic;
 }
 
 .air-pct {
-  font-size: 27px;
+  font-size: 1.6875rem;
   font-weight: 900;
   letter-spacing: -1.2px;
   flex-shrink: 0;
@@ -4623,7 +4674,7 @@ body.ex-filters-open .ex-drawer {
   background: rgba(245, 158, 11, .1);
   border: 1px solid rgba(245, 158, 11, .3);
   color: var(--yellow-text);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 6px;
@@ -4659,13 +4710,13 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-riasec-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
   letter-spacing: -.2px;
 }
 
 .air-riasec-sub {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 4px;
   line-height: 1.5;
@@ -4687,7 +4738,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-riasec-code-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -4697,7 +4748,7 @@ body.ex-filters-open .ex-drawer {
 .air-riasec-code {
   display: flex;
   gap: 6px;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 800;
   line-height: 1;
   color: var(--accent2-text);
@@ -4727,7 +4778,7 @@ body.ex-filters-open .ex-drawer {
 .air-riasec-letter {
   width: 15px;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 800;
   text-align: center;
   color: var(--muted);
@@ -4744,11 +4795,11 @@ body.ex-filters-open .ex-drawer {
   gap: 8px;
   width: 222px;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .air-riasec-emoji {
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .air-riasec-name {
@@ -4775,7 +4826,7 @@ body.ex-filters-open .ex-drawer {
 .air-riasec-pct {
   width: 46px;
   text-align: right;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   flex-shrink: 0;
 }
@@ -4815,7 +4866,7 @@ body.ex-filters-open .ex-drawer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -4824,7 +4875,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-code-key-text {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.55;
   color: var(--muted);
   padding-top: 2px;
@@ -4836,7 +4887,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-enjoy-title {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -4864,14 +4915,14 @@ body.ex-filters-open .ex-drawer {
   box-shadow: var(--well-inset);
   border: 1px solid var(--border);
   border-radius: 999px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.35;
   color: var(--text);
 }
 
 .air-enjoy li::before {
   content: '✦';
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--accent2-text);
 }
 
@@ -4888,7 +4939,7 @@ body.ex-filters-open .ex-drawer {
   background: var(--accent-weak);
   border: 1px solid var(--accent-line);
   border-radius: 999px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 600;
   line-height: 1.35;
   color: var(--text);
@@ -4897,7 +4948,7 @@ body.ex-filters-open .ex-drawer {
 /* Words under a career's match %, e.g. "Strong fit" */
 .air-fit-label {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0;
   color: var(--muted);
@@ -4924,7 +4975,7 @@ body.ex-filters-open .ex-drawer {
   align-items: baseline;
   gap: 12px;
   margin-bottom: 6px;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 600;
   color: var(--text);
 }
@@ -4944,7 +4995,7 @@ body.ex-filters-open .ex-drawer {
 
 .air-stream-row-reason {
   margin-top: 6px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.5;
   color: var(--muted);
 }
@@ -4966,14 +5017,14 @@ body.ex-filters-open .ex-drawer {
 }
 
 .air-print-brand {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -.5px;
   color: var(--accent-text);
 }
 
 .air-print-meta {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 
@@ -4984,7 +5035,7 @@ body.ex-filters-open .ex-drawer {
   border: 1px solid rgba(108, 99, 255, .2);
   border-left: 3px solid var(--accent-line);
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   line-height: 1.65;
 }
@@ -5005,7 +5056,7 @@ body.ex-filters-open .ex-drawer {
 }
 
 .mobile-topbar-logo {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
   letter-spacing: -.3px;
 }
@@ -5026,7 +5077,7 @@ body.ex-filters-open .ex-drawer {
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1;
   cursor: pointer;
   align-items: center;
@@ -5148,12 +5199,8 @@ body.nav-open .sidebar-overlay {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* The dashboard's fixed grids need fewer columns here: five quick actions
-     and four stat tiles both get too narrow to read. */
-  .quick-actions {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
+  /* Four stat tiles get too narrow to read here. The quick actions stay one
+     row — four short labels still fit. */
   .db-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -5208,17 +5255,27 @@ body.nav-open .sidebar-overlay {
 }
 
 /* ─────────────────────  PHONE  (≤640px)  ───────────────────── */
-@media (max-width: 640px) {
-
-  /* ── Sidebar becomes an off-canvas drawer ── */
+/* ───────────  SIDEBAR → DRAWER  (≤860px)  ─────────── */
+/* Below this the fixed 220px sidebar leaves the page column too narrow for
+   its grids, so it moves off-canvas behind the menu button. */
+@media (max-width: 860px) {
   .sidebar {
-    width: 250px;
+    width: min(280px, 82vw);
     transform: translateX(-100%);
     box-shadow: var(--shadow-lg);
+    visibility: hidden;
+    transition: transform .3s var(--ease-out), visibility 0s linear .3s;
   }
 
   body.nav-open .sidebar {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform .3s var(--ease-out), visibility 0s;
+  }
+
+  /* No background scroll while the drawer is open */
+  body.nav-open {
+    overflow: hidden;
   }
 
   .main-content {
@@ -5230,10 +5287,20 @@ body.nav-open .sidebar-overlay {
     display: flex;
   }
 
-  /* The chat page carries an inline height sized for desktop */
-  #chat {
-    height: calc(100vh - 120px) !important;
+  .sidebar-toggle {
+    width: 44px;
+    height: 44px;
   }
+
+  /* The chat page carries an inline height sized for desktop; subtract the
+     mobile top bar as well */
+  #chat {
+    height: calc(100vh - 125px) !important;
+    height: calc(100dvh - 125px) !important;
+  }
+}
+
+@media (max-width: 640px) {
 
   .theme-toggle {
     width: 34px;
@@ -5242,7 +5309,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .theme-toggle .ti {
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
 
   /* ── Page chrome ── */
@@ -5251,11 +5318,11 @@ body.nav-open .sidebar-overlay {
   }
 
   .page-title {
-    font-size: 19px;
+    font-size: 1.1875rem;
   }
 
   .page-sub {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
 
   .topbar {
@@ -5294,12 +5361,12 @@ body.nav-open .sidebar-overlay {
   .land-eyebrow {
     margin-bottom: 18px;
     letter-spacing: 1px;
-    font-size: 10.5px;
+    font-size: 0.6562rem;
     padding: 5px 13px;
   }
 
   .land-p {
-    font-size: 15.5px;
+    font-size: 0.9688rem;
     margin-bottom: 26px;
   }
 
@@ -5348,7 +5415,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .fact-val {
-    font-size: 25px;
+    font-size: 1.5625rem;
   }
 
   .land-features {
@@ -5390,16 +5457,16 @@ body.nav-open .sidebar-overlay {
   }
 
   .footer-base {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .land-feat-title {
-    font-size: 25px;
+    font-size: 1.5625rem;
     letter-spacing: -.9px;
   }
 
   .land-feat-sub {
-    font-size: 14.5px;
+    font-size: 0.9062rem;
     margin-bottom: 36px;
   }
 
@@ -5432,7 +5499,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .qc-emoji {
-    font-size: 52px;
+    font-size: 3.25rem;
   }
 
   .quiz-header {
@@ -5440,14 +5507,14 @@ body.nav-open .sidebar-overlay {
   }
 
   .quiz-q {
-    font-size: 19px;
+    font-size: 1.1875rem;
     letter-spacing: -.3px;
     margin-bottom: 22px;
   }
 
   .quiz-option {
     padding: 13px 14px;
-    font-size: 14.5px;
+    font-size: 0.9062rem;
     gap: 12px;
   }
 
@@ -5474,7 +5541,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .cq-q {
-    font-size: 21px;
+    font-size: 1.3125rem;
     letter-spacing: -.4px;
     text-align: left;
     max-width: none;
@@ -5484,7 +5551,7 @@ body.nav-open .sidebar-overlay {
   .cq-opt {
     padding: 13px 14px;
     gap: 12px;
-    font-size: 14.5px;
+    font-size: 0.9062rem;
   }
 
   .cq-footer .cq-hint {
@@ -5517,14 +5584,14 @@ body.nav-open .sidebar-overlay {
 
   .air-riasec-letter {
     width: 12px;
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
 
   .air-riasec-label {
     width: auto;
     flex: 1 1 auto;
     min-width: 0;
-    font-size: 12.5px;
+    font-size: 0.7812rem;
   }
 
   .air-riasec-track {
@@ -5535,7 +5602,7 @@ body.nav-open .sidebar-overlay {
   .air-riasec-pct {
     order: 2;
     width: auto;
-    font-size: 12.5px;
+    font-size: 0.7812rem;
   }
 
   /* The code panel wraps under the title here, so let it span the card */
@@ -5554,7 +5621,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .air-personality-type {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
 
   .air-stream-box {
@@ -5579,7 +5646,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .air-pct {
-    font-size: 22px;
+    font-size: 1.375rem;
     text-align: left;
   }
 
@@ -5644,12 +5711,12 @@ body.nav-open .sidebar-overlay {
 
   .apt-label {
     width: 76px;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .meter-label {
     width: 108px;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .salary-grid {
@@ -5667,6 +5734,7 @@ body.nav-open .sidebar-overlay {
 
   /* Two up: one column wastes the width, three is unreadable */
   .quick-actions {
+    grid-auto-flow: row;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     margin-bottom: 26px;
@@ -5694,11 +5762,11 @@ body.nav-open .sidebar-overlay {
   }
 
   .stat-val {
-    font-size: 24px;
+    font-size: 1.5rem;
   }
 
   .stat-val.is-text {
-    font-size: 17px;
+    font-size: 1.0625rem;
   }
 
   .db-empty {
@@ -5707,11 +5775,11 @@ body.nav-open .sidebar-overlay {
   }
 
   .db-empty h3 {
-    font-size: 19px;
+    font-size: 1.1875rem;
   }
 
   .db-empty p {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
 
   .db-empty .btn {
@@ -5760,7 +5828,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .msg-bubble {
-    font-size: 13.5px;
+    font-size: 0.8438rem;
     padding: 11px 14px;
   }
 
@@ -5780,7 +5848,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .land-logo {
-    font-size: 19px;
+    font-size: 1.1875rem;
   }
 
   .land-nav-links .btn {
@@ -5800,7 +5868,7 @@ body.nav-open .sidebar-overlay {
   }
 
   .qc-emoji {
-    font-size: 44px;
+    font-size: 2.75rem;
   }
 
   .cq-area-tag {
@@ -5949,7 +6017,7 @@ body.nav-open .sidebar-overlay {
   padding: 60px 0;
   text-align: center;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .ct-center {
@@ -5957,13 +6025,13 @@ body.nav-open .sidebar-overlay {
 }
 
 .ct-emoji {
-  font-size: 40px;
+  font-size: 2.5rem;
   line-height: 1;
   margin-bottom: 14px;
 }
 
 .ct-h {
-  font-size: 23px;
+  font-size: 1.4375rem;
   font-weight: 800;
   letter-spacing: -.5px;
   line-height: 1.3;
@@ -5971,7 +6039,7 @@ body.nav-open .sidebar-overlay {
 }
 
 .ct-p {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.6;
   margin-bottom: 18px;
@@ -5982,7 +6050,7 @@ body.nav-open .sidebar-overlay {
 }
 
 .ct-small {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
 }
 
@@ -5995,7 +6063,7 @@ body.nav-open .sidebar-overlay {
   display: block;
   margin-top: 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--accent-text);
   text-decoration: none;
@@ -6022,7 +6090,7 @@ body.nav-open .sidebar-overlay {
 .ct-rules li {
   display: flex;
   gap: 12px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
@@ -6033,7 +6101,7 @@ body.nav-open .sidebar-overlay {
 }
 
 .ct-count {
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 800;
   letter-spacing: -.5px;
   font-variant-numeric: tabular-nums;
@@ -6062,7 +6130,7 @@ body.nav-open .sidebar-overlay {
 }
 
 .ct-warn {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--orange-text);
   background: rgba(251, 146, 60, .08);
   border: 1px solid rgba(251, 146, 60, .3);
@@ -6093,7 +6161,7 @@ body.nav-open .sidebar-overlay {
   background: var(--surface);
   color: var(--muted);
   font: inherit;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 800;
   cursor: pointer;
   transition: border-color .15s var(--ease), background .15s var(--ease), color .15s var(--ease);
@@ -6125,7 +6193,7 @@ button.quiz-option:focus-visible {
 button.quiz-option {
   width: 100%;
   font: inherit;
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: inherit;
   text-align: left;
 }
@@ -6170,7 +6238,7 @@ button.quiz-option {
 }
 
 .ct-sum-n {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--muted);
   width: 24px;
@@ -6180,7 +6248,7 @@ button.quiz-option {
 .ct-sum-q {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6201,20 +6269,20 @@ button.quiz-option {
 }
 
 .ct-stat-val {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -.4px;
   font-variant-numeric: tabular-nums;
 }
 
 .ct-stat-val small {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted);
 }
 
 .ct-stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -6238,7 +6306,7 @@ button.quiz-option {
 }
 
 .ct-rq-text {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.45;
   margin-bottom: 16px;
@@ -6257,7 +6325,7 @@ button.quiz-option {
   padding: 11px 14px;
   border: 1.5px solid var(--border);
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .ct-rq-opt .opt-letter {
@@ -6267,7 +6335,7 @@ button.quiz-option {
   background: var(--surface2);
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--muted);
   flex-shrink: 0;
@@ -6295,7 +6363,7 @@ button.quiz-option {
 
 .ct-rq-note {
   margin-left: auto;
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
   color: var(--muted);
   white-space: nowrap;
@@ -6303,7 +6371,7 @@ button.quiz-option {
 
 .ct-expl {
   margin-top: 14px;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   line-height: 1.6;
   color: var(--muted);
   background: var(--surface2);
@@ -6339,7 +6407,7 @@ button.quiz-option {
 }
 
 .lb-status-icon {
-  font-size: 24px;
+  font-size: 1.5rem;
   flex-shrink: 0;
 }
 
@@ -6349,12 +6417,12 @@ button.quiz-option {
 }
 
 .lb-status-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
 }
 
 .lb-status-sub {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   margin-top: 3px;
   line-height: 1.5;
@@ -6380,7 +6448,7 @@ button.quiz-option {
 }
 
 .lb-tabs .filter-chip {
-  font-size: 13px;
+  font-size: 0.8125rem;
   padding: 8px 16px;
 }
 
@@ -6421,7 +6489,7 @@ button.quiz-option {
 }
 
 .lb-card-title {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--muted);
   text-transform: uppercase;
@@ -6429,14 +6497,14 @@ button.quiz-option {
 }
 
 .lb-card-sub {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
   margin: 2px 0 12px;
 }
 
 .lb-rank {
   display: inline-block;
-  font-size: 34px;
+  font-size: 2.125rem;
   font-weight: 800;
   letter-spacing: -1.2px;
   line-height: 1.1;
@@ -6445,19 +6513,19 @@ button.quiz-option {
 }
 
 .lb-rank span {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0;
   color: var(--muted);
 }
 
 .lb-rank-none {
-  font-size: 22px;
+  font-size: 1.375rem;
   color: var(--muted);
 }
 
 .lb-card-line {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   margin-top: 10px;
 }
@@ -6486,12 +6554,12 @@ button.quiz-option {
 }
 
 .lb-table-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
 }
 
 .lb-table-sub {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -6508,7 +6576,7 @@ button.quiz-option {
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 700;
   color: var(--muted);
   padding: 6px 12px;
@@ -6529,12 +6597,12 @@ button.quiz-option {
 .lb-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
 }
 
 .lb-table th {
   text-align: left;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -6565,7 +6633,7 @@ button.quiz-option {
 .lb-pos {
   width: 56px;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -6574,7 +6642,7 @@ button.quiz-option {
 }
 
 .lb-career {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -6592,7 +6660,7 @@ button.quiz-option {
 
 .lb-of {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .lb-skipped {
@@ -6607,13 +6675,13 @@ button.quiz-option {
 }
 
 .lb-empty h3 {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 800;
   margin-bottom: 8px;
 }
 
 .lb-empty p {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.6;
   max-width: 460px;
@@ -6621,7 +6689,7 @@ button.quiz-option {
 }
 
 .lb-section-title {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   color: var(--muted);
   text-transform: uppercase;
@@ -6642,7 +6710,7 @@ button.quiz-option {
   }
 
   .ct-count {
-    font-size: 24px;
+    font-size: 1.5rem;
   }
 
   .lb-status {
@@ -6691,14 +6759,14 @@ button.quiz-option {
 }
 
 .form-hint {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 6px;
   line-height: 1.5;
 }
 
 .form-error {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent3);
   margin-top: 6px;
@@ -6710,7 +6778,7 @@ button.quiz-option {
 }
 
 .form-alert {
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.55;
   color: var(--accent3);
   background: rgba(255, 101, 132, .08);
@@ -6763,7 +6831,7 @@ button.quiz-option {
 }
 
 .pw-hero h1 {
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 800;
   letter-spacing: -.5px;
   margin: 10px 0 8px;
@@ -6771,14 +6839,14 @@ button.quiz-option {
 
 .pw-hero p {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.6;
   max-width: 560px;
   margin: 0 auto;
 }
 
 .pw-emoji {
-  font-size: 40px;
+  font-size: 2.5rem;
 }
 
 .pw-reason {
@@ -6789,18 +6857,18 @@ button.quiz-option {
 }
 
 .pw-reason-icon {
-  font-size: 24px;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
 .pw-reason h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .pw-reason p {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   line-height: 1.6;
 }
@@ -6822,7 +6890,7 @@ button.quiz-option {
 
 .pw-or {
   text-align: center;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: .6px;
   text-transform: uppercase;
@@ -6843,7 +6911,7 @@ button.quiz-option {
 }
 
 .pw-plan-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -6851,20 +6919,20 @@ button.quiz-option {
 }
 
 .pw-price {
-  font-size: 32px;
+  font-size: 2rem;
   font-weight: 800;
   margin: 8px 0 2px;
   letter-spacing: -.5px;
 }
 
 .pw-price small {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--muted);
 }
 
 .pw-plan-note {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -6881,7 +6949,7 @@ button.quiz-option {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 20px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
@@ -6898,7 +6966,7 @@ button.quiz-option {
 .pw-steps {
   margin: 8px 0 4px;
   padding-left: 20px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.7;
   color: var(--muted);
 }
@@ -6908,7 +6976,7 @@ button.quiz-option {
 }
 
 .pw-fineprint {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 10px;
   line-height: 1.6;
@@ -6920,14 +6988,14 @@ button.quiz-option {
 }
 
 .pw-center h2 {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 800;
   margin: 12px 0 8px;
 }
 
 .pw-center p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.6;
   margin-bottom: 20px;
 }
@@ -6952,7 +7020,7 @@ button.quiz-option {
   }
 
   .pw-hero h1 {
-    font-size: 24px;
+    font-size: 1.5rem;
   }
 
   .pw-school-form {

@@ -73,6 +73,26 @@
       });
     }
 
+    // -- Career catalogue --
+    // The careers the quiz matches against, the explorer lists and roadmaps
+    // belong to live in careerAPI (GET /careers). Paid pages load them before
+    // initPage(); riasec_engine.js and the rest read the RIASEC_CAREERS global.
+    // Kept for the tab's session so each page change doesn't refetch them.
+    window.RIASEC_CAREERS = window.RIASEC_CAREERS || [];
+    const CAREERS_CACHE = 'careerai_careers';
+    function loadCareers() {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(CAREERS_CACHE));
+        if (cached && cached.length) { window.RIASEC_CAREERS = cached; return Promise.resolve(true); }
+      } catch (e) { }
+      if (!window.CareerAPI) return Promise.resolve(false);
+      return CareerAPI.careers.list().then(r => {
+        window.RIASEC_CAREERS = r.careers || [];
+        try { sessionStorage.setItem(CAREERS_CACHE, JSON.stringify(window.RIASEC_CAREERS)); } catch (e) { }
+        return true;
+      }, () => false);
+    }
+
     // -- Theme --
     // Stored in localStorage, not sessionStorage: a theme choice should
     // outlive the tab, unlike quiz progress. The <html data-theme> attribute
@@ -148,6 +168,9 @@
     // ── Mobile sidebar drawer (phone breakpoint only) ──
     function toggleSidebar() { document.body.classList.toggle('nav-open'); }
     function closeSidebar() { document.body.classList.remove('nav-open'); }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.body.classList.contains('nav-open')) closeSidebar();
+    });
 
     // ── App nav (only meaningful on app.html) ──
     function navTo(pageId, btn) {
@@ -183,8 +206,9 @@
       // Hidden, not blank: the markup is already there, it just must not be
       // seen (or a quiz started) before the server says this student has paid.
       document.body.style.visibility = 'hidden';
-      requireAccess().then(ok => {
+      Promise.all([requireAccess(), loadCareers()]).then(([ok, careers]) => {
         if (!ok) return;
+        if (!careers) alert("Couldn't load the career list. Check your connection and reload the page.");
         return cqLoadSaved().then(() => {
           document.body.style.visibility = '';
           initPage();
@@ -582,9 +606,10 @@
     // CAREER INTEREST QUIZ  (RIASEC)
     //
     // The questions, scoring, career matching and result assembly all live
-    // in riasec_engine.js / riasec_careers.js, which every page loads before
-    // this file. Keeping them there means the Node test harness in tests/
-    // scores answers with exactly the same code the browser runs.
+    // in riasec_engine.js, which every page loads before this file; it
+    // matches against RIASEC_CAREERS, loaded from careerAPI by loadCareers().
+    // Keeping them there means the Node test harness in tests/ scores answers
+    // with exactly the same code the browser runs.
     //
     // Function names are unchanged from the previous five-trait version so
     // the router in show() and the onclick handlers in the page markup did
@@ -1234,7 +1259,7 @@
       d.top_careers.forEach((c, i) => {
         bannerHtml +=
           '<div class="career-pill" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">' +
-          '<span style="font-size:18px;">' + c.emoji + '</span>' +
+          '<span style="font-size:1.125rem;">' + c.emoji + '</span>' +
           '<div><div class="career-pill-name">' + c.title + '</div></div>' +
           '<div class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + c.match_pct + '%</div>' +
           '</div>';
@@ -1281,9 +1306,9 @@
         if (streamBadge) { streamBadge.textContent = 'Take the quiz to unlock'; streamBadge.style.color = 'var(--muted)'; }
         if (list) list.innerHTML =
           '<div style="text-align:center;padding:56px 20px;color:var(--muted);">' +
-          '<div style="font-size:40px;margin-bottom:16px;">📊</div>' +
-          '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">No career matches yet</div>' +
-          '<div style="font-size:14px;margin-bottom:24px;">Complete the career quiz to see your personalised career rankings.</div>' +
+          '<div style="font-size:2.5rem;margin-bottom:16px;">📊</div>' +
+          '<div style="font-size:1rem;font-weight:700;margin-bottom:8px;">No career matches yet</div>' +
+          '<div style="font-size:0.875rem;margin-bottom:24px;">Complete the career quiz to see your personalised career rankings.</div>' +
           '<button class="btn btn-primary" onclick="cqStart()">Take Career Quiz →</button>' +
           '</div>';
         return;
@@ -1750,9 +1775,9 @@
         const none = document.createElement('div');
         none.className = 'ex-none';
         none.innerHTML =
-          '<div style="font-size:32px;margin-bottom:10px;">🔍</div>' +
+          '<div style="font-size:2rem;margin-bottom:10px;">🔍</div>' +
           '<div style="font-weight:700;margin-bottom:4px;"></div>' +
-          '<div style="font-size:13px;margin-bottom:18px;">Nothing matches every filter at once — ' +
+          '<div style="font-size:0.8125rem;margin-bottom:18px;">Nothing matches every filter at once — ' +
           'try loosening one.</div>' +
           '<button class="btn btn-secondary btn-sm" onclick="exClear()">Clear filters</button>';
         none.querySelector('div:nth-child(2)').textContent = exQuery.trim()
@@ -1974,7 +1999,7 @@
       const box = document.getElementById('pg-evolution-rows');
       if (!box) return;
       const row = (label, top, latest) => !top ? '' :
-        '<div style="display:flex;align-items:center;gap:16px;font-size:13px;">' +
+        '<div style="display:flex;align-items:center;gap:16px;font-size:0.8125rem;">' +
         '<span style="color:' + (latest ? 'var(--accent2);font-weight:700' : 'var(--muted)') + ';width:64px;">' + label + '</span>' +
         '<span style="font-weight:' + (latest ? 700 : 600) + ';">' + esc((top.emoji || '') + ' ' + top.title) + '</span>' +
         '<span style="color:' + (latest ? 'var(--accent2);font-weight:800' : '#a8a3ff;font-weight:700') + ';margin-left:auto;">' +

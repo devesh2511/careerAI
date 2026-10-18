@@ -7,14 +7,15 @@
 /* ── Shell ── */
 .adm-page {
   display: block;
-  padding: 32px 36px;
-  max-width: 1150px;
+  padding: clamp(24px, 2.6vw, 48px) clamp(20px, 3vw, 56px) 48px;
+  max-width: 1320px;
+  margin-inline: auto;
 }
 
 .adm-role {
   display: inline-block;
   margin-top: 6px;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 800;
   letter-spacing: .8px;
   text-transform: uppercase;
@@ -26,7 +27,7 @@
 }
 
 .adm-crumb {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   margin-bottom: 10px;
 }
@@ -75,7 +76,7 @@
 }
 
 .adm-section-title {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   color: var(--muted);
   text-transform: uppercase;
@@ -104,12 +105,12 @@
 .adm-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
 }
 
 .adm-table th {
   text-align: left;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -154,14 +155,14 @@
 }
 
 .adm-sub {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 2px;
 }
 
 .adm-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   letter-spacing: .3px;
 }
 
@@ -170,7 +171,7 @@
   padding: 36px 22px;
   text-align: center;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .adm-error-box {
@@ -179,7 +180,7 @@
   border: 1px solid rgba(255, 101, 132, .35);
   background: rgba(255, 101, 132, .08);
   color: var(--accent3);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   margin-bottom: 16px;
 }
 
@@ -189,7 +190,7 @@
   border: 1px solid var(--border);
   background: var(--surface2);
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.55;
   margin-bottom: 16px;
 }
@@ -246,7 +247,7 @@
 }
 
 .adm-field-err {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--accent3);
   margin-top: 6px;
   min-height: 0;
@@ -261,7 +262,7 @@
 }
 
 .adm-hint {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 6px;
   line-height: 1.5;
@@ -284,7 +285,7 @@ textarea.form-input {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   margin-bottom: 18px;
 }
@@ -327,7 +328,7 @@ textarea.form-input {
 }
 
 .adm-q-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 800;
 }
 
@@ -361,7 +362,7 @@ textarea.form-input {
 
 .adm-opt .adm-opt-letter {
   font-weight: 800;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   width: 14px;
 }
@@ -386,7 +387,7 @@ textarea.form-input {
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
 }
 
 .adm-ro-opt.is-correct {
@@ -396,14 +397,14 @@ textarea.form-input {
 }
 
 .adm-ro-text {
-  font-size: 14.5px;
+  font-size: 0.9062rem;
   font-weight: 600;
   line-height: 1.5;
   margin-bottom: 12px;
 }
 
 .adm-ro-expl {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   margin-top: 12px;
   line-height: 1.55;
@@ -413,7 +414,7 @@ textarea.form-input {
 .adm-result {
   display: grid;
   gap: 6px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin-top: 14px;
 }
 
@@ -471,14 +472,14 @@ textarea.form-input {
 }
 
 .adm-modal-title {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 800;
 }
 
 .adm-modal-close {
   background: none;
   border: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   line-height: 1;
   color: var(--muted);
   cursor: pointer;
@@ -525,11 +526,11 @@ textarea.form-input {
 
 .adm-choice-title {
   font-weight: 800;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .adm-choice-sub {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
   margin-top: 3px;
   line-height: 1.5;
@@ -537,7 +538,7 @@ textarea.form-input {
 
 .adm-hard-box {
   margin-top: 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .adm-hard-box ul {
@@ -554,7 +555,7 @@ textarea.form-input {
   transform: translateX(-50%) translateY(20px);
   background: var(--text);
   color: var(--bg);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 700;
   padding: 11px 18px;
   border-radius: 12px;
@@ -574,7 +575,7 @@ textarea.form-input {
 /* ── Login page ── */
 .adm-login-hint {
   margin-top: 18px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   text-align: center;
   line-height: 1.6;
@@ -583,7 +584,7 @@ textarea.form-input {
 .adm-forgot-link {
   margin-top: 8px;
   text-align: right;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
 }
 
 .adm-forgot-link a,
@@ -613,7 +614,7 @@ textarea.form-input {
 }
 
 .adm-auth-copy {
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--muted);
   line-height: 1.55;
   margin-bottom: 18px;
@@ -626,14 +627,14 @@ textarea.form-input {
 
 .adm-auth-back {
   text-align: center;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--muted);
   margin-top: 16px;
 }
 
 .adm-code-input {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 20px;
+  font-size: 1.25rem;
   letter-spacing: .4em;
   text-align: center;
 }
@@ -644,7 +645,7 @@ textarea.form-input {
   border: 1px solid rgba(46, 204, 113, .35);
   background: rgba(46, 204, 113, .08);
   color: var(--text);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   margin-bottom: 16px;
 }
 

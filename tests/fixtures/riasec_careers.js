@@ -28,8 +28,10 @@
 // occupation scores (see the source note in the class-9 doc). They are
 // authored to be internally consistent so ranking behaves sensibly.
 //
-// Loaded as a plain <script> before script.js (attaches to the global),
-// and require()-able from tests/ under Node.
+// SNAPSHOT FOR THE NODE TESTS. The live catalogue is the careers table in
+// careerAPI (migration 010_careers.sql was generated from this file), served
+// by GET /careers; the browser no longer loads this file. Edit careers there
+// with a migration, then mirror the change here so the tests match.
 // ══════════════════════════════════════════════════════════════
 (function (root, factory) {
   const api = factory();

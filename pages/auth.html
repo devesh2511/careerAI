@@ -49,7 +49,7 @@
           <!-- Google login comes later (careerAPI docs/database-schema.md §2.2).
           <div class="auth-divider">or</div>
           <button class="google-btn" onclick="show('dashboard')">🌐 Continue with Google</button> -->
-          <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:16px;cursor:pointer;"
+          <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:16px;cursor:pointer;"
             onclick="authTab('register', document.querySelectorAll('.auth-tab')[1])">New here? Create an account</p>
         </form>
         <form id="auth-register" novalidate style="display:none;" onsubmit="authSubmitRegister(event)">
@@ -86,13 +86,12 @@
           <div class="auth-divider">or</div>
           <button class="google-btn" onclick="show('onboarding')">🌐 Sign up with Google</button> -->
         </form>
-        <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:20px;cursor:pointer;"
+        <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:20px;cursor:pointer;"
           onclick="show('landing')">← Back to home</p>
       </div>
     </div>
   </div>
 
-  <script src="../scripts/riasec_careers.js"></script>
   <script src="../scripts/riasec_engine.js"></script>
   <script src="../scripts/careerapi_mock.js"></script>
   <script src="../scripts/script.js"></script>

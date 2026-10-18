@@ -10,7 +10,7 @@
 // API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
 //   POST /auth/register   POST /auth/login   POST /auth/logout
 //   GET  /me              GET  /me/access      PUT /me/career    PUT /me/school
-//   GET  /roadmaps        GET  /roadmap?career=
+//   GET  /roadmaps        GET  /roadmap?career=     GET /careers
 //   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
 // As more endpoints ship, move their methods from reply(...) to http(...).
 //
@@ -253,6 +253,11 @@
     demo: true,
     plans: PLANS,
     leaderboardName: leaderboardName,
+
+    // GET /careers — live, no login. → { careers } the career catalogue
+    careers: {
+      list() { return http('GET', '/careers'); }
+    },
 
     auth: {
       // POST /auth/register — live

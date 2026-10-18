@@ -387,7 +387,7 @@
       ctStartTicker(lbRender);
     }
 
-    // The career list lives in riasec_careers.js; the server's emoji is the
+    // The career list is RIASEC_CAREERS (GET /careers); the server's emoji is the
     // fallback for a career that isn't in it.
     function lbEmoji(title, fallback) {
       const c = (typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : []).find(x => x.title === title);
