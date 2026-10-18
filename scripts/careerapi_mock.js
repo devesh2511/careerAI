@@ -12,6 +12,7 @@
 //   POST /auth/forgot-password   POST /auth/reset-password
 //   GET  /me              GET  /me/access      PUT /me/career    PUT /me/school
 //   GET  /roadmaps        GET  /roadmap?career=     GET /careers
+//   GET  /career-news?career=
 //   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
 // As more endpoints ship, move their methods from reply(...) to http(...).
 //
@@ -306,6 +307,8 @@
       roadmaps() { return http('GET', '/roadmaps'); },
       // GET /roadmap?career= — live. → { roadmap: { career, emoji, steps } }; 404 not_found if none
       roadmap(career) { return http('GET', '/roadmap' + query({ career: career })); },
+      // GET /career-news?career= — live. → { career, categories: [{ key, label, items }], sources, updated_at }
+      careerNews(career) { return http('GET', '/career-news' + query({ career: career })); },
       // PUT /me/school — live; code '' / null clears it. → { student, access }
       setSchool(code) {
         return http('PUT', '/me/school', { school_code: code || null }).then(r => { shadow(r.student); return r; });

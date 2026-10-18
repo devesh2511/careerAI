@@ -51,6 +51,8 @@
               class="icon">🏆</span>Contests</button>
           <button class="nav-item" data-page="settings" onclick="navTo('settings',this)"><span
               class="icon">⚙️</span>Settings</button>
+          <button class="nav-item" data-page="space" onclick="navTo('space',this)"><span
+              class="icon">📰</span>My Career Space</button>
         </nav>
         <div class="sidebar-user">
           <div class="user-row">
@@ -406,6 +408,24 @@
           </div>
           <div class="page-sub" id="rm-note" style="margin-bottom:16px;" hidden></div>
           <div class="timeline" id="rm-timeline"></div>
+        </div>
+
+        <!-- ── MY CAREER SPACE ── -->
+        <div id="space" class="page">
+          <div class="topbar">
+            <div>
+              <div class="page-title">My Career Space</div>
+              <div class="page-sub">The latest news, jobs, exams and scholarships for your top career matches</div>
+            </div>
+          </div>
+          <!-- Drawn by spLoad() in scripts/script.js: one pill per career the
+               quiz suggested, then that career's feed from careerAPI
+               (GET /career-news?career=). -->
+          <div class="sp-careers" id="sp-careers" role="tablist" aria-label="Career"></div>
+          <div class="lb-tabs sp-tabs" id="sp-tabs" role="tablist" aria-label="Category"></div>
+          <div class="page-sub" id="sp-note" hidden></div>
+          <div class="sp-feed" id="sp-feed"></div>
+          <div class="sp-foot" id="sp-foot" hidden></div>
         </div>
 
         <!-- ── AI CHAT ── -->

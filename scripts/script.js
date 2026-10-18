@@ -23,7 +23,7 @@
     };
 
     // These are .page divs inside app.html — they still switch in place.
-    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'roadmap', 'chat', 'contests', 'settings'];
+    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'roadmap', 'chat', 'contests', 'settings', 'space'];
 
     // Which file are we on? Set via <body data-page="...">
     const CURRENT_PAGE = (document.body && document.body.dataset.page) || 'landing';
@@ -197,6 +197,7 @@
       else if (pageId === 'roadmap') rmLoad();
       else if (pageId === 'contests') syncProgress();
       else if (pageId === 'settings') syncSettings();
+      else if (pageId === 'space') spLoad();
     }
 
     // ── Per-page init: replaces the old single-page bootstrap ──
@@ -2089,6 +2090,140 @@
     function rmNote(text) {
       const el = document.getElementById('rm-note');
       el.textContent = text;
+      el.hidden = !text;
+    }
+
+    // ── My Career Space (app.html#/space) ──
+    // A pill per career the student's career quiz suggested
+    // (appResults.top_careers, up to 5), opening on the top match. Each pick
+    // fetches that career's live feed from careerAPI (GET /career-news?career=):
+    // four category lists, which the All tab merges. Feeds are kept for the
+    // page's life, so switching back to a career is instant.
+    const SP_BADGE = { news: 'badge-purple', jobs: 'badge-green', exams: 'badge-blue', scholarships: 'badge-orange' };
+    const SP_ICON = { news: '📰', jobs: '💼', exams: '📝', scholarships: '🏅' };
+    const spFeeds = {};
+    let spCareer = null, spTab = 'all', spReq = 0;
+
+    function spLoad() {
+      if (!window.CareerAPI) return;
+      const careers = (appResults && appResults.top_careers) || [];
+      const pills = document.getElementById('sp-careers');
+      if (!careers.length) {
+        pills.innerHTML = document.getElementById('sp-tabs').innerHTML = document.getElementById('sp-feed').innerHTML = '';
+        document.getElementById('sp-foot').hidden = true;
+        spNote('');
+        document.getElementById('sp-feed').innerHTML =
+          '<div class="db-empty">' +
+          '<div class="db-empty-icon">📰</div>' +
+          '<h3>Your Career Space fills up after the quiz</h3>' +
+          '<p>Take the career quiz and we\'ll bring you the latest news, jobs, exams and scholarships ' +
+          'for each of your top career matches.</p>' +
+          '<button class="btn btn-primary btn-lg" onclick="cqStart()">Start the Career Quiz →</button>' +
+          '</div>';
+        return;
+      }
+      if (!careers.some(c => c.title === spCareer)) spCareer = careers[0].title;
+      pills.innerHTML = careers.map((c, i) =>
+        '<button class="career-pill' + (c.title === spCareer ? ' active' : '') + '" role="tab" aria-selected="' +
+        (c.title === spCareer) + '" data-career="' + esc(c.title) + '" onclick="spShow(this.dataset.career)">' +
+        '<span style="font-size:1.125rem;">' + esc(c.emoji || '') + '</span>' +
+        '<span class="career-pill-name">' + esc(c.title) + '</span>' +
+        '<span class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + esc(c.match_pct) + '%</span>' +
+        '</button>').join('');
+      spShow(spCareer);
+    }
+
+    function spShow(career) {
+      spCareer = career;
+      document.querySelectorAll('#sp-careers .career-pill').forEach(p => {
+        const on = p.dataset.career === career;
+        p.classList.toggle('active', on);
+        p.setAttribute('aria-selected', on);
+      });
+      if (spFeeds[career]) { spRender(); return; }
+      const req = ++spReq;
+      document.getElementById('sp-tabs').innerHTML = document.getElementById('sp-feed').innerHTML = '';
+      document.getElementById('sp-foot').hidden = true;
+      spNote('Finding the latest for ' + career + '…');
+      CareerAPI.me.careerNews(career).then(r => {
+        spFeeds[career] = r;
+        if (req === spReq) spRender();
+      }, err => {
+        if (req !== spReq) return;
+        spNote(err.code === 'not_found'
+          ? 'We don\'t have a news feed for ' + career + ' yet. Pick another of your matches above.'
+          : err.message, true);
+      });
+    }
+
+    function spSetTab(key) { spTab = key; spRender(); }
+
+    // The All tab: every category's items, a story filed under two of them
+    // shown once (under the first), newest first.
+    function spItems(feed) {
+      if (spTab !== 'all') {
+        const cat = feed.categories.find(c => c.key === spTab);
+        return cat ? cat.items.map(it => Object.assign({ cat: cat.key }, it)) : [];
+      }
+      const seen = new Set(), out = [];
+      feed.categories.forEach(c => c.items.forEach(it => {
+        if (seen.has(it.url)) return;
+        seen.add(it.url);
+        out.push(Object.assign({ cat: c.key }, it));
+      }));
+      return out.sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''));
+    }
+
+    function spRender() {
+      const feed = spFeeds[spCareer];
+      if (!feed) return;
+      if (spTab !== 'all' && !feed.categories.some(c => c.key === spTab)) spTab = 'all';
+      const total = new Set([].concat.apply([], feed.categories.map(c => c.items.map(it => it.url)))).size;
+      const chip = (key, label, n) => '<button class="filter-chip' + (spTab === key ? ' active' : '') + (n ? '' : ' is-empty') +
+        '" role="tab" aria-selected="' + (spTab === key) + '" onclick="spSetTab(\'' + key + '\')">' +
+        label + '<span class="fc-n">' + n + '</span></button>';
+      document.getElementById('sp-tabs').innerHTML = chip('all', '✨ All', total) +
+        feed.categories.map(c => chip(c.key, (SP_ICON[c.key] || '') + ' ' + esc(c.label), c.items.length)).join('');
+
+      const items = spItems(feed);
+      const labels = {};
+      feed.categories.forEach(c => { labels[c.key] = c.label; });
+      spNote(items.length ? '' : 'Nothing new here in the last few weeks. Check the other tabs, or come back in a few days.');
+      document.getElementById('sp-feed').innerHTML = items.map(it => {
+        const url = /^https?:\/\//i.test(it.url) ? it.url : '#';
+        const img = it.image && /^https:\/\//i.test(it.image)
+          ? '<img class="sp-thumb" src="' + esc(it.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
+        return '<a class="sp-item" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
+          '<div class="sp-item-body">' +
+          '<div class="sp-meta">' +
+          (spTab === 'all' ? '<span class="badge ' + (SP_BADGE[it.cat] || 'badge-purple') + '">' + esc(labels[it.cat] || it.cat) + '</span>' : '') +
+          '<span class="sp-source">' + esc(it.source || it.provider || '') + '</span>' +
+          (it.published_at ? '<span class="sp-time" title="' + esc(new Date(it.published_at).toLocaleString('en-IN')) + '">' + esc(spAgo(it.published_at)) + '</span>' : '') +
+          '</div>' +
+          '<div class="sp-title">' + esc(it.title) + '</div>' +
+          '</div>' + img + '</a>';
+      }).join('');
+
+      const foot = document.getElementById('sp-foot');
+      foot.hidden = false;
+      foot.textContent = (feed.sources && feed.sources.length ? 'Headlines from ' + feed.sources.join(' and ') : 'Live headlines') +
+        (feed.updated_at ? ' · updated ' + spAgo(feed.updated_at) : '') +
+        '. CareerAI doesn\'t write these stories: check dates and eligibility on the official website before you apply.';
+    }
+
+    function spAgo(iso) {
+      const mins = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+      if (mins < 60) return mins <= 1 ? 'just now' : mins + ' min ago';
+      const hrs = Math.round(mins / 60);
+      if (hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+      const days = Math.round(hrs / 24);
+      if (days < 30) return days + (days === 1 ? ' day ago' : ' days ago');
+      return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function spNote(text, retry) {
+      const el = document.getElementById('sp-note');
+      el.innerHTML = esc(text) + (retry ? ' <button class="sp-retry" onclick="spShow(spCareer)">Try again</button>' : '');
       el.hidden = !text;
     }
 
