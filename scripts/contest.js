@@ -63,6 +63,7 @@
     // ══════════════════════════════════════════════════════════════
     let ctRun = null;   // { contest, started_at, questions, answers }
     let ctIdx = 0;
+    let ctOnReview = false;   // the "Ready to submit?" screen is up
 
     function ctRoot() { return document.getElementById('ct-root'); }
     function ctSet(html) {
@@ -97,8 +98,12 @@
     }
 
     // Entry point for quiz.html. ?review=N shows a closed contest's answers.
+    // During an attempt the question is in the hash (#/q/3, #/review) and
+    // the browser's Back steps back through the questions (stepInit, in
+    // script.js).
     function ctInit() {
       clearInterval(ctTick);
+      stepInit(ctStepBack);
       const review = new URLSearchParams(location.search).get('review');
       if (review) { ctShowReview(review); return; }
       ctSet('<div class="ct-loading">Loading this week’s contest…</div>');
@@ -174,7 +179,10 @@
         ctRun = run;
         const firstOpen = run.questions.findIndex(q => run.answers[q.id] === undefined);
         ctIdx = firstOpen === -1 ? run.questions.length - 1 : firstOpen;
-        ctQuestion();
+        // A reload reopens the question (or review screen) it was on.
+        const m = /^#\/q\/(\d+)$/.exec(location.hash);
+        if (m && +m[1] >= 1 && +m[1] <= run.questions.length) ctIdx = +m[1] - 1;
+        if (location.hash === '#/review') ctConfirm(); else ctQuestion();
       }).catch(err => {
         if (err.code === 'already_submitted' || err.code === 'not_open') ctInit();
         else ctError(err);
@@ -190,6 +198,7 @@
 
     function ctQuestion() {
       clearInterval(ctTick);
+      ctOnReview = false;
       const qs = ctRun.questions, q = qs[ctIdx], chosen = ctRun.answers[q.id];
       const last = ctIdx === qs.length - 1;
       ctLabel('Contest #' + ctRun.contest.number + ' · Question ' + (ctIdx + 1) + ' of ' + qs.length);
@@ -208,6 +217,15 @@
           ? '<button class="btn btn-primary btn-sm" onclick="ctConfirm()">Review &amp; submit →</button>'
           : '<button class="btn btn-primary btn-sm" onclick="ctGo(' + (ctIdx + 1) + ')">Next →</button>') +
         '</div></div>');
+      stepSync(ctIdx > 0, '#/q/' + (ctIdx + 1));
+    }
+
+    // Browser Back mid-attempt: review screen → last question → the one before.
+    function ctStepBack() {
+      if (!ctRun) return false;
+      if (ctOnReview) { ctGo(ctRun.questions.length - 1); return true; }
+      if (ctIdx > 0) { ctGo(ctIdx - 1); return true; }
+      return false;
     }
 
     function ctGo(i) {
@@ -230,6 +248,8 @@
     }
 
     function ctConfirm() {
+      ctOnReview = true;
+      stepSync(true, '#/review');
       const qs = ctRun.questions;
       const open = qs.filter(q => ctRun.answers[q.id] === undefined).length;
       ctLabel('Contest #' + ctRun.contest.number + ' · Review');
@@ -267,6 +287,8 @@
 
     function ctSubmitted(c, a) {
       ctRun = null;
+      ctOnReview = false;
+      stepSync(false, location.pathname + location.search);  // no question to come back to
       ctLabel('Contest #' + c.number);
       const took = a.time_taken_s != null ? a.time_taken_s
         : Math.round((Date.parse(a.submitted_at) - Date.parse(a.started_at)) / 1000);
@@ -283,7 +305,7 @@
         '</div>' +
         '<div class="ct-actions"><button class="btn btn-primary" onclick="show(\'contests\')">Go to leaderboards</button></div>' +
         '</div>');
-      ctStartTicker(() => { location.href = '?review=' + c.id; });
+      ctStartTicker(() => { location.replace('?review=' + c.id); });
     }
 
     function ctShowReview(id) {

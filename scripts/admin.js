@@ -60,7 +60,7 @@
     // ── Errors ──
     // A 401 anywhere means the admin session is gone: back to the login page.
     function admAuthGuard(err) {
-      if (err && err.status === 401) { location.href = 'admin_login.html'; return true; }
+      if (err && err.status === 401) { location.replace('admin_login.html'); return true; }
       return false;
     }
     // Put a server error next to its field (err.field) if the form has one,
@@ -193,7 +193,7 @@
       if (!email || !password) { box.textContent = 'Enter your email and password.'; box.style.display = 'block'; return; }
       admBusy(btn, true, 'Logging in…');
       CareerAPI.admin.login({ email: email, password: password })
-        .then(() => { location.href = 'admin.html'; })
+        .then(() => { location.replace('admin.html'); })
         .catch(err => {
           admBusy(btn, false);
           box.textContent = err.message || 'Could not log in.';
@@ -203,7 +203,7 @@
     }
 
     function admLogout() {
-      CareerAPI.admin.logout().finally(() => { location.href = 'admin_login.html'; });
+      CareerAPI.admin.logout().finally(() => { location.replace('admin_login.html'); });
     }
 
     // ── Forgot password ──
@@ -214,7 +214,23 @@
     let admResetEmail = '';
     let admResendTimer = null;
 
-    function admShowAuth(which) {
+    // The form on show is in the hash (#forgot, #reset), so Back steps from
+    // reset to forgot to login. mode: 'push' (default) adds a history entry,
+    // 'replace' rewrites the current one, 'none' leaves history alone.
+    function admAuthFromHash() {
+      const h = (location.hash || '').replace(/^#\/?/, '');
+      return h === 'forgot' || h === 'reset' ? h : 'login';
+    }
+    function admShowAuth(which, mode) {
+      // The reset form needs the email the code went to, which a reload or a
+      // Back/Forward onto it no longer has.
+      if (which === 'reset' && !admResetEmail) { which = 'forgot'; mode = 'replace'; }
+      if (mode !== 'none' && admAuthFromHash() !== which) {
+        try {
+          history[mode === 'replace' ? 'replaceState' : 'pushState'](null, '',
+            which === 'login' ? location.pathname + location.search : '#' + which);
+        } catch (e) { }
+      }
       ['login', 'forgot', 'reset'].forEach(k => {
         const form = document.getElementById('adm-' + k + '-form');
         form.hidden = k !== which;
@@ -308,7 +324,7 @@
           form.reset();
           document.getElementById('adm-email').value = admResetEmail;
           document.getElementById('adm-password').value = '';
-          admShowAuth('login');
+          admShowAuth('login', 'replace');
           const ok = document.getElementById('adm-login-ok');
           ok.textContent = 'Password changed. Log in with your new password.';
           ok.style.display = 'block';
@@ -1357,7 +1373,9 @@
     document.addEventListener('DOMContentLoaded', () => {
       if (ADM_PAGE === 'adminlogin') {
         // Already logged in? Skip the form.
-        CareerAPI.admin.me().then(() => { location.href = 'admin.html'; }).catch(() => { });
+        CareerAPI.admin.me().then(() => { location.replace('admin.html'); }).catch(() => { });
+        window.addEventListener('popstate', () => admShowAuth(admAuthFromHash(), 'none'));
+        if (admAuthFromHash() !== 'login') admShowAuth(admAuthFromHash(), 'none');
         return;
       }
       if (ADM_PAGE !== 'admin') return;

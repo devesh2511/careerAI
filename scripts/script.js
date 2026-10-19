@@ -64,10 +64,10 @@
       if (!window.CareerAPI) return Promise.resolve(true);
       return CareerAPI.me.access().then(a => {
         if (a.has_access) return true;
-        show('paywall');
+        redirect('paywall');
         return false;
       }, err => {
-        if (err.status === 401) show('auth');
+        if (err.status === 401) redirect('auth');
         else alert(err.message);
         return false;
       });
@@ -140,18 +140,35 @@
     }
 
     // ── Screen switching → real page navigation ──
-    function show(id) {
+    // A move the student chose adds a history entry. A redirect -- a guard
+    // bouncing them to login or the paywall, an interstitial like ai_loading
+    // handing on -- replaces the current entry instead, so Back never lands
+    // on a page that just bounces forward again.
+    function show(id, replace) {
       if (APP_PAGES.includes(id)) {
-        if (CURRENT_PAGE === 'app') { navTo(id); return; }  // already inside the shell
-        location.href = routeTo('app') + '#/' + id;
+        if (CURRENT_PAGE === 'app') { appGo(appDefaultHash(id), replace); return; }  // already inside the shell
+        go(routeTo('app') + appHash(id), replace);
         return;
       }
       const file = routeTo(id);
-      if (file) location.href = file;
+      if (file) go(file, replace);
+    }
+    function redirect(id) { show(id, true); }
+    function go(url, replace) {
+      if (replace) location.replace(url); else location.href = url;
+    }
+
+    // In-page "← Back" buttons: step back through history when the page
+    // before this one was ours, else go to the fallback screen (a bookmark,
+    // a link opened in a new tab).
+    function goBack(fallback) {
+      let ours = false;
+      try { ours = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) { }
+      if (ours && history.length > 1) history.back(); else show(fallback);
     }
 
     function logout() {
-      const done = () => { clearState(); location.href = routeTo('landing'); };
+      const done = () => { clearState(); location.replace(routeTo('landing')); };
       if (window.CareerAPI) CareerAPI.auth.logout().then(done, done);
       else done();
     }
@@ -161,7 +178,7 @@
     // restore it.
     function deleteAccount() {
       if (!confirm('Delete your CareerAI account? You will be logged out and removed from leaderboards.')) return;
-      CareerAPI.me.remove().then(() => { clearState(); location.href = routeTo('landing'); },
+      CareerAPI.me.remove().then(() => { clearState(); location.replace(routeTo('landing')); },
         err => alert(err.message));
     }
 
@@ -172,35 +189,140 @@
       if (e.key === 'Escape' && document.body.classList.contains('nav-open')) closeSidebar();
     });
 
-    // ── App nav (only meaningful on app.html) ──
-    function navTo(pageId, btn) {
-      if (CURRENT_PAGE !== 'app') { location.href = routeTo('app') + '#/' + pageId; return; }
+    // ── App router (app.html) ──
+    // The view, and what it is showing, live in the hash, so Back/Forward,
+    // a reload and a pasted link all land in the same place:
+    //   #/dashboard  #/results  #/chat  #/contests  #/settings
+    //   #/explorer?q=&group=&stream=&fit=&sort=
+    //   #/careerdetail/<career>?from=explorer
+    //   #/roadmap/<career>
+    //   #/space/<career>?tab=jobs
+    // The '#/' prefix matters: a bare '#dashboard' matches a real element id,
+    // and the browser scroll-anchors to it on load, shoving the page down
+    // under the sticky header.
+    function appHash(page, arg, params) {
+      const h = '#/' + page + (arg ? '/' + encodeURIComponent(arg) : '');
+      const q = new URLSearchParams();
+      Object.keys(params || {}).forEach(k => { if (params[k] != null && params[k] !== '') q.set(k, params[k]); });
+      const qs = q.toString();
+      return qs ? h + '?' + qs : h;
+    }
+
+    function appParse() {
+      const raw = (location.hash || '').replace(/^#\/?/, '');
+      const cut = raw.indexOf('?');
+      const path = (cut === -1 ? raw : raw.slice(0, cut)).split('/').filter(Boolean);
+      let page = path[0] || '';
+      if (page === 'progress') page = 'contests';  // old address of this page
+      let arg = null;
+      try { arg = path.length > 1 ? decodeURIComponent(path.slice(1).join('/')) : null; } catch (e) { }
+      const params = {};
+      new URLSearchParams(cut === -1 ? '' : raw.slice(cut + 1)).forEach((v, k) => { params[k] = v; });
+      return APP_PAGES.includes(page) ? { page: page, arg: arg, params: params } : { page: 'dashboard', arg: null, params: {} };
+    }
+
+    // Where the sidebar sends each view: back to whatever it showed last
+    // (the explorer keeps its filters, the roadmap its career).
+    function appDefaultHash(page) {
+      if (page === 'explorer') return appHash('explorer', null, exParams());
+      if (page === 'roadmap') return appHash('roadmap', rmCareer);
+      if (page === 'space') return appHash('space', spCareer, { tab: spTab === 'all' ? null : spTab });
+      return appHash(page);
+    }
+
+    let appRendered = null;   // the hash currently drawn
+    let appView = null;       // the .page currently shown
+
+    // A new view (or a new career in one): its own history entry.
+    function appGo(h, replace) {
+      if (h === location.hash) { appRoute(true); return; }
+      try { history[replace ? 'replaceState' : 'pushState']({ app: true }, '', h); }
+      catch (e) { location.hash = h; return; }  // hashchange routes it
+      appRoute();
+    }
+
+    // Opens a view from any page: in place inside app.html, else a
+    // navigation to it.
+    function appOpen(page, arg, params) {
+      const h = appHash(page, arg, params);
+      if (CURRENT_PAGE === 'app') appGo(h); else location.href = routeTo('app') + h;
+    }
+
+    // Filters and tabs rewrite the address of the view on screen without
+    // adding entries, so Back leaves the view instead of undoing each chip.
+    function appSetHash(h) {
+      if (h !== location.hash) { try { history.replaceState(history.state, '', h); } catch (e) { } }
+      appRendered = location.hash;
+    }
+
+    function appRoute(force) {
+      if (!force && location.hash === appRendered) return;
+      const r = appParse();
+      appSetHash(appHash(r.page, r.arg, r.params));  // tidy an old or hand-typed address
+      const changed = r.page !== appView;
+      appView = r.page;
       document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
-      const pg = document.getElementById(pageId);
-      if (pg) {
-        if (pageId === 'chat') { pg.style.display = 'flex'; pg.classList.add('active'); }
-        else { pg.style.display = 'block'; pg.classList.add('active'); }
-      }
-      // btn is passed by the sidebar onclick; on a fresh load we look it up by data-page
+      const pg = document.getElementById(r.page);
+      if (pg) { pg.style.display = r.page === 'chat' ? 'flex' : 'block'; pg.classList.add('active'); }
       // Career detail has no sidebar entry of its own: light up where it was opened from.
-      const navPage = pageId === 'careerdetail' ? (cdFrom || 'results') : pageId;
-      const navBtn = btn || document.querySelector('.nav-item[data-page="' + navPage + '"]');
-      if (navBtn) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); navBtn.classList.add('active'); }
-      // Keep the hash in sync so a reload lands on the same page. The '#/' prefix
-      // matters: a bare '#dashboard' matches a real element id, and the browser
-      // scroll-anchors to it on load, shoving the page down under the sticky header.
-      try { history.replaceState(null, '', '#/' + pageId); } catch (e) { }
+      if (r.page === 'careerdetail') cdFrom = CD_BACK[r.params.from] ? r.params.from : null;
+      const navPage = r.page === 'careerdetail' ? (cdFrom || 'results') : r.page;
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === navPage));
       document.body.classList.remove('nav-open'); // collapse the mobile drawer
-      window.scrollTo(0, 0);
+      if (changed) window.scrollTo(0, 0);
       // Sync quiz results into the page just revealed
-      if (pageId === 'dashboard') syncDashboard();
-      else if (pageId === 'results') syncResults();
-      else if (pageId === 'explorer') syncExplorer();
-      else if (pageId === 'roadmap') rmLoad();
-      else if (pageId === 'contests') syncProgress();
-      else if (pageId === 'settings') syncSettings();
-      else if (pageId === 'space') spLoad();
-      else if (pageId === 'careerdetail') cdRender();
+      if (r.page === 'dashboard') syncDashboard();
+      else if (r.page === 'results') syncResults();
+      else if (r.page === 'explorer') syncExplorer(r.params);
+      else if (r.page === 'roadmap') rmLoad(r.arg);
+      else if (r.page === 'contests') syncProgress();
+      else if (r.page === 'settings') syncSettings();
+      else if (r.page === 'space') spLoad(r.arg, r.params.tab);
+      else if (r.page === 'careerdetail') cdRender(r.arg);
+    }
+
+    // Sidebar and in-app buttons. From another page it opens app.html there.
+    function navTo(pageId) {
+      if (CURRENT_PAGE !== 'app') { location.href = routeTo('app') + appHash(pageId); return; }
+      appGo(appDefaultHash(pageId));
+    }
+
+    // ── Step pages: Back steps back ──
+    // Onboarding, the career quiz and the contest move between steps in
+    // place. While the student is past the first step the page keeps one
+    // extra history entry, a guard: the browser's Back pops it and the page
+    // steps back instead of leaving, then re-arms it. The step is shown in
+    // the hash (#/q/7) so a reload lands on it. One entry rather than one
+    // per step, so finishing never leaves a trail of dead steps behind.
+    let stepOnBack = null, stepLeaving = null;
+    function stepArmed() { return !!(history.state && history.state.step); }
+
+    // onBack() steps back and returns true, or returns false at the first step.
+    function stepInit(onBack) {
+      if (!stepOnBack) {
+        window.addEventListener('popstate', () => {
+          if (stepLeaving) { const next = stepLeaving; stepLeaving = null; next(); return; }
+          if (stepArmed()) return;              // Forward onto the guard
+          if (!stepOnBack()) history.back();    // nothing left to step back to: leave
+        });
+      }
+      stepOnBack = onBack;
+    }
+
+    // Called after each step is drawn.
+    function stepSync(canGoBack, hash) {
+      try {
+        if (canGoBack && !stepArmed()) history.pushState({ step: 1 }, '', hash);
+        else history.replaceState(history.state, '', hash);
+      } catch (e) { }
+    }
+
+    // Leaving the step page (finished): drop the guard first, so the next
+    // page replaces this one's entry instead of stacking on top of it.
+    function stepLeave(next) {
+      if (!stepArmed()) { next(); return; }
+      stepLeaving = next;
+      history.back();
     }
 
     // ── Per-page init: replaces the old single-page bootstrap ──
@@ -223,9 +345,11 @@
     function initPage() {
       switch (CURRENT_PAGE) {
         case 'app': {
-          let hash = (location.hash || '').replace(/^#\/?/, '');
-          if (hash === 'progress') hash = 'contests';  // old address of this page
-          navTo(APP_PAGES.includes(hash) ? hash : 'dashboard');
+          // popstate covers Back/Forward, hashchange an address typed by hand;
+          // appRoute skips whichever arrives second.
+          window.addEventListener('popstate', () => appRoute());
+          window.addEventListener('hashchange', () => appRoute());
+          appRoute(true);
           syncUser();
           cqInitPrint(appPrintTitle);
           break;
@@ -242,11 +366,7 @@
     }
 
     // ── Auth tabs ──
-    function authTab(type, btn) {
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      authShow(type);
-    }
+    function authTab(type) { authShow(type); }
 
     // ── Shared bits for account screens ──
     function esc(s) {
@@ -266,8 +386,16 @@
     // ── Auth: login / register (pages/auth.html) ──
     function authInit() {
       // Already logged in: the gate on the next page decides dashboard vs paywall.
-      if (isLoggedIn()) { show('dashboard'); return; }
-      if (location.hash === '#register') authTab('register', document.querySelectorAll('.auth-tab')[1]);
+      if (isLoggedIn()) { redirect('dashboard'); return; }
+      // The form on show is in the hash (#register, #forgot, #reset), so
+      // Back steps from the reset form to forgot to login.
+      window.addEventListener('popstate', () => authShow(authFromHash(), 'none'));
+      authShow(authFromHash(), 'none');
+    }
+
+    function authFromHash() {
+      const h = (location.hash || '').replace(/^#\/?/, '');
+      return ['register', 'forgot', 'reset'].includes(h) ? h : 'login';
     }
 
     // Clears the alert box and every per-field error inside one form.
@@ -283,7 +411,7 @@
       authReset(form, 'login-alert');
       setBusy(btn, true);
       CareerAPI.auth.login({ email: val('login-email'), password: val('login-password') }).then(r => {
-        show(r.access.has_access ? 'dashboard' : 'paywall');
+        redirect(r.access.has_access ? 'dashboard' : 'paywall');
       }, err => {
         setBusy(btn, false);
         document.getElementById('login-alert').textContent = err.message;
@@ -300,8 +428,8 @@
         password: val('reg-password'), school_code: val('reg-school_code')
       }).then(r => {
         // New students fill in onboarding next, after paying if they must.
-        if (r.access.has_access) show('onboarding');
-        else location.href = routeTo('paywall') + '?next=onboarding';
+        if (r.access.has_access) redirect('onboarding');
+        else location.replace(routeTo('paywall') + '?next=onboarding');
       }, err => {
         setBusy(btn, false);
         const box = err.field && document.getElementById('reg-' + err.field + '-error');
@@ -322,7 +450,19 @@
     let authResendTimer = null;
 
     // Shows one of the four forms; the Login/Register tabs only show with theirs.
-    function authShow(which) {
+    // mode: 'push' (default) adds a history entry for it, 'replace' rewrites
+    // the current one, 'none' leaves history alone (drawing what it says).
+    function authShow(which, mode) {
+      // The reset form needs the email a code was sent to, which a reload or
+      // a Back/Forward onto it no longer has.
+      if (which === 'reset' && !authResetEmail) { which = 'forgot'; mode = 'replace'; }
+      if (mode !== 'none' && authFromHash() !== which) {
+        try {
+          history[mode === 'replace' ? 'replaceState' : 'pushState'](null, '',
+            which === 'login' ? location.pathname + location.search : '#' + which);
+        } catch (e) { }
+      }
+      document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (i === 1) === (which === 'register')));
       ['login', 'register', 'forgot', 'reset'].forEach(k => {
         document.getElementById('auth-' + k).style.display = k === which ? 'block' : 'none';
       });
@@ -417,7 +557,7 @@
         setBusy(btn, false);
         clearInterval(authResendTimer);
         form.reset();
-        authTab('login', document.querySelectorAll('.auth-tab')[0]);
+        authShow('login', 'replace');
         document.getElementById('login-email').value = authResetEmail;
         document.getElementById('login-password').value = '';
         document.getElementById('login-password').focus();
@@ -450,7 +590,7 @@
       Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
         root.innerHTML = a.has_access ? pwAllSet(a) : pwHero(m.student, a) + pwReason(m.student, a) + pwPlans(m.student);
       }, err => {
-        if (err.status === 401) { show('auth'); return; }
+        if (err.status === 401) { redirect('auth'); return; }
         root.innerHTML = '<div class="card pw-center"><p>' + esc(err.message) + '</p>' +
           '<button class="btn btn-primary" onclick="pwRender()">Try again</button></div>';
       });
@@ -708,9 +848,9 @@
     let obCurrent = 1;
     const obTitles = ['Tell us about yourself', 'Your subject marks', 'Your interests & hobbies', 'Your aspirations'];
     const obSubs = ['Basic academic details so we can personalise everything.', 'Optional but improves accuracy. Enter your last exam scores.', 'What do you love? This is the most important step.', 'Help us understand your goals and circumstances.'];
-    function obStep(dir) {
+    function obShow(n) {
       document.getElementById('ob-step-' + obCurrent).style.display = 'none';
-      obCurrent = Math.max(1, Math.min(4, obCurrent + dir));
+      obCurrent = Math.max(1, Math.min(4, n));
       document.getElementById('ob-step-' + obCurrent).style.display = 'block';
       document.getElementById('ob-count').textContent = 'Step ' + obCurrent + ' of 4';
       document.getElementById('ob-title').textContent = obTitles[obCurrent - 1];
@@ -719,15 +859,20 @@
       document.getElementById('ob-back').style.visibility = obCurrent > 1 ? 'visible' : 'hidden';
       const dots = document.querySelectorAll('.dot');
       dots.forEach((d, i) => { d.className = 'dot' + (i < obCurrent - 1 ? ' done' : i === obCurrent - 1 ? ' active' : ''); });
-      if (obCurrent === 4) document.getElementById('ob-next').textContent = 'Finish ✓';
-      else document.getElementById('ob-next').textContent = 'Next →';
-      if (obCurrent === 4 && dir === 1) { obCurrent = 4; document.getElementById('ob-next').onclick = () => show('evaluation'); }
-      else document.getElementById('ob-next').onclick = () => obStep(1);
+      document.getElementById('ob-next').textContent = obCurrent === 4 ? 'Finish ✓' : 'Next →';
+      stepSync(obCurrent > 1, '#/step/' + obCurrent);
     }
-    // reset finish btn (called from the per-page init on onboarding.html)
+    function obStep(dir) {
+      if (dir > 0 && obCurrent === 4) { stepLeave(() => show('evaluation')); return; }
+      obShow(obCurrent + dir);
+    }
+    // Called from the per-page init on onboarding.html. #/step/N reopens a step.
     function obInit() {
       const next = document.getElementById('ob-next');
       if (next) next.onclick = () => obStep(1);
+      stepInit(() => { if (obCurrent <= 1) return false; obShow(obCurrent - 1); return true; });
+      const m = /^#\/step\/([1-4])$/.exec(location.hash);
+      obShow(m ? +m[1] : 1);
     }
 
     // ── Chip single-select helper ──
@@ -866,7 +1011,8 @@
         cqIdx: 0, cqAnswers: [], cqOrder: cqOrder,
         appResults: null, isDemo: true
       });
-      show('careerquiz');
+      // From the evaluation interstitial the quiz takes its place in history.
+      show('careerquiz', CURRENT_PAGE === 'evaluation');
     }
 
     // Entry point for career_quiz.html — restore progress and draw the question
@@ -881,6 +1027,9 @@
         : rsBuildOrder();
       cqIdx = typeof s.cqIdx === 'number' ? s.cqIdx : 0;
       if (cqIdx < 0 || cqIdx >= RS_QUESTIONS.length) cqIdx = 0;
+      // Browser Back goes to the previous question; the session, not the
+      // hash, decides where the student is, so the hash can't skip questions.
+      stepInit(() => { if (cqIdx <= 0) return false; cqPrev(); return true; });
       cqRender();
     }
 
@@ -929,6 +1078,7 @@
           if (prev.indices.indexOf(parseInt(el.dataset.orig, 10)) !== -1) cqSelect(el, true);
         });
       }
+      stepSync(cqIdx > 0, '#/q/' + (cqIdx + 1));
     }
 
     function cqSelect(el, on) {
@@ -981,7 +1131,7 @@
       cqIdx++;
       saveState({ cqIdx: cqIdx, cqAnswers: cqAnswers });
       // Last question → hand off to ai_loading.html, which runs the analysis
-      if (cqIdx >= RS_QUESTIONS.length) { show('ailoading'); return; }
+      if (cqIdx >= RS_QUESTIONS.length) { stepLeave(() => redirect('ailoading')); return; }
       cqSlide('next');
     }
 
@@ -1009,7 +1159,9 @@
     async function cqFinish() {
       const s = loadState();
       cqAnswers = Array.isArray(s.cqAnswers) ? s.cqAnswers : [];
-      if (!cqAnswers.length) { show('careerquiz'); return; }  // landed here directly
+      // Landed here directly, or came back after the run was scored: never
+      // score (and save) the same answers twice.
+      if (!cqAnswers.length) { redirect(s.appResults ? 'airesults' : 'careerquiz'); return; }
       document.querySelectorAll('.al-step').forEach(el => {
         el.className = 'al-step pending';
         el.querySelector('.al-step-icon').textContent = '⏳';
@@ -1048,6 +1200,8 @@
       const pct = {};
       RS_DIMS.forEach(d => { pct[d] = Math.round(scoring.pct[d]); });
       saveState({
+        // The answers travel on in quizRun; clearing them marks this run scored.
+        cqAnswers: [], cqIdx: 0,
         appResults: results,
         isDemo: true,
         riasecScores: {
@@ -1062,7 +1216,7 @@
         } : null
       });
       await cqSaveRun();
-      show('airesults');
+      redirect('airesults');
     }
 
     // POST /me/career-quiz, which also sets the student's career (career
@@ -1116,7 +1270,7 @@
     // Entry point for career_results.html
     function cqShowResults() {
       const s = loadState();
-      if (!s.appResults) { show('careerquiz'); return; }  // no run to show
+      if (!s.appResults) { redirect('careerquiz'); return; }  // no run to show
       cqRenderResults(s.appResults, s.isDemo !== false);
       cqInitPrint();
       // Career Matches → Download Report lands here with ?print=1. The flag
@@ -1597,21 +1751,24 @@
       });
     }
 
-    // ── Career detail (app.html#/careerdetail) ──
+    // ── Career detail (app.html#/careerdetail/<career>?from=explorer) ──
     // Opened from Career Matches, the dashboard strip and the explorer. The
-    // career is kept in the tab's state so a reload re-opens the same one;
-    // with none picked it falls back to the top match.
+    // career and where it was opened from are in the address, so a reload or
+    // a shared link re-opens the same one; with none named it falls back to
+    // the top match.
     const CD_BACK = { results: 'Matches', dashboard: 'Dashboard', explorer: 'Explore Careers' };
     let cdFrom = null, cdReq = 0;
 
     function cdOpen(title) {
-      const here = document.querySelector('.page.active');
-      cdFrom = here && CD_BACK[here.id] ? here.id : null;
-      saveState({ cdCareer: title });
-      navTo('careerdetail');
+      appOpen('careerdetail', title, { from: CD_BACK[appView] ? appView : null });
     }
 
-    function cdBack() { navTo(cdFrom || 'results'); }
+    // Opened from inside the app: step back, which also restores the
+    // explorer's filters. Opened from a link: go to where it says it came from.
+    function cdBack() {
+      if (history.state && history.state.app) history.back();
+      else appGo(appDefaultHash(cdFrom || 'results'));
+    }
 
     // Catalogue row first (it has the RIASEC profile, subjects and domains);
     // a quiz-run career that has since left the catalogue still shows from
@@ -1625,12 +1782,11 @@
       return { title: title, cat: cat, top: top, base: cat || top, rank: top ? tops.indexOf(top) : -1 };
     }
 
-    function cdRender() {
+    function cdRender(picked) {
       const body = document.getElementById('cd-body');
       const back = document.getElementById('cd-back');
       back.textContent = '← Back to ' + (CD_BACK[cdFrom] || 'Matches');
       const tops = (appResults && appResults.top_careers) || [];
-      const picked = loadState().cdCareer;
       const d = cdCareerData(picked) || (tops[0] && cdCareerData(tops[0].title));
       if (!d) {
         body.innerHTML =
@@ -2191,38 +2347,53 @@
     // The grid is the source of truth for "how many match", so it renders
     // first and everything else is told the number.
     function exRender() {
+      if (appView === 'explorer') appSetHash(appHash('explorer', null, exParams()));
       const shown = exRenderGrid();
       exRenderBar(shown);
       exRenderActive();
       exRenderDrawer();
     }
 
-    function syncExplorer() {
+    // params are the filters from the address (#/explorer?stream=PCB&q=…).
+    function syncExplorer(params) {
       const grid = document.getElementById('explore-grid');
       if (!grid) return;
 
       exCareers = exBuildList();
       exGroups = exGroupsFor(exCareers);
-      if (!exGroups.some(g => g.key === exGroup)) exGroup = 'all';
-
-      // Set by exploreStream(); consumed once so a later visit is unfiltered.
-      const pending = loadState().exPendingStream;
-      if (pending) {
-        saveState({ exPendingStream: null });
-        exStream = exStreamOptions(exCareers).indexOf(pending) !== -1 ? pending : 'all';
+      if (params) {
+        exQuery = params.q || '';
+        exGroup = params.group || 'all';
+        exStream = params.stream || 'all';
+        exFit = EX_FIT_STEPS.some(s => s.key === params.fit) ? params.fit : 'all';
+        exSort = params.sort || '';
+        const box = document.getElementById('ex-search');
+        if (box) box.value = exQuery;
       }
+      if (!exGroups.some(g => g.key === exGroup)) exGroup = 'all';
+      if (exStream !== 'all' && exStreamOptions(exCareers).indexOf(exStream) === -1) exStream = 'all';
 
       exRender();
     }
 
+    // The explorer's filters as address parameters; defaults are left out.
+    function exParams() {
+      return {
+        q: exQuery.trim() ? exQuery : null,
+        group: exGroup !== 'all' ? exGroup : null,
+        stream: exStream !== 'all' ? exStream : null,
+        fit: exFit !== 'all' ? exFit : null,
+        sort: exSort || null
+      };
+    }
+
     // Opens the explorer narrowed to a recommended stream. "PCM+CS / Commerce"
     // names two, so the first (stronger) one is filtered on; "Any" filters
-    // nothing. Goes through session state so it survives the hop in from
-    // career_results.html.
+    // nothing. The filter rides in the address, so it survives the hop in
+    // from career_results.html.
     function exploreStream(stream) {
       const first = String(stream || '').split('/')[0].trim();
-      saveState({ exPendingStream: first && first !== 'Any' ? first : 'all' });
-      show('explorer');
+      appOpen('explorer', null, { stream: first && first !== 'Any' ? first : null });
     }
 
     // ── Control handlers (wired in app.html) ──
@@ -2316,19 +2487,27 @@
     // (appResults.top_careers, up to 5) and opens on the top match. Each pick
     // fetches that career's timeline from careerAPI (GET /roadmap?career=);
     // a career with no roadmap there yet answers 404 not_found.
-    let rmReq = 0;
-    function rmLoad() {
+    // The career is in the address (#/roadmap/<career>); with none named,
+    // or one that isn't a match, it keeps the last pick or the top match.
+    let rmReq = 0, rmCareer = null;
+    function rmLoad(career) {
       const sel = document.getElementById('rm-select');
       if (!sel || !window.CareerAPI) return;
       const careers = (appResults && appResults.top_careers) || [];
       sel.hidden = !careers.length;
       if (!careers.length) { rmMessage('Take the career quiz to see a roadmap for your top career matches.'); return; }
-      const pick = careers.some(c => c.title === sel.value) ? sel.value : careers[0].title;
+      const has = t => careers.some(c => c.title === t);
+      const pick = has(career) ? career : has(rmCareer) ? rmCareer : careers[0].title;
+      rmCareer = pick;
+      appSetHash(appHash('roadmap', pick));
       sel.innerHTML = careers.map(c => '<option value="' + esc(c.title) + '">' +
         esc((c.emoji ? c.emoji + ' ' : '') + c.title) + '</option>').join('');
       sel.value = pick;
       rmShow(pick);
     }
+
+    // The career picker: each pick is a history entry, like any other view.
+    function rmPick(career) { appGo(appHash('roadmap', career)); }
 
     function rmShow(career) {
       const req = ++rmReq;
@@ -2382,7 +2561,8 @@
     const spFeeds = {};
     let spCareer = null, spTab = 'all', spReq = 0;
 
-    function spLoad() {
+    // career and tab come from the address (#/space/<career>?tab=jobs).
+    function spLoad(career, tab) {
       if (!window.CareerAPI) return;
       const careers = (appResults && appResults.top_careers) || [];
       const pills = document.getElementById('sp-careers');
@@ -2400,10 +2580,13 @@
           '</div>';
         return;
       }
-      if (!careers.some(c => c.title === spCareer)) spCareer = careers[0].title;
+      if (careers.some(c => c.title === career)) spCareer = career;
+      else if (!careers.some(c => c.title === spCareer)) spCareer = careers[0].title;
+      spTab = tab || 'all';  // checked against the feed's categories once it loads
+      spSyncHash();
       pills.innerHTML = careers.map((c, i) =>
         '<button class="career-pill' + (c.title === spCareer ? ' active' : '') + '" role="tab" aria-selected="' +
-        (c.title === spCareer) + '" data-career="' + esc(c.title) + '" onclick="spShow(this.dataset.career)">' +
+        (c.title === spCareer) + '" data-career="' + esc(c.title) + '" onclick="spPick(this.dataset.career)">' +
         '<span style="font-size:1.125rem;">' + esc(c.emoji || '') + '</span>' +
         '<span class="career-pill-name">' + esc(c.title) + '</span>' +
         '<span class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + esc(c.match_pct) + '%</span>' +
@@ -2434,7 +2617,12 @@
       });
     }
 
+    // Picking a career is a history entry; a tab only rewrites the address.
+    function spPick(career) { appGo(appHash('space', career, { tab: spTab === 'all' ? null : spTab })); }
     function spSetTab(key) { spTab = key; spRender(); }
+    function spSyncHash() {
+      if (appView === 'space' && spCareer) appSetHash(appHash('space', spCareer, { tab: spTab === 'all' ? null : spTab }));
+    }
 
     // The All tab: every category's items, a story filed under two of them
     // shown once (under the first), newest first.
@@ -2456,6 +2644,7 @@
       const feed = spFeeds[spCareer];
       if (!feed) return;
       if (spTab !== 'all' && !feed.categories.some(c => c.key === spTab)) spTab = 'all';
+      spSyncHash();
       const total = new Set([].concat.apply([], feed.categories.map(c => c.items.map(it => it.url)))).size;
       const chip = (key, label, n) => '<button class="filter-chip' + (spTab === key ? ' active' : '') + (n ? '' : ' is-empty') +
         '" role="tab" aria-selected="' + (spTab === key) + '" onclick="spSetTab(\'' + key + '\')">' +

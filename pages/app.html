@@ -157,7 +157,7 @@
             <div class="filter-chip" onclick="filterChip(this)">Arts &amp; Law</div>
           </div>
           <div id="career-list">
-            <div class="career-card" onclick="navTo('careerdetail',null)">
+            <div class="career-card" onclick="navTo('careerdetail')">
               <div class="career-rank top">1</div>
               <div class="career-icon-wrap" style="background:rgba(108,99,255,.12);">🎨</div>
               <div class="career-info">
@@ -339,7 +339,7 @@
               <div class="rm-label">Target Career</div>
               <div class="rm-career" id="rm-career">Loading…</div>
             </div>
-            <select class="form-input" id="rm-select" onchange="rmShow(this.value)"
+            <select class="form-input" id="rm-select" onchange="rmPick(this.value)"
               aria-label="Target career"></select>
           </div>
           <div class="page-sub" id="rm-note" style="margin-bottom:16px;" hidden></div>

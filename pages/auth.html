@@ -30,8 +30,8 @@
         <div class="auth-logo">Career<span>AI</span></div>
         <div class="auth-tagline">Discover the career you were born for</div>
         <div class="auth-tabs" id="auth-tabs">
-          <button class="auth-tab active" onclick="authTab('login',this)">Login</button>
-          <button class="auth-tab" onclick="authTab('register',this)">Register</button>
+          <button class="auth-tab active" onclick="authTab('login')">Login</button>
+          <button class="auth-tab" onclick="authTab('register')">Register</button>
         </div>
         <form id="auth-login" novalidate onsubmit="authSubmitLogin(event)">
           <div class="form-alert form-alert-ok" id="login-ok" role="status"></div>
@@ -44,7 +44,7 @@
             <label class="form-label" for="login-password">Password</label>
             <input class="form-input" id="login-password" type="password" autocomplete="current-password"
               placeholder="••••••••" />
-            <p class="auth-forgot-link"><a href="#" onclick="authShow('forgot'); return false;">Forgot password?</a></p>
+            <p class="auth-forgot-link"><a href="#forgot" onclick="authShow('forgot'); return false;">Forgot password?</a></p>
           </div>
           <button class="btn btn-primary" id="login-btn" type="submit" style="width:100%;justify-content:center;">Login
             →</button>
@@ -52,7 +52,7 @@
           <div class="auth-divider">or</div>
           <button class="google-btn" onclick="show('dashboard')">🌐 Continue with Google</button> -->
           <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:16px;cursor:pointer;"
-            onclick="authTab('register', document.querySelectorAll('.auth-tab')[1])">New here? Create an account</p>
+            onclick="authTab('register')">New here? Create an account</p>
         </form>
         <form id="auth-register" novalidate style="display:none;" onsubmit="authSubmitRegister(event)">
           <div class="form-alert" id="reg-alert" role="alert"></div>
@@ -100,7 +100,7 @@
           </div>
           <button class="btn btn-primary" id="forgot-btn" type="submit" style="width:100%;justify-content:center;">Send
             code →</button>
-          <p class="auth-back"><a href="#" onclick="authShow('login'); return false;">← Back to log in</a></p>
+          <p class="auth-back"><a href="auth.html" onclick="authShow('login'); return false;">← Back to log in</a></p>
         </form>
         <!-- Forgot password, step 2: code + new password (POST /auth/reset-password) -->
         <form id="auth-reset" novalidate style="display:none;" onsubmit="authSubmitReset(event)">
@@ -131,7 +131,7 @@
           <p class="auth-back">
             <button type="button" class="auth-link-btn" id="reset-resend-btn" onclick="authResendCode()">Resend
               code</button>
-            · <a href="#" onclick="authShow('forgot'); return false;">Use a different email</a>
+            · <a href="#forgot" onclick="authShow('forgot'); return false;">Use a different email</a>
           </p>
         </form>
         <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:20px;cursor:pointer;"

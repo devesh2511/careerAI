@@ -40,7 +40,7 @@
           <label class="form-label" for="adm-password">Password</label>
           <input class="form-input" id="adm-password" type="password" autocomplete="current-password"
             placeholder="••••••••" />
-          <p class="adm-forgot-link"><a href="#" onclick="admShowAuth('forgot'); return false;">Forgot password?</a></p>
+          <p class="adm-forgot-link"><a href="#forgot" onclick="admShowAuth('forgot'); return false;">Forgot password?</a></p>
         </div>
         <button class="btn btn-primary" id="adm-login-btn" type="submit"
           style="width:100%;justify-content:center;">Log in →</button>
@@ -64,7 +64,7 @@
         </div>
         <button class="btn btn-primary" id="adm-forgot-btn" type="submit"
           style="width:100%;justify-content:center;">Send code →</button>
-        <p class="adm-auth-back"><a href="#" onclick="admShowAuth('login'); return false;">← Back to log in</a></p>
+        <p class="adm-auth-back"><a href="admin_login.html" onclick="admShowAuth('login'); return false;">← Back to log in</a></p>
       </form>
 
       <!-- Forgot password, step 2: code + new password (POST /admin/auth/reset-password) -->
@@ -96,7 +96,7 @@
           style="width:100%;justify-content:center;">Reset password →</button>
         <p class="adm-auth-back">
           <button type="button" class="adm-link-btn" id="adm-resend-btn" onclick="admResend()">Resend code</button>
-          · <a href="#" onclick="admShowAuth('forgot'); return false;">Use a different email</a>
+          · <a href="#forgot" onclick="admShowAuth('forgot'); return false;">Use a different email</a>
         </p>
       </form>
     </div>
