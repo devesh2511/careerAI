@@ -177,7 +177,7 @@
     // (DELETE /me): the account is hidden and logged out, and an admin can
     // restore it.
     function deleteAccount() {
-      if (!confirm('Delete your CareerAI account? You will be logged out and removed from leaderboards.')) return;
+      if (!confirm('Delete your Crackeer account? You will be logged out and removed from leaderboards.')) return;
       CareerAPI.me.remove().then(() => { clearState(); location.replace(routeTo('landing')); },
         err => alert(err.message));
     }
@@ -195,7 +195,7 @@
     //   #/dashboard  #/results  #/chat  #/contests  #/settings
     //   #/explorer?q=&group=&stream=&fit=&sort=
     //   #/careerdetail/<career>?from=explorer
-    //   #/roadmap/<career>
+    //   #/roadmap  (the picked career is kept in state, not the address)
     //   #/space/<career>?tab=jobs
     // The '#/' prefix matters: a bare '#dashboard' matches a real element id,
     // and the browser scroll-anchors to it on load, shoving the page down
@@ -225,7 +225,6 @@
     // (the explorer keeps its filters, the roadmap its career).
     function appDefaultHash(page) {
       if (page === 'explorer') return appHash('explorer', null, exParams());
-      if (page === 'roadmap') return appHash('roadmap', rmCareer);
       if (page === 'space') return appHash('space', spCareer, { tab: spTab === 'all' ? null : spTab });
       return appHash(page);
     }
@@ -575,7 +574,7 @@
     // individual plan. There is no checkout: students pay outside the
     // website, send us the payment ID, and an admin records it, which is
     // what grants access. Payments are non-refundable.
-    // Where students send their payment ID. Blank → "the CareerAI team".
+    // Where students send their payment ID. Blank → "the Crackeer team".
     const PW_PAYMENT_CONTACT = '';
     let pwNext = 'dashboard';
 
@@ -599,7 +598,7 @@
     function pwHero(st, a) {
       const first = esc(st.full_name.split(' ')[0]);
       return '<div class="pw-hero"><div class="pw-emoji">🔓</div>' +
-        '<h1>Unlock CareerAI, ' + first + '</h1>' +
+        '<h1>Unlock Crackeer, ' + first + '</h1>' +
         '<p>' + (a.reason === 'no_school'
           ? 'Get in free through your school, or get your own plan.'
           : 'You\'re not covered by your school yet. Here\'s why, and what you can do.') + '</p></div>';
@@ -626,7 +625,7 @@
           '<div id="pw-school-slot"></div>';
       } else if (a.reason === 'school_not_subscribed') {
         icon = '⏳';
-        title = school + '\'s CareerAI plan isn\'t active';
+        title = school + '\'s Crackeer plan isn\'t active';
         body = 'Your school hasn\'t paid for this year yet, or its plan has run out. Ask your school about it, ' +
           'or get your own plan below.';
         extra = '<div class="pw-school-form"><button class="btn btn-secondary" onclick="pwRender()">Check again</button>' +
@@ -634,8 +633,8 @@
           '<div id="pw-school-slot"></div>';
       } else {
         icon = '🏫';
-        title = 'Is your school on CareerAI?';
-        body = 'If your school has a CareerAI plan, enter the School ID they gave you and you\'ll get in free.';
+        title = 'Is your school on Crackeer?';
+        body = 'If your school has a Crackeer plan, enter the School ID they gave you and you\'ll get in free.';
         extra = pwSchoolForm('Check');
       }
       return '<div class="card pw-reason"><div class="pw-reason-icon">' + icon + '</div><div style="flex:1;">' +
@@ -672,7 +671,7 @@
         '<div class="pw-plan-name">' + p.label + '</div>' +
         '<div class="pw-price">' + price + ' <small>' + per + '</small></div>' +
         '<div class="pw-plan-note">' + note + '</div></div>';
-      const contact = PW_PAYMENT_CONTACT ? '<b>' + esc(PW_PAYMENT_CONTACT) + '</b>' : 'the CareerAI team';
+      const contact = PW_PAYMENT_CONTACT ? '<b>' + esc(PW_PAYMENT_CONTACT) + '</b>' : 'the Crackeer team';
       return '<div class="pw-plans">' +
         card(a, rupees(a.amount_paise), '/ year', 'That\'s ' + rupees(a.amount_paise / 12) + ' a month', 'Save ' + saving + '%') +
         card(m, rupees(m.amount_paise), '/ month', 'Pay month by month') + '</div>' +
@@ -1298,15 +1297,15 @@
       cqSavePdf();
     }
 
-    // The suggested PDF filename on app.html, e.g. CareerAI-Roadmap-Civil-Engineer.
+    // The suggested PDF filename on app.html, e.g. Crackeer-Roadmap-Civil-Engineer.
     function appPrintTitle() {
       const page = document.querySelector('.page.active');
       if (page && page.id === 'roadmap') {
         const career = document.getElementById('rm-career').textContent
           .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        return 'CareerAI-Roadmap-' + (career || cqDateStamp());
+        return 'Crackeer-Roadmap-' + (career || cqDateStamp());
       }
-      return 'CareerAI-' + cqDateStamp();
+      return 'Crackeer-' + cqDateStamp();
     }
 
     // Shown over a result saved by the previous question set (riasec-1),
@@ -1359,7 +1358,7 @@
         // borrow the light one while the dialog is open.
         document.documentElement.setAttribute('data-theme', 'light');
         // Chrome and Edge seed the "Save as PDF" filename from the title.
-        document.title = titleFn ? titleFn() : 'CareerAI-Career-Report-' + cqDateStamp();
+        document.title = titleFn ? titleFn() : 'Crackeer-Career-Report-' + cqDateStamp();
       }
 
       function restore() {
@@ -1614,7 +1613,7 @@
 
       // ── NO RESULTS: show empty / CTA state ─────────────────────────
       if (!appResults) {
-        title.textContent = 'Welcome to CareerAI 👋';
+        title.textContent = 'Welcome to Crackeer 👋';
         sub.textContent = 'Take the 25-question quiz to discover careers that fit you.';
         ctaBtn.textContent = 'Take Career Quiz →';
         ctaBtn.onclick = cqStart;
@@ -2487,9 +2486,10 @@
     // (appResults.top_careers, up to 5) and opens on the top match. Each pick
     // fetches that career's timeline from careerAPI (GET /roadmap?career=);
     // a career with no roadmap there yet answers 404 not_found.
-    // The career is in the address (#/roadmap/<career>); with none named,
-    // or one that isn't a match, it keeps the last pick or the top match.
-    let rmReq = 0, rmCareer = null;
+    // The address stays a plain #/roadmap: the picked career is kept in the
+    // tab's state, so a reload re-opens it; otherwise the top match. An old
+    // #/roadmap/<career> link still opens that career, then tidies the address.
+    let rmReq = 0, rmCareer = loadState().rmCareer || null;
     function rmLoad(career) {
       const sel = document.getElementById('rm-select');
       if (!sel || !window.CareerAPI) return;
@@ -2498,16 +2498,25 @@
       if (!careers.length) { rmMessage('Take the career quiz to see a roadmap for your top career matches.'); return; }
       const has = t => careers.some(c => c.title === t);
       const pick = has(career) ? career : has(rmCareer) ? rmCareer : careers[0].title;
-      rmCareer = pick;
-      appSetHash(appHash('roadmap', pick));
+      rmRemember(pick);
+      appSetHash(appHash('roadmap'));
       sel.innerHTML = careers.map(c => '<option value="' + esc(c.title) + '">' +
         esc((c.emoji ? c.emoji + ' ' : '') + c.title) + '</option>').join('');
       sel.value = pick;
       rmShow(pick);
     }
 
-    // The career picker: each pick is a history entry, like any other view.
-    function rmPick(career) { appGo(appHash('roadmap', career)); }
+    // The career picker switches in place: no history entry, no address change.
+    function rmPick(career) {
+      const sel = document.getElementById('rm-select');
+      if (sel) sel.value = career;
+      rmRemember(career);
+      rmShow(career);
+    }
+    function rmRemember(career) {
+      rmCareer = career;
+      saveState({ rmCareer: career });
+    }
 
     function rmShow(career) {
       const req = ++rmReq;
@@ -2675,7 +2684,7 @@
       foot.hidden = false;
       foot.textContent = (feed.sources && feed.sources.length ? 'Headlines from ' + feed.sources.join(' and ') : 'Live headlines') +
         (feed.updated_at ? ' · updated ' + spAgo(feed.updated_at) : '') +
-        '. CareerAI doesn\'t write these stories: check dates and eligibility on the official website before you apply.';
+        '. Crackeer doesn\'t write these stories: check dates and eligibility on the official website before you apply.';
     }
 
     function spAgo(iso) {

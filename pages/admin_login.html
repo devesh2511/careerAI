@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CareerAI Admin · Sign In</title>
+  <title>Crackeer Admin · Sign In</title>
   <!-- Resolve the theme before first paint: a deferred script would let a
        dark-mode user see a white flash on every navigation. -->
   <script>
@@ -28,7 +28,7 @@
   <div id="auth" class="screen active">
     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
       <form class="auth-box" id="adm-login-form" onsubmit="admLogin(event)" novalidate>
-        <div class="auth-logo">Career<span>AI</span></div>
+        <div class="auth-logo">Crack<span>eer</span></div>
         <div class="auth-tagline">Admin panel · staff only</div>
         <div class="adm-ok-box" id="adm-login-ok" style="display:none;" role="status"></div>
         <div class="adm-error-box" id="adm-login-err" style="display:none;" role="alert"></div>
@@ -47,12 +47,12 @@
         <p class="adm-login-hint">Demo only: <span class="adm-mono">admin@careerai.in</span> /
           <span class="adm-mono">admin123</span></p>
         <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:14px;cursor:pointer;"
-          onclick="show('landing')">← Back to CareerAI</p>
+          onclick="show('landing')">← Back to Crackeer</p>
       </form>
 
       <!-- Forgot password, step 1: email a 6-digit code (POST /admin/auth/forgot-password) -->
       <form class="auth-box" id="adm-forgot-form" onsubmit="admForgot(event)" novalidate hidden>
-        <div class="auth-logo">Career<span>AI</span></div>
+        <div class="auth-logo">Crack<span>eer</span></div>
         <div class="auth-tagline">Reset your admin password</div>
         <div class="adm-error-box" style="display:none;" role="alert"></div>
         <p class="adm-auth-copy">Enter your admin email and we'll send you a 6-digit code.</p>
@@ -69,7 +69,7 @@
 
       <!-- Forgot password, step 2: code + new password (POST /admin/auth/reset-password) -->
       <form class="auth-box" id="adm-reset-form" onsubmit="admReset(event)" novalidate hidden>
-        <div class="auth-logo">Career<span>AI</span></div>
+        <div class="auth-logo">Crack<span>eer</span></div>
         <div class="auth-tagline">Choose a new password</div>
         <div class="adm-error-box" style="display:none;" role="alert"></div>
         <p class="adm-auth-copy">If <strong id="adm-reset-to"></strong> is an admin account, we've emailed it a

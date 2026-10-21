@@ -924,7 +924,7 @@
     function admSchools(r, seq) {
       admSchoolRows().then(table => {
         admPaint(seq,
-          admTopbar('Schools', 'Schools registered with CareerAI. A school\'s students get access when it pays and their email is on its list.',
+          admTopbar('Schools', 'Schools registered with Crackeer. A school\'s students get access when it pays and their email is on its list.',
             admSchoolTab === 'active' ? '<button class="btn btn-primary btn-sm" onclick="admSchoolModal()">+ Add school</button>' : '') +
           '<div class="adm-toolbar">' + admTabs([{ key: 'active', label: 'Active' }, { key: 'deleted', label: 'Deleted' }], admSchoolTab, 'admSchoolTabSet') +
           '<input class="form-input adm-search" type="search" placeholder="Search name, School ID or city" value="' + admEsc(admSchoolQuery) + '" oninput="admSearch(\'schools\',this.value)" /></div>' +
