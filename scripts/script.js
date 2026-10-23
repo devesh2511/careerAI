@@ -861,9 +861,76 @@
       document.getElementById('ob-next').textContent = obCurrent === 4 ? 'Finish ✓' : 'Next →';
       stepSync(obCurrent > 1, '#/step/' + obCurrent);
     }
+    // Selected chip labels in a chip grid.
+    function obChips(id) {
+      return [...document.querySelectorAll('#' + id + ' .chip.selected')].map(c => c.textContent.trim());
+    }
+    function obSetChips(id, values) {
+      document.querySelectorAll('#' + id + ' .chip').forEach(c =>
+        c.classList.toggle('selected', (values || []).indexOf(c.textContent.trim()) !== -1));
+    }
+    // The answers on step n, shaped for PUT /me/profile. class goes with every
+    // step because the API requires it; the other keys are only that step's.
+    function obFields(n) {
+      const f = { class: Number(val('ob-class')) };
+      if (n === 1) {
+        f.board = val('ob-board');
+        f.medium = val('ob-medium');
+        f.city = val('ob-city').trim() || null;
+      } else if (n === 2) {
+        const marks = {};
+        document.querySelectorAll('#ob-step-2 [data-subject]').forEach(inp => {
+          if (inp.value.trim() !== '') marks[inp.dataset.subject] = Number(inp.value);
+        });
+        f.marks = Object.keys(marks).length ? marks : null;
+      } else if (n === 3) {
+        f.favourite_subjects = obChips('ob-subjects');
+        f.hobbies = obChips('ob-hobbies');
+        f.dream_job = val('ob-dream').trim() || null;
+      } else {
+        f.career_preference = obChips('ob-pref')[0] || null;
+        f.study_location = obChips('ob-loc')[0] || null;
+      }
+      return f;
+    }
+    // Fill the form from a saved profile, so coming back shows what was saved.
+    function obFill(p) {
+      if (!p) return;
+      if (p.class) document.getElementById('ob-class').value = String(p.class);
+      if (p.board) document.getElementById('ob-board').value = p.board;
+      if (p.medium) document.getElementById('ob-medium').value = p.medium;
+      document.getElementById('ob-city').value = p.city || '';
+      document.querySelectorAll('#ob-step-2 [data-subject]').forEach(inp => {
+        const m = p.marks && p.marks[inp.dataset.subject];
+        inp.value = typeof m === 'number' ? m : '';
+      });
+      if (p.favourite_subjects) obSetChips('ob-subjects', p.favourite_subjects);
+      if (p.hobbies) obSetChips('ob-hobbies', p.hobbies);
+      document.getElementById('ob-dream').value = p.dream_job || '';
+      if (p.career_preference) obSetChips('ob-pref', [p.career_preference]);
+      if (p.study_location) obSetChips('ob-loc', [p.study_location]);
+    }
+    // Next saves the current step before moving on; Back doesn't save.
     function obStep(dir) {
-      if (dir > 0 && obCurrent === 4) { stepLeave(() => show('evaluation')); return; }
-      obShow(obCurrent + dir);
+      if (dir < 0) { obShow(obCurrent + dir); return; }
+      const btn = document.getElementById('ob-next'), errEl = document.getElementById('ob-error');
+      if (btn.disabled) return;
+      const step = obCurrent;
+      if (step === 2) {
+        const bad = [...document.querySelectorAll('#ob-step-2 [data-subject]')].find(inp =>
+          inp.value.trim() !== '' && !(Number(inp.value) >= 0 && Number(inp.value) <= 100));
+        if (bad) { errEl.textContent = 'Marks must be between 0 and 100.'; bad.focus(); return; }
+      }
+      errEl.textContent = '';
+      setBusy(btn, true);
+      CareerAPI.me.saveProfile(obFields(step)).then(() => {
+        setBusy(btn, false);
+        if (step === 4) { stepLeave(() => show('evaluation')); return; }
+        obShow(step + 1);
+      }, err => {
+        setBusy(btn, false);
+        errEl.textContent = err.message;
+      });
     }
     // Called from the per-page init on onboarding.html. #/step/N reopens a step.
     function obInit() {
@@ -872,6 +939,7 @@
       stepInit(() => { if (obCurrent <= 1) return false; obShow(obCurrent - 1); return true; });
       const m = /^#\/step\/([1-4])$/.exec(location.hash);
       obShow(m ? +m[1] : 1);
+      CareerAPI.me.profile().then(r => obFill(r.profile), () => { });
     }
 
     // ── Chip single-select helper ──

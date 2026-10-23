@@ -42,14 +42,14 @@
           <div id="ob-step-1">
             <div class="form-group">
               <label class="form-label">Current Class</label>
-              <select class="form-input">
-                <option>Class 9</option>
-                <option selected>Class 10</option>
+              <select class="form-input" id="ob-class">
+                <option value="9">Class 9</option>
+                <option value="10" selected>Class 10</option>
               </select>
             </div>
             <div class="form-group">
               <label class="form-label">School Board</label>
-              <select class="form-input">
+              <select class="form-input" id="ob-board">
                 <option selected>CBSE</option>
                 <option>ICSE</option>
                 <option>State Board</option>
@@ -57,7 +57,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Medium of Instruction</label>
-              <select class="form-input">
+              <select class="form-input" id="ob-medium">
                 <option selected>English</option>
                 <option>Hindi</option>
                 <option>Regional Language</option>
@@ -65,30 +65,30 @@
             </div>
             <div class="form-group">
               <label class="form-label">City</label>
-              <input class="form-input" placeholder="e.g. Mumbai, Delhi, Bangalore" />
+              <input class="form-input" id="ob-city" maxlength="80" placeholder="e.g. Mumbai, Delhi, Bangalore" />
             </div>
           </div>
           <!-- Step 2 -->
           <div id="ob-step-2" style="display:none;">
             <p style="font-size:0.8125rem;color:var(--muted);margin-bottom:20px;">This step is optional but improves
               accuracy. Enter your last exam marks (%).</p>
-            <div class="form-group"><label class="form-label">Mathematics</label><input class="form-input"
-                placeholder="e.g. 87" type="number" /></div>
-            <div class="form-group"><label class="form-label">Science</label><input class="form-input"
-                placeholder="e.g. 79" type="number" /></div>
-            <div class="form-group"><label class="form-label">English</label><input class="form-input"
-                placeholder="e.g. 82" type="number" /></div>
-            <div class="form-group"><label class="form-label">Social Studies</label><input class="form-input"
-                placeholder="e.g. 74" type="number" /></div>
+            <div class="form-group"><label class="form-label">Mathematics</label><input class="form-input" data-subject="Mathematics"
+                placeholder="e.g. 87" type="number" min="0" max="100" /></div>
+            <div class="form-group"><label class="form-label">Science</label><input class="form-input" data-subject="Science"
+                placeholder="e.g. 79" type="number" min="0" max="100" /></div>
+            <div class="form-group"><label class="form-label">English</label><input class="form-input" data-subject="English"
+                placeholder="e.g. 82" type="number" min="0" max="100" /></div>
+            <div class="form-group"><label class="form-label">Social Studies</label><input class="form-input" data-subject="Social Studies"
+                placeholder="e.g. 74" type="number" min="0" max="100" /></div>
           </div>
           <!-- Step 3 -->
           <div id="ob-step-3" style="display:none;">
             <div class="form-group">
               <label class="form-label">Favourite Subjects (pick all you like)</label>
-              <div class="chip-grid" style="margin-top:8px;">
-                <div class="chip selected" onclick="this.classList.toggle('selected')">Mathematics</div>
+              <div class="chip-grid" id="ob-subjects" style="margin-top:8px;">
+                <div class="chip" onclick="this.classList.toggle('selected')">Mathematics</div>
                 <div class="chip" onclick="this.classList.toggle('selected')">Science</div>
-                <div class="chip selected" onclick="this.classList.toggle('selected')">Computer</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Computer</div>
                 <div class="chip" onclick="this.classList.toggle('selected')">English</div>
                 <div class="chip" onclick="this.classList.toggle('selected')">Art &amp; Design</div>
                 <div class="chip" onclick="this.classList.toggle('selected')">Social Studies</div>
@@ -98,9 +98,9 @@
             </div>
             <div class="form-group" style="margin-top:20px;">
               <label class="form-label">Hobbies &amp; Interests</label>
-              <div class="chip-grid" style="margin-top:8px;">
-                <div class="chip selected" onclick="this.classList.toggle('selected')">Drawing / Design</div>
-                <div class="chip selected" onclick="this.classList.toggle('selected')">Coding</div>
+              <div class="chip-grid" id="ob-hobbies" style="margin-top:8px;">
+                <div class="chip" onclick="this.classList.toggle('selected')">Drawing / Design</div>
+                <div class="chip" onclick="this.classList.toggle('selected')">Coding</div>
                 <div class="chip" onclick="this.classList.toggle('selected')">Sports</div>
                 <div class="chip" onclick="this.classList.toggle('selected')">Music</div>
                 <div class="chip" onclick="this.classList.toggle('selected')">Reading</div>
@@ -111,14 +111,14 @@
             </div>
             <div class="form-group" style="margin-top:20px;">
               <label class="form-label">Dream Job / Role Model (optional)</label>
-              <input class="form-input" placeholder="e.g. I want to design apps like Instagram" />
+              <input class="form-input" id="ob-dream" maxlength="80" placeholder="e.g. I want to design apps like Instagram" />
             </div>
           </div>
           <!-- Step 4 -->
           <div id="ob-step-4" style="display:none;">
             <div class="form-group">
               <label class="form-label">Career Preference</label>
-              <div class="chip-grid" style="margin-top:8px;">
+              <div class="chip-grid" id="ob-pref" style="margin-top:8px;">
                 <div class="chip selected" onclick="chipOne(this,'pref')">Private Sector</div>
                 <div class="chip" onclick="chipOne(this,'pref')">Government Job</div>
                 <div class="chip" onclick="chipOne(this,'pref')">Entrepreneur</div>
@@ -126,7 +126,7 @@
             </div>
             <div class="form-group" style="margin-top:20px;">
               <label class="form-label">Open to studying outside your city?</label>
-              <div class="chip-grid" style="margin-top:8px;">
+              <div class="chip-grid" id="ob-loc" style="margin-top:8px;">
                 <div class="chip selected" onclick="chipOne(this,'loc')">Yes, anywhere</div>
                 <div class="chip" onclick="chipOne(this,'loc')">Same state only</div>
                 <div class="chip" onclick="chipOne(this,'loc')">Prefer home city</div>
@@ -134,6 +134,7 @@
             </div>
           </div>
 
+          <div class="form-error" id="ob-error" role="alert"></div>
           <div class="onboard-nav">
             <button class="btn btn-ghost btn-sm" id="ob-back" onclick="obStep(-1)" style="visibility:hidden;">←
               Back</button>
