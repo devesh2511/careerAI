@@ -365,34 +365,43 @@
         </div>
 
         <!-- ── AI CHAT ── -->
-        <div id="chat" class="page" style="height:calc(100vh - 64px);display:none;flex-direction:column;">
-          <div class="topbar" style="margin-bottom:16px;">
-            <div>
-              <div class="page-title">AI Chat Counsellor</div>
-              <div class="page-sub">Ask anything about careers, streams, college — I know your full profile.</div>
-            </div>
-          </div>
-          <div class="chat-suggestions">
-            <div class="chat-sug" onclick="sendSug(this)">Is data science good for me?</div>
-            <div class="chat-sug" onclick="sendSug(this)">What do UX designers do daily?</div>
-            <div class="chat-sug" onclick="sendSug(this)">Which stream for architecture?</div>
-            <div class="chat-sug" onclick="sendSug(this)">Top colleges for design in India?</div>
-          </div>
-          <div class="chat-messages" id="chat-messages">
-            <div class="msg">
-              <div class="msg-avatar msg-ai-avatar">AI</div>
-              <div>
-                <div class="msg-bubble">Hi! 👋 I'm your Crackeer counsellor. I know your profile and career quiz
-                  results, so ask me anything — careers, streams, colleges, or what a day in a job actually looks like!
-                </div>
-                <div class="msg-time">Just now</div>
+        <div id="chat" class="page chat-page">
+          <div class="chat-col">
+            <div class="chat-head">
+              <div class="chat-head-avatar" aria-hidden="true">✦</div>
+              <div class="chat-head-text">
+                <div class="chat-head-title">AI Career Counsellor</div>
+                <div class="chat-head-sub"><span class="chat-dot"></span>Knows your profile and quiz results</div>
               </div>
+              <button class="btn btn-ghost btn-sm chat-new" id="chat-new" onclick="newChat()" hidden>＋ New chat</button>
             </div>
-          </div>
-          <div class="chat-input-wrap">
-            <input class="chat-input" id="chat-input" placeholder="Ask anything about your career…" maxlength="2000"
-              onkeydown="if(event.key==='Enter')sendChat()" />
-            <button class="chat-send" onclick="sendChat()">→</button>
+            <div class="chat-scroll" id="chat-scroll">
+              <div class="chat-welcome" id="chat-welcome">
+                <div class="chat-welcome-avatar" aria-hidden="true">✦</div>
+                <div class="chat-welcome-title">Hi<span id="chat-hello-name"></span>! 👋 How can I help?</div>
+                <div class="chat-welcome-sub">I know your profile and career quiz results, so ask me anything — careers,
+                  streams, colleges, or what a day in a job actually looks like.</div>
+                <div class="chat-sugs">
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">📊</span><span class="chat-sug-text">Is data science good for me?</span></button>
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🎨</span><span class="chat-sug-text">What do UX designers do daily?</span></button>
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🏛️</span><span class="chat-sug-text">Which stream for architecture?</span></button>
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🎓</span><span class="chat-sug-text">Top colleges for design in India?</span></button>
+                </div>
+              </div>
+              <div class="chat-messages" id="chat-messages"></div>
+            </div>
+            <div class="chat-composer">
+              <div class="chat-input-wrap">
+                <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask anything about your career…"
+                  maxlength="2000" aria-label="Message" oninput="chatAutosize(this)" onkeydown="chatKey(event)"></textarea>
+                <button class="chat-send idle" id="chat-send" onclick="chatSendOrStop()" aria-label="Send message">
+                  <svg class="chat-ico-send" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg class="chat-ico-stop" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
+                </button>
+              </div>
+              <div class="chat-foot">Enter to send · Shift + Enter for a new line · AI can make mistakes, so double-check
+                admissions and fees.</div>
+            </div>
           </div>
         </div>
 

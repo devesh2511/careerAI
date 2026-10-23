@@ -834,6 +834,8 @@
         const n = document.querySelector('.user-name'), av = document.querySelector('.user-avatar');
         if (n) n.textContent = m.student.full_name;
         if (av) av.textContent = m.student.full_name.charAt(0).toUpperCase();
+        const hi = document.getElementById('chat-hello-name');
+        if (hi) hi.textContent = ' ' + m.student.full_name.split(' ')[0];
       }, () => { });
       CareerAPI.me.profile().then(r => {
         const text = profileSummary(r.profile);
@@ -997,9 +999,17 @@
       chatHistory = [];
       setChatBusy(false);
     }
+    // While a reply streams the send button turns into a stop button.
     function setChatBusy(busy) {
-      const send = document.querySelector('.chat-send');
-      if (send) { send.disabled = busy; send.style.opacity = busy ? '.5' : ''; }
+      const send = document.getElementById('chat-send');
+      if (!send) return;
+      send.classList.toggle('busy', busy);
+      send.setAttribute('aria-label', busy ? 'Stop reply' : 'Send message');
+      chatSyncSend();
+    }
+    function chatSyncSend() {
+      const send = document.getElementById('chat-send'), inp = document.getElementById('chat-input');
+      if (send && inp) send.classList.toggle('idle', !chatAbort && !inp.value.trim());
     }
     // The backend takes at most six exchanges, 2,000 characters per turn and
     // 12,000 in total, and rejects anything larger rather than truncating.
@@ -1064,27 +1074,71 @@
     }
 
     // Replies are text with light Markdown: escape first, then format.
+    // Paragraphs, headings and bullet/numbered lists become real blocks so a
+    // long answer reads like a document instead of one wall of <br>s.
     function renderReply(text) {
-      return esc(text)
-        .replace(/^#{1,6}\s+(.*)$/gm, '<strong>$1</strong>')
-        .replace(/^\s*[*-]\s+/gm, '• ')
+      const inline = s => esc(s)
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n/g, '<br>');
+        .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+      let html = '', list = null, para = [];
+      const flush = () => { if (para.length) { html += '<p>' + para.join('<br>') + '</p>'; para = []; } };
+      const close = () => { if (list) { html += '</' + list + '>'; list = null; } };
+      for (const line of text.split('\n')) {
+        const t = line.trim();
+        let m;
+        if (!t) { flush(); close(); }
+        else if ((m = t.match(/^#{1,6}\s+(.*)$/))) { flush(); close(); html += '<h4>' + inline(m[1]) + '</h4>'; }
+        else if ((m = t.match(/^[*•-]\s+(.*)$/))) {
+          flush();
+          if (list !== 'ul') { close(); html += '<ul>'; list = 'ul'; }
+          html += '<li>' + inline(m[1]) + '</li>';
+        }
+        else if ((m = t.match(/^(\d+)[.)]\s+(.*)$/))) {
+          flush();
+          // A blank line between items closes the list; keep the numbering going.
+          if (list !== 'ol') { close(); html += '<ol start="' + m[1] + '">'; list = 'ol'; }
+          html += '<li>' + inline(m[2]) + '</li>';
+        }
+        else { close(); para.push(inline(t)); }
+      }
+      flush(); close();
+      return html;
     }
     function addSources(bubble, items) {
       const links = items.filter(s => /^https:\/\//.test(s.url || ''));
       if (!links.length) return;
       const box = document.createElement('div');
-      box.style.cssText = 'margin-top:8px;font-size:.75rem;opacity:.8;';
-      box.textContent = 'Sources: ';
+      box.className = 'msg-sources';
       links.forEach((s, i) => {
         const a = document.createElement('a');
+        a.className = 'msg-source';
         a.href = s.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        a.textContent = '[' + (i + 1) + '] ' + (s.title || s.url);
-        a.style.marginRight = '8px';
+        a.title = s.title || s.url;
+        const n = document.createElement('b');
+        n.textContent = i + 1;
+        a.append(n, s.title || new URL(s.url).hostname);
         box.appendChild(a);
       });
       bubble.parentNode.insertBefore(box, bubble.nextSibling);
+    }
+    // Errors and notes go under the reply and its sources, above the time.
+    function addChatError(bubble, message, quiet) {
+      const box = document.createElement('div');
+      box.className = quiet ? 'msg-note' : 'msg-error';
+      box.textContent = quiet ? message : '⚠ ' + message;
+      bubble.parentNode.insertBefore(box, bubble.parentNode.querySelector('.msg-time'));
+    }
+    // Follow a streaming reply only while the student is already at the
+    // bottom, so scrolling up to reread isn't yanked back down.
+    function chatNearBottom(sc) { return sc.scrollHeight - sc.scrollTop - sc.clientHeight < 80; }
+    function chatToBottom() {
+      const sc = document.getElementById('chat-scroll');
+      if (sc) sc.scrollTop = sc.scrollHeight;
+    }
+    function chatShowWelcome(show) {
+      document.getElementById('chat-welcome').hidden = !show;
+      document.getElementById('chat-new').hidden = show;
     }
 
     async function sendChat() {
@@ -1092,9 +1146,14 @@
       const msg = inp.value.trim();
       if (!msg || chatAbort) return;
       inp.value = '';
+      chatAutosize(inp);
+      inp.focus();
+      chatShowWelcome(false);
       addMsg(msg, 'user');
-      const bubble = addMsg('…', 'ai');
-      const wrap = document.getElementById('chat-messages');
+      const bubble = addMsg('', 'ai');
+      bubble.innerHTML = '<span class="msg-typing" aria-label="Thinking"><span></span><span></span><span></span></span>';
+      chatToBottom();
+      const sc = document.getElementById('chat-scroll');
       const controller = new AbortController();
       const id = chatId;
       let reply = '';
@@ -1104,9 +1163,10 @@
         await streamChat({ conversation_id: id, message: msg, history: chatTurns() }, controller.signal, {
           sources: items => addSources(bubble, items),
           delta: text => {
+            const stick = chatNearBottom(sc);
             reply += text;
             bubble.innerHTML = renderReply(reply);
-            wrap.scrollTop = wrap.scrollHeight;
+            if (stick) sc.scrollTop = sc.scrollHeight;
           }
         });
         // Only a finished reply joins the history; a stopped one is dropped.
@@ -1115,36 +1175,58 @@
                            { role: 'assistant', content: reply.slice(0, 2000) });
         }
       } catch (err) {
-        if (err.name === 'AbortError') return;
+        if (err.name === 'AbortError') {
+          bubble.innerHTML = reply ? renderReply(reply) : '';
+          addChatError(bubble, 'Reply stopped.', true);
+          return;
+        }
         if (err.status === 401) { redirect('auth'); return; }
         if (err.status === 402) { redirect('paywall'); return; }
+        bubble.innerHTML = reply ? renderReply(reply) : '';
         if (err.code === 'conversation_expired') {
           chatId = crypto.randomUUID();
           chatHistory = [];
-          bubble.textContent = "This chat expired, so I've started a new one. Please send your question again.";
+          addChatError(bubble, "This chat expired, so I've started a new one. Please send your question again.");
         } else {
-          bubble.textContent = reply ? reply + '\n\n⚠ ' + err.message : err.message;
-          bubble.style.whiteSpace = 'pre-wrap';
+          addChatError(bubble, err.message);
         }
+        chatToBottom();
       } finally {
         if (chatAbort === controller) { chatAbort = null; setChatBusy(false); }
       }
     }
-    // Settings → Clear Chat History. The chat lives only in this page, so
-    // clearing it is putting the greeting back and starting a new conversation.
-    let chatGreeting = null;
+    function chatSendOrStop() {
+      if (chatAbort) chatAbort.abort();
+      else sendChat();
+    }
+    // Enter sends; Shift+Enter (or an IME composition) adds a new line.
+    function chatKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); }
+    }
+    function chatAutosize(el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+      chatSyncSend();
+    }
+    // The chat lives only in this page, so a new chat is emptying the thread,
+    // bringing the welcome back and starting a new conversation id.
+    function newChat() {
+      resetChat();
+      document.getElementById('chat-messages').innerHTML = '';
+      chatShowWelcome(true);
+      document.getElementById('chat-input').focus();
+    }
+    // Settings → Clear Chat History.
     function clearChat(btn) {
       const wrap = document.getElementById('chat-messages');
       if (!wrap) return;
-      if (chatGreeting === null) chatGreeting = wrap.firstElementChild ? wrap.firstElementChild.outerHTML : '';
-      if (wrap.children.length <= 1) { if (btn) btn.textContent = 'Nothing to clear'; return; }
+      if (!wrap.children.length) { if (btn) btn.textContent = 'Nothing to clear'; return; }
       if (!confirm('Clear all AI chat messages?')) return;
-      wrap.innerHTML = chatGreeting;
-      resetChat();
+      newChat();
       if (btn) btn.textContent = 'Cleared ✓';
     }
     function sendSug(el) {
-      document.getElementById('chat-input').value = el.textContent;
+      document.getElementById('chat-input').value = el.querySelector('.chat-sug-text').textContent;
       sendChat();
     }
     // Returns the bubble so a streaming reply can fill it in.
@@ -1154,20 +1236,20 @@
       div.className = 'msg' + (type === 'user' ? ' user' : '');
       const avatar = document.createElement('div');
       avatar.className = 'msg-avatar ' + (type === 'ai' ? 'msg-ai-avatar' : 'msg-user-avatar');
-      avatar.textContent = type === 'ai' ? 'AI' : 'A';
-      const inner = document.createElement('div');
+      const me = document.querySelector('.user-avatar');
+      avatar.textContent = type === 'ai' ? '✦' : ((me && me.textContent.trim()) || '?');
+      avatar.setAttribute('aria-hidden', 'true');
+      const body = document.createElement('div');
+      body.className = 'msg-body';
       const bubble = document.createElement('div');
       bubble.className = 'msg-bubble';
       bubble.textContent = text;
       const time = document.createElement('div');
       time.className = 'msg-time';
-      time.textContent = 'Just now';
-      inner.appendChild(bubble);
-      inner.appendChild(time);
-      div.appendChild(avatar);
-      div.appendChild(inner);
+      time.textContent = new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+      body.append(bubble, time);
+      div.append(avatar, body);
       wrap.appendChild(div);
-      wrap.scrollTop = wrap.scrollHeight;
       return bubble;
     }
 
