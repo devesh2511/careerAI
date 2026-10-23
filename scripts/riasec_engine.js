@@ -2,8 +2,9 @@
 // RIASEC QUIZ ENGINE
 //
 // Implements riasec/riasec_career_quiz_documentation.md (riasec-2):
-//   20 scenario questions → hidden 6-D weights → R/I/A/S/E/C percentages → top-3 code
+//   18 scenario questions → hidden 6-D weights → R/I/A/S/E/C percentages → top-3 code
 //   5 "which world" questions → domain preferences (digital, machines...)
+//   2 subject questions → subject strength and enjoyment
 //   → interest pattern + domain matched against the career database
 //   → minimum-fit filter → diversity filter → careers to explore.
 //
