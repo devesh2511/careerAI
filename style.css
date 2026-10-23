@@ -3647,6 +3647,25 @@ body.ex-filters-open .ex-drawer {
   display: flex;
 }
 
+/* While the chat is open the content column is exactly one screen tall and
+   the chat takes whatever the (mobile-only) top bar leaves, so no magic
+   numbers are needed for the bar's height. Browsers without :has() fall back
+   to the fixed heights above and in the phone breakpoint. */
+.main-content:has(> #chat.active) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-content:has(> #chat.active) > #chat.page {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
 .chat-col {
   flex: 1;
   min-height: 0;
@@ -3715,6 +3734,7 @@ body.ex-filters-open .ex-drawer {
 
 .chat-new {
   flex-shrink: 0;
+  gap: 6px;
 }
 
 .chat-new[hidden] {
@@ -4098,11 +4118,16 @@ body.ex-filters-open .ex-drawer {
   font-family: inherit;
   padding: 8px 0;
   max-height: 180px;
-  overflow-y: auto;
+  /* chatAutosize() turns scrolling on once the text outgrows max-height */
+  overflow-y: hidden;
 }
 
+/* On a narrow phone the placeholder would wrap to a second, clipped line */
 .chat-input::placeholder {
   color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-send {
@@ -5652,11 +5677,17 @@ body.nav-open .sidebar-overlay {
     height: 44px;
   }
 
-  /* The sticky mobile top bar takes about 61px off the chat's height */
+  /* The sticky mobile top bar takes about 61px off the chat's height
+     (fallback for browsers without :has(), see the CHAT section) */
   #chat.page {
     height: calc(100vh - 61px);
     height: calc(100dvh - 61px);
-    padding-bottom: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  /* iOS Safari zooms the page into any field under 16px when it's focused */
+  .chat-input {
+    font-size: 16px;
   }
 }
 
@@ -6193,8 +6224,73 @@ body.nav-open .sidebar-overlay {
   }
 
   /* ── Chat ── */
+  /* The phone already has the app's top bar, so the chat header shrinks to
+     one slim row: small avatar, title with the online dot, icon-only button */
+  #chat.page {
+    padding-top: 10px;
+    padding-inline: 12px;
+  }
+
+  .chat-head {
+    gap: 10px;
+    padding-bottom: 10px;
+  }
+
+  .chat-head-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 0.9375rem;
+  }
+
+  .chat-head-title {
+    font-size: 0.9375rem;
+  }
+
+  .chat-head-sub {
+    font-size: 0.6875rem;
+    margin-top: 0;
+  }
+
+  .chat-new {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 1rem;
+  }
+
+  .chat-new-label {
+    display: none;
+  }
+
+  .chat-scroll {
+    padding: 16px 2px 8px 0;
+  }
+
+  .chat-messages {
+    gap: 18px;
+  }
+
   .msg.user {
     max-width: 88%;
+  }
+
+  .msg-source {
+    max-width: 100%;
+  }
+
+  .chat-welcome {
+    padding: 12px 0;
+  }
+
+  .chat-welcome-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    font-size: 1.375rem;
+    margin-bottom: 14px;
   }
 
   .msg-ai-avatar {
@@ -6229,6 +6325,58 @@ body.nav-open .sidebar-overlay {
 
   .chat-foot {
     display: none;
+  }
+}
+
+/* Short phones (and landscape): keep the chat's empty state on one screen */
+@media (max-width: 640px) and (max-height: 700px),
+(max-height: 480px) {
+  .chat-head-sub,
+  .chat-foot {
+    display: none;
+  }
+
+  #chat.page {
+    padding-top: 8px;
+  }
+
+  .chat-head {
+    padding-bottom: 8px;
+  }
+
+  .chat-scroll {
+    padding-top: 12px;
+  }
+
+  .chat-welcome-avatar {
+    display: none;
+  }
+
+  .chat-welcome-sub {
+    display: none;
+  }
+
+  .chat-welcome-title {
+    margin-bottom: 14px;
+  }
+
+  .chat-sug {
+    padding: 9px 12px;
+  }
+
+  .chat-sug-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+  }
+}
+
+/* Touch screens: a tap leaves :hover stuck on, so drop the lift */
+@media (hover: none) {
+  .chat-sug:hover,
+  .chat-send:hover {
+    transform: none;
   }
 }
 

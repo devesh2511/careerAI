@@ -1080,7 +1080,9 @@
       const inline = s => esc(s)
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>');
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/https:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, u =>
+          '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + u + '</a>');
       let html = '', list = null, para = [];
       const flush = () => { if (para.length) { html += '<p>' + para.join('<br>') + '</p>'; para = []; } };
       const close = () => { if (list) { html += '</' + list + '>'; list = null; } };
@@ -1206,6 +1208,7 @@
     function chatAutosize(el) {
       el.style.height = 'auto';
       el.style.height = el.scrollHeight + 'px';
+      el.style.overflowY = el.scrollHeight > el.clientHeight ? 'auto' : 'hidden';
       chatSyncSend();
     }
     // The chat lives only in this page, so a new chat is emptying the thread,

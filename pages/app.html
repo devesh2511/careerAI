@@ -3,7 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- interactive-widget: on Android the keyboard shrinks the layout, so the
+       chat composer stays above it instead of being covered -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
   <title>Crackeer · Dashboard</title>
   <!-- Resolve the theme before first paint: a deferred script would let a
        dark-mode user see a white flash on every navigation. -->
@@ -373,7 +375,7 @@
                 <div class="chat-head-title">AI Career Counsellor</div>
                 <div class="chat-head-sub"><span class="chat-dot"></span>Knows your profile and quiz results</div>
               </div>
-              <button class="btn btn-ghost btn-sm chat-new" id="chat-new" onclick="newChat()" hidden>＋ New chat</button>
+              <button class="btn btn-ghost btn-sm chat-new" id="chat-new" onclick="newChat()" aria-label="New chat" hidden><span aria-hidden="true">＋</span><span class="chat-new-label">New chat</span></button>
             </div>
             <div class="chat-scroll" id="chat-scroll">
               <div class="chat-welcome" id="chat-welcome">
@@ -392,7 +394,7 @@
             </div>
             <div class="chat-composer">
               <div class="chat-input-wrap">
-                <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask anything about your career…"
+                <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask about your career…"
                   maxlength="2000" aria-label="Message" oninput="chatAutosize(this)" onkeydown="chatKey(event)"></textarea>
                 <button class="chat-send idle" id="chat-send" onclick="chatSendOrStop()" aria-label="Send message">
                   <svg class="chat-ico-send" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
