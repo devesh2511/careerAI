@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://careerapi.vercel.app/:path*" }
+    { "source": "/api/:path*", "destination": "https://careerapi.vercel.app/:path*" },
+    { "source": "/chat/:path*", "destination": "https://chat-bot-wheat-one.vercel.app/chat/:path*" }
   ]
 }

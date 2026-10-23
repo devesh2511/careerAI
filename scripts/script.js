@@ -979,26 +979,159 @@
     }
 
     // ── Chat ──
-    const aiReplies = [
-      "Great question! Based on your aptitude scores, data science is actually a solid match at 71% for you. Your logical reasoning (82) and maths strength support it. However, UX Design at 92% suits you even better because of your spatial skills. You could combine both — UX + data viz is a hot field right now!",
-      "UX designers spend their days understanding users, sketching wireframes, building prototypes in Figma, and testing designs with real people. Your Drawing hobby and spatial reasoning score (91st %) are perfect for this. No heavy coding needed — more visual problem-solving.",
-      "For architecture, you need PCM (Physics, Chemistry, Maths) in Class 11. You'd target NATA or JEE Paper 2 for entrance. Good news — your maths and spatial scores are strong. Architecture is your #2 match at 85%.",
-      "Top design colleges in India: NID Ahmedabad (best for industrial/UX), Symbiosis Design School (Pune), Srishti Institute (Bangalore), NIFT (multiple cities), and IITs via UCEED. NID is the gold standard — very competitive.",
-    ];
-    let replyIdx = 0;
-    function sendChat() {
+    // The chatBot backend sits behind the /chat proxy in vercel.json, which
+    // forwards the student cookie. A reply streams as Server-Sent Events:
+    // optional sources, then delta… and done, or error. Completed turns stay
+    // in page memory only and go back with every message; the backend keeps
+    // no transcript. Only the deployed site can chat: locally there is no
+    // proxy and the cookie belongs to careerapi.vercel.app.
+    const CHAT_URL = '/chat/messages';
+    let chatId = crypto.randomUUID();
+    let chatHistory = [];
+    let chatAbort = null;
+
+    function resetChat() {
+      if (chatAbort) chatAbort.abort();
+      chatAbort = null;
+      chatId = crypto.randomUUID();
+      chatHistory = [];
+      setChatBusy(false);
+    }
+    function setChatBusy(busy) {
+      const send = document.querySelector('.chat-send');
+      if (send) { send.disabled = busy; send.style.opacity = busy ? '.5' : ''; }
+    }
+    // The backend takes at most six exchanges, 2,000 characters per turn and
+    // 12,000 in total, and rejects anything larger rather than truncating.
+    function chatTurns() {
+      const turns = chatHistory.slice(-12);
+      while (turns.length && turns.reduce((n, t) => n + t.content.length, 0) > 12000) turns.splice(0, 2);
+      return turns;
+    }
+    function chatError(status, code, message) {
+      const e = new Error(message);
+      e.status = status; e.code = code;
+      return e;
+    }
+
+    async function streamChat(body, signal, on) {
+      let res;
+      try {
+        res = await fetch(CHAT_URL, {
+          method: 'POST', credentials: 'include', signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      } catch (err) {
+        if (err.name === 'AbortError') throw err;
+        throw chatError(0, 'network_error', "Can't reach the server. Check your connection and try again.");
+      }
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        const err = data.error || {};
+        throw chatError(res.status, err.code || 'server_error', err.message || 'Something went wrong. Please try again.');
+      }
+      const reader = res.body.getReader(), decoder = new TextDecoder();
+      let buffer = '', finished = false;
+      const frame = raw => {
+        let name = 'message', data = '';
+        for (const line of raw.split('\n')) {
+          if (line.startsWith('event:')) name = line.slice(6).trim();
+          else if (line.startsWith('data:')) data += line.slice(5).trim();
+        }
+        if (!data) return;
+        const payload = JSON.parse(data);
+        if (name === 'sources') on.sources(payload.items || []);
+        else if (name === 'delta') on.delta(payload.text || '');
+        else if (name === 'done') finished = true;
+        else if (name === 'error') throw chatError(200, payload.code || 'stream_error', payload.message || 'The reply stopped unexpectedly.');
+      };
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+          buffer = buffer.replace(/\r/g, '');
+          let i;
+          while ((i = buffer.indexOf('\n\n')) >= 0) { frame(buffer.slice(0, i)); buffer = buffer.slice(i + 2); }
+          if (done) break;
+        }
+        if (buffer.trim()) frame(buffer);
+      } catch (err) {
+        reader.cancel().catch(() => { });
+        throw err;
+      }
+      if (!finished) throw chatError(200, 'stream_error', 'The reply stopped unexpectedly. Please try again.');
+    }
+
+    // Replies are text with light Markdown: escape first, then format.
+    function renderReply(text) {
+      return esc(text)
+        .replace(/^#{1,6}\s+(.*)$/gm, '<strong>$1</strong>')
+        .replace(/^\s*[*-]\s+/gm, '• ')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    }
+    function addSources(bubble, items) {
+      const links = items.filter(s => /^https:\/\//.test(s.url || ''));
+      if (!links.length) return;
+      const box = document.createElement('div');
+      box.style.cssText = 'margin-top:8px;font-size:.75rem;opacity:.8;';
+      box.textContent = 'Sources: ';
+      links.forEach((s, i) => {
+        const a = document.createElement('a');
+        a.href = s.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.textContent = '[' + (i + 1) + '] ' + (s.title || s.url);
+        a.style.marginRight = '8px';
+        box.appendChild(a);
+      });
+      bubble.parentNode.insertBefore(box, bubble.nextSibling);
+    }
+
+    async function sendChat() {
       const inp = document.getElementById('chat-input');
       const msg = inp.value.trim();
-      if (!msg) return;
-      addMsg(msg, 'user');
+      if (!msg || chatAbort) return;
       inp.value = '';
-      setTimeout(() => {
-        addMsg(aiReplies[replyIdx % aiReplies.length], 'ai');
-        replyIdx++;
-      }, 800);
+      addMsg(msg, 'user');
+      const bubble = addMsg('…', 'ai');
+      const wrap = document.getElementById('chat-messages');
+      const controller = new AbortController();
+      const id = chatId;
+      let reply = '';
+      chatAbort = controller;
+      setChatBusy(true);
+      try {
+        await streamChat({ conversation_id: id, message: msg, history: chatTurns() }, controller.signal, {
+          sources: items => addSources(bubble, items),
+          delta: text => {
+            reply += text;
+            bubble.innerHTML = renderReply(reply);
+            wrap.scrollTop = wrap.scrollHeight;
+          }
+        });
+        // Only a finished reply joins the history; a stopped one is dropped.
+        if (id === chatId) {
+          chatHistory.push({ role: 'user', content: msg.slice(0, 2000) },
+                           { role: 'assistant', content: reply.slice(0, 2000) });
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        if (err.status === 401) { redirect('auth'); return; }
+        if (err.status === 402) { redirect('paywall'); return; }
+        if (err.code === 'conversation_expired') {
+          chatId = crypto.randomUUID();
+          chatHistory = [];
+          bubble.textContent = "This chat expired, so I've started a new one. Please send your question again.";
+        } else {
+          bubble.textContent = reply ? reply + '\n\n⚠ ' + err.message : err.message;
+          bubble.style.whiteSpace = 'pre-wrap';
+        }
+      } finally {
+        if (chatAbort === controller) { chatAbort = null; setChatBusy(false); }
+      }
     }
     // Settings → Clear Chat History. The chat lives only in this page, so
-    // clearing it is putting the greeting back.
+    // clearing it is putting the greeting back and starting a new conversation.
     let chatGreeting = null;
     function clearChat(btn) {
       const wrap = document.getElementById('chat-messages');
@@ -1007,13 +1140,14 @@
       if (wrap.children.length <= 1) { if (btn) btn.textContent = 'Nothing to clear'; return; }
       if (!confirm('Clear all AI chat messages?')) return;
       wrap.innerHTML = chatGreeting;
-      replyIdx = 0;
+      resetChat();
       if (btn) btn.textContent = 'Cleared ✓';
     }
     function sendSug(el) {
       document.getElementById('chat-input').value = el.textContent;
       sendChat();
     }
+    // Returns the bubble so a streaming reply can fill it in.
     function addMsg(text, type) {
       const wrap = document.getElementById('chat-messages');
       const div = document.createElement('div');
@@ -1022,11 +1156,19 @@
       avatar.className = 'msg-avatar ' + (type === 'ai' ? 'msg-ai-avatar' : 'msg-user-avatar');
       avatar.textContent = type === 'ai' ? 'AI' : 'A';
       const inner = document.createElement('div');
-      inner.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">Just now</div>`;
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.textContent = text;
+      const time = document.createElement('div');
+      time.className = 'msg-time';
+      time.textContent = 'Just now';
+      inner.appendChild(bubble);
+      inner.appendChild(time);
       div.appendChild(avatar);
       div.appendChild(inner);
       wrap.appendChild(div);
       wrap.scrollTop = wrap.scrollHeight;
+      return bubble;
     }
 
     // ── Toggle ──
