@@ -384,7 +384,7 @@
           cqInitPrint(appPrintTitle);
           break;
         }
-        case 'chat': syncUser(); break;
+        case 'chat': syncUser(); chatLoadContext(); chatInitMem(); break;
         case 'onboarding': obInit(); break;
         case 'evaluation': startEval(); break;
         case 'quiz': ctInit(); break;
@@ -1198,9 +1198,11 @@
             const stick = chatNearBottom(sc);
             reply += text;
             bubble.innerHTML = renderReply(reply);
+            chatLight(chatMentions(reply));
             if (stick) sc.scrollTop = sc.scrollHeight;
           }
         });
+        addMentions(bubble, chatMentions(reply));
         // Only a finished reply joins the history; a stopped one is dropped.
         if (id === chatId) {
           chatHistory.push({ role: 'user', content: msg.slice(0, 2000) },
@@ -1225,6 +1227,7 @@
         chatToBottom();
       } finally {
         if (chatAbort === controller) { chatAbort = null; setChatBusy(false); }
+        chatLight([]);
       }
     }
     function chatSendOrStop() {
@@ -1250,8 +1253,244 @@
       document.getElementById('chat-input').focus();
     }
     function sendSug(el) {
-      document.getElementById('chat-input').value = el.querySelector('.chat-sug-text').textContent;
+      chatAsk(el.querySelector('.chat-sug-text').textContent);
+    }
+    function chatAsk(question) {
+      document.getElementById('chat-input').value = question;
       sendChat();
+    }
+
+    // ── What the counsellor knows ──
+    // On a chat's first message the chatBot fetches the student's profile and
+    // top career matches (careerAPI GET /userContext), so the welcome cards
+    // and the side panel show that data and nothing the bot never sees (the
+    // RIASEC scores stay out). Each fact can ask about itself, and its terms
+    // are what a reply is searched for to light it up.
+    let chatFacts = [];
+    const CHAT_MEM_WIDE = '(min-width: 1180px)';
+
+    function chatLoadContext() {
+      if (!window.CareerAPI) return;
+      Promise.all([
+        CareerAPI.me.profile().then(r => r.profile, () => null),
+        CareerAPI.me.latestCareerQuiz().then(r => r.result, () => null)
+      ]).then(([p, run]) => {
+        const careers = run && run.results && Array.isArray(run.results.top_careers)
+          ? run.results.top_careers.slice(0, 5) : [];
+        chatFacts = chatBuildFacts(p, careers);
+        chatRenderFacts();
+        chatRenderMem(p, careers);
+      });
+    }
+
+    function chatBuildFacts(p, careers) {
+      const facts = [];
+      const add = (key, icon, label, ask, terms, extra) =>
+        facts.push(Object.assign({ key, icon, label, ask, terms: terms.filter(Boolean) }, extra));
+      careers.forEach((c, i) => add('career:' + c.title, c.emoji || '💼', c.title,
+        i === 0 ? 'Why is ' + c.title + ' my top match?' : 'Is ' + c.title + ' a good option for me?',
+        [c.title], { badge: c.match_pct != null ? Math.round(c.match_pct) + '%' : '', rank: i + 1 }));
+      if (p) {
+        add('class', '🎒', 'Class ' + p.class + (p.board ? ' · ' + p.board : ''),
+          p.class >= 10 ? 'Which stream should I pick after Class 10?' : 'What should I focus on in Class 9?',
+          ['Class ' + p.class, p.board]);
+        if (p.dream_job) add('dream', '✨', 'Dream: ' + p.dream_job, 'How do I become a ' + p.dream_job + '?', [p.dream_job]);
+        (p.favourite_subjects || []).forEach(s =>
+          add('subj:' + s, '📚', 'Loves ' + s, 'Which careers use ' + s + '?', [s]));
+        (p.hobbies || []).forEach(h =>
+          add('hob:' + h, '🎯', h, 'Can ' + h + ' become a career for me?', [h]));
+        if (p.city) add('city', '📍', p.city, 'What are good colleges near ' + p.city + '?', [p.city]);
+      }
+      return facts;
+    }
+
+    // The welcome mixes kinds (top match, class, dream, a subject, a hobby…)
+    // rather than listing five careers in a row.
+    function chatRenderFacts() {
+      const box = document.getElementById('chat-facts'), sub = document.getElementById('chat-mirror-sub');
+      if (!box) return;
+      box.innerHTML = '';
+      const kind = f => f.key.split(':')[0];
+      const picked = [];
+      ['career', 'class', 'dream', 'subj', 'hob', 'career', 'city', 'career'].forEach(k => {
+        const f = chatFacts.find(x => kind(x) === k && !picked.includes(x) &&
+          (k === 'career' || !picked.some(y => kind(y) === k)));
+        if (f) picked.push(f);
+      });
+      box.hidden = !picked.length;
+      if (!picked.length) {
+        sub.textContent = 'Ask me anything — careers, streams, colleges, or what a day in a job actually looks like.';
+        return;
+      }
+      const hasCareers = chatFacts.some(f => kind(f) === 'career'), hasProfile = chatFacts.some(f => kind(f) !== 'career');
+      sub.textContent = "I've read your " + (hasCareers && hasProfile ? 'profile and career matches'
+        : hasCareers ? 'career matches' : 'profile') + ". Here's what I know about you:";
+      picked.forEach((f, i) => {
+        const b = document.createElement('button');
+        b.className = 'chat-fact' + (f.rank === 1 ? ' chat-fact-top' : '');
+        b.style.animationDelay = (0.25 + i * 0.08) + 's';
+        b.title = f.ask;
+        b.onclick = () => chatAsk(f.ask);
+        const icon = document.createElement('span');
+        icon.className = 'chat-fact-icon';
+        icon.textContent = f.icon;
+        const label = document.createElement('span');
+        label.className = 'chat-fact-label';
+        label.textContent = f.label;
+        b.append(icon, label);
+        if (f.badge) {
+          const badge = document.createElement('span');
+          badge.className = 'chat-fact-badge';
+          badge.textContent = f.badge;
+          b.appendChild(badge);
+        }
+        box.appendChild(b);
+      });
+    }
+
+    function chatRenderMem(p, careers) {
+      const body = document.getElementById('chat-mem-body');
+      if (!body) return;
+      body.innerHTML = '';
+      const el = (tag, cls, text) => {
+        const n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text != null) n.textContent = text;
+        return n;
+      };
+      const section = title => {
+        const s = el('section', 'chat-mem-sec');
+        s.appendChild(el('div', 'chat-mem-sec-title', title));
+        body.appendChild(s);
+        return s;
+      };
+      const empty = (sec, text, label, page) => {
+        const box = el('div', 'chat-mem-empty');
+        const b = el('button', 'btn btn-ghost btn-sm', label);
+        b.onclick = () => navTo(page);
+        box.append(el('p', '', text), b);
+        sec.appendChild(box);
+      };
+      const tags = (sec, title, items, prefix) => {
+        if (!items || !items.length) return;
+        const wrap = el('div', 'chat-mem-tags');
+        items.forEach(t => {
+          const tag = el('span', 'chat-mem-tag', t);
+          if (prefix) tag.dataset.fact = prefix + t;
+          wrap.appendChild(tag);
+        });
+        sec.append(el('div', 'chat-mem-tags-title', title), wrap);
+      };
+
+      const you = section('You');
+      if (!p) {
+        empty(you, "I don't know your class or interests yet, so my advice will be general.", 'Fill in your profile', 'onboarding');
+      } else {
+        const rows = el('div', 'chat-mem-rows');
+        [
+          ['🎒', 'Class', 'Class ' + p.class, 'class'],
+          ['🏫', 'Board', p.board, 'class'],
+          ['🗣️', 'Medium', p.medium],
+          ['📍', 'City', p.city, 'city'],
+          ['✨', 'Dream job', p.dream_job, 'dream'],
+          ['💼', 'Prefers', p.career_preference],
+          ['🧳', 'Study away?', p.study_location]
+        ].forEach(([icon, k, v, fact]) => {
+          if (!v) return;
+          const row = el('div', 'chat-mem-row');
+          if (fact) row.dataset.fact = fact;
+          row.append(el('span', 'chat-mem-row-icon', icon), el('span', 'chat-mem-row-key', k), el('span', 'chat-mem-row-val', v));
+          rows.appendChild(row);
+        });
+        you.appendChild(rows);
+        tags(you, 'Favourite subjects', p.favourite_subjects, 'subj:');
+        tags(you, 'Hobbies', p.hobbies, 'hob:');
+        const marks = p.marks && Object.entries(p.marks);
+        if (marks && marks.length) tags(you, 'Last exam marks', marks.map(([s, n]) => s + ' ' + n));
+      }
+
+      const matches = section('Your top career matches');
+      if (!careers.length) {
+        empty(matches, "You haven't taken the career quiz, so I don't know your matches yet.", 'Take the career quiz', 'careerquiz');
+      } else {
+        careers.forEach((c, i) => {
+          const pct = Math.max(0, Math.min(100, Math.round(c.match_pct || 0)));
+          const row = el('div', 'chat-mem-career' + (i === 0 ? ' top' : ''));
+          row.dataset.fact = 'career:' + c.title;
+          const name = el('div', 'chat-mem-career-name');
+          name.append(el('span', '', c.title), el('b', '', pct + '%'));
+          const track = el('div', 'chat-mem-career-track');
+          const fill = el('div', 'chat-mem-career-fill');
+          fill.style.width = pct + '%';
+          track.appendChild(fill);
+          const info = el('div', 'chat-mem-career-info');
+          info.append(name, track);
+          row.append(el('span', 'chat-mem-career-icon', c.emoji || '💼'), info);
+          matches.appendChild(row);
+        });
+      }
+    }
+
+    // A side column on wide screens; a drawer below that.
+    function chatMemOpen(open) {
+      const btn = document.getElementById('chat-mem-btn');
+      document.body.classList.toggle('chat-mem-open', open);
+      if (btn) btn.setAttribute('aria-expanded', String(open));
+      if (open) document.querySelector('.chat-mem-close').focus();
+      else if (btn && document.activeElement && document.activeElement.closest('.chat-mem')) btn.focus();
+    }
+    function chatInitMem() {
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && document.body.classList.contains('chat-mem-open')) chatMemOpen(false);
+      });
+      // Growing past the breakpoint turns the drawer back into a column
+      window.matchMedia(CHAT_MEM_WIDE).addEventListener('change', e => { if (e.matches) chatMemOpen(false); });
+    }
+
+    // The facts a reply talks about, by whole-phrase match. Terms under four
+    // letters ("Art") are skipped: they hit too many unrelated words.
+    function chatMentions(text) {
+      const hit = term => {
+        if (term.length < 4) return false;
+        const t = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp('(^|[^\\p{L}\\p{N}])' + t + '(?=$|[^\\p{L}\\p{N}])', 'iu').test(text);
+      };
+      return chatFacts.filter(f => f.terms.some(hit));
+    }
+    // While a reply streams, the panel items it mentions glow.
+    function chatLight(facts) {
+      document.querySelectorAll('.chat-mem [data-fact]').forEach(n =>
+        n.classList.toggle('lit', facts.some(f => f.key === n.dataset.fact)));
+    }
+    // Under a finished reply: "Mentions your" and the facts it named. Tapping
+    // one shows it in the panel.
+    function addMentions(bubble, facts) {
+      if (!facts.length) return;
+      const box = document.createElement('div');
+      box.className = 'msg-mentions';
+      const label = document.createElement('span');
+      label.className = 'msg-mentions-label';
+      label.textContent = '🧠 Mentions your';
+      box.appendChild(label);
+      facts.slice(0, 5).forEach(f => {
+        const b = document.createElement('button');
+        b.className = 'msg-mention';
+        b.textContent = f.icon + ' ' + f.label.replace(/^(Dream|Loves):? /, '');
+        b.onclick = () => chatMemShow(f.key);
+        box.appendChild(b);
+      });
+      bubble.parentNode.insertBefore(box, bubble.parentNode.querySelector('.msg-time'));
+    }
+    function chatMemShow(key) {
+      if (!window.matchMedia(CHAT_MEM_WIDE).matches) chatMemOpen(true);
+      const nodes = [...document.querySelectorAll('.chat-mem [data-fact]')].filter(n => n.dataset.fact === key);
+      if (!nodes.length) return;
+      nodes[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      nodes.forEach(n => {
+        n.classList.remove('flash');
+        void n.offsetWidth;  // restart the animation on a second tap
+        n.classList.add('flash');
+      });
     }
     // Returns the bubble so a streaming reply can fill it in.
     function addMsg(text, type) {

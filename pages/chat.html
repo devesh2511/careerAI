@@ -100,18 +100,25 @@
                 <div class="chat-head-sub"><span class="chat-dot"></span>Knows your profile and quiz results</div>
               </div>
               <button class="btn btn-ghost btn-sm chat-new" id="chat-new" onclick="newChat()" aria-label="New chat" hidden><span aria-hidden="true">＋</span><span class="chat-new-label">New chat</span></button>
+              <button class="btn btn-ghost btn-sm chat-mem-btn" id="chat-mem-btn" onclick="chatMemOpen(true)" aria-label="What I know about you" aria-controls="chat-mem" aria-expanded="false"><span aria-hidden="true">🧠</span><span class="chat-mem-btn-label">What I know</span></button>
             </div>
             <div class="chat-scroll" id="chat-scroll">
               <div class="chat-welcome" id="chat-welcome">
-                <div class="chat-welcome-avatar" aria-hidden="true">✦</div>
+                <div class="chat-mirror" aria-hidden="true">
+                  <span class="chat-mirror-ring"></span>
+                  <span class="chat-mirror-ring"></span>
+                  <div class="chat-welcome-avatar">✦</div>
+                </div>
                 <div class="chat-welcome-title">Hi<span id="chat-hello-name"></span>! 👋 How can I help?</div>
-                <div class="chat-welcome-sub">I know your profile and career quiz results, so ask me anything — careers,
-                  streams, colleges, or what a day in a job actually looks like.</div>
+                <div class="chat-welcome-sub" id="chat-mirror-sub">I've read your profile and career matches. Here's what I know about you:</div>
+                <!-- Filled by chatLoadContext(): one card per fact, each asks about itself -->
+                <div class="chat-facts" id="chat-facts"></div>
+                <div class="chat-sugs-label">Or start with</div>
                 <div class="chat-sugs">
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">📊</span><span class="chat-sug-text">Is data science good for me?</span></button>
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🎨</span><span class="chat-sug-text">What do UX designers do daily?</span></button>
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🏛️</span><span class="chat-sug-text">Which stream for architecture?</span></button>
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🎓</span><span class="chat-sug-text">Top colleges for design in India?</span></button>
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🎓</span><span class="chat-sug-text">Which colleges are best for me?</span></button>
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🧭</span><span class="chat-sug-text">Which stream should I choose?</span></button>
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🧬</span><span class="chat-sug-text">What careers fit my personality?</span></button>
+                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🗓️</span><span class="chat-sug-text">What should I start doing this year?</span></button>
                 </div>
               </div>
               <div class="chat-messages" id="chat-messages"></div>
@@ -129,6 +136,25 @@
                 admissions and fees.</div>
             </div>
           </div>
+
+          <!-- What the counsellor is given about the student. A side column on
+               wide screens, a drawer (bottom sheet on phones) everywhere else. -->
+          <div class="chat-mem-scrim" onclick="chatMemOpen(false)"></div>
+          <aside class="chat-mem" id="chat-mem" aria-labelledby="chat-mem-title">
+            <div class="chat-mem-grip" aria-hidden="true"></div>
+            <div class="chat-mem-head">
+              <div class="chat-mem-head-icon" aria-hidden="true">🧠</div>
+              <div class="chat-mem-head-text">
+                <div class="chat-mem-title" id="chat-mem-title">What I know about you</div>
+                <div class="chat-mem-sub">Shared with me at the start of each chat</div>
+              </div>
+              <button class="chat-mem-close" onclick="chatMemOpen(false)" aria-label="Close">✕</button>
+            </div>
+            <div class="chat-mem-body" id="chat-mem-body">
+              <div class="chat-mem-loading"><span></span><span></span><span></span></div>
+            </div>
+            <button class="chat-mem-edit" onclick="navTo('settings')">✏️ Something wrong? Edit your profile</button>
+          </aside>
         </div>
 
       </div><!-- /main-content -->
