@@ -1253,7 +1253,7 @@
       document.getElementById('chat-input').focus();
     }
     function sendSug(el) {
-      chatAsk(el.querySelector('.chat-sug-text').textContent);
+      chatAsk(el.dataset.ask || el.querySelector('.chat-sug-text').textContent);
     }
     function chatAsk(question) {
       document.getElementById('chat-input').value = question;
@@ -1262,7 +1262,7 @@
 
     // ── What the counsellor knows ──
     // On a chat's first message the chatBot fetches the student's profile and
-    // top career matches (careerAPI GET /userContext), so the welcome cards
+    // top career matches (careerAPI GET /userContext), so the welcome line
     // and the side panel show that data and nothing the bot never sees (the
     // RIASEC scores stay out). Each fact can ask about itself, and its terms
     // are what a reply is searched for to light it up.
@@ -1278,7 +1278,7 @@
         const careers = run && run.results && Array.isArray(run.results.top_careers)
           ? run.results.top_careers.slice(0, 5) : [];
         chatFacts = chatBuildFacts(p, careers);
-        chatRenderFacts();
+        chatRenderWelcome(p, careers);
         chatRenderMem(p, careers);
       });
     }
@@ -1287,65 +1287,94 @@
       const facts = [];
       const add = (key, icon, label, ask, terms, extra) =>
         facts.push(Object.assign({ key, icon, label, ask, terms: terms.filter(Boolean) }, extra));
+      // chip: the shorter wording a welcome prompt shows; it still sends ask
       careers.forEach((c, i) => add('career:' + c.title, c.emoji || '💼', c.title,
         i === 0 ? 'Why is ' + c.title + ' my top match?' : 'Is ' + c.title + ' a good option for me?',
-        [c.title], { badge: c.match_pct != null ? Math.round(c.match_pct) + '%' : '', rank: i + 1 }));
+        [c.title], { badge: c.match_pct != null ? Math.round(c.match_pct) + '%' : '', rank: i + 1,
+          chip: 'Why ' + c.title.split(' / ')[0] + '?' }));
       if (p) {
         add('class', '🎒', 'Class ' + p.class + (p.board ? ' · ' + p.board : ''),
           p.class >= 10 ? 'Which stream should I pick after Class 10?' : 'What should I focus on in Class 9?',
-          ['Class ' + p.class, p.board]);
-        if (p.dream_job) add('dream', '✨', 'Dream: ' + p.dream_job, 'How do I become a ' + p.dream_job + '?', [p.dream_job]);
+          ['Class ' + p.class, p.board], { chip: p.class >= 10 ? 'Which stream after Class 10?' : 'What to focus on in Class 9?' });
+        if (p.dream_job) add('dream', '✨', 'Dream: ' + p.dream_job, 'How do I become a ' + p.dream_job + '?', [p.dream_job],
+          { chip: 'How to become a ' + p.dream_job });
         (p.favourite_subjects || []).forEach(s =>
-          add('subj:' + s, '📚', 'Loves ' + s, 'Which careers use ' + s + '?', [s]));
+          add('subj:' + s, '📚', 'Loves ' + s, 'Which careers use ' + s + '?', [s], { chip: 'Careers that use ' + s }));
         (p.hobbies || []).forEach(h =>
           add('hob:' + h, '🎯', h, 'Can ' + h + ' become a career for me?', [h]));
-        if (p.city) add('city', '📍', p.city, 'What are good colleges near ' + p.city + '?', [p.city]);
+        if (p.city) add('city', '📍', p.city, 'What are good colleges near ' + p.city + '?', [p.city],
+          { chip: 'Best colleges near ' + p.city });
       }
       return facts;
     }
 
-    // The welcome mixes kinds (top match, class, dream, a subject, a hobby…)
-    // rather than listing five careers in a row.
-    function chatRenderFacts() {
-      const box = document.getElementById('chat-facts'), sub = document.getElementById('chat-mirror-sub');
-      if (!box) return;
-      box.innerHTML = '';
-      const kind = f => f.key.split(':')[0];
-      const picked = [];
-      ['career', 'class', 'dream', 'subj', 'hob', 'career', 'city', 'career'].forEach(k => {
-        const f = chatFacts.find(x => kind(x) === k && !picked.includes(x) &&
-          (k === 'career' || !picked.some(y => kind(y) === k)));
-        if (f) picked.push(f);
-      });
-      box.hidden = !picked.length;
-      if (!picked.length) {
-        sub.textContent = 'Ask me anything — careers, streams, colleges, or what a day in a job actually looks like.';
-        return;
+    // The welcome stays small: one sentence of what the counsellor knows,
+    // with the facts in it highlighted, and four prompts of one shape. The
+    // prompts are the facts' own questions, topped up from the defaults.
+    const CHAT_SUGS = [
+      ['🎓', 'Which colleges are best for me?'],
+      ['🧭', 'Which stream should I choose?'],
+      ['🗓️', 'What should I start doing this year?'],
+      ['🧬', 'What careers fit my personality?']
+    ];
+    function chatRenderWelcome(p, careers) {
+      const line = document.getElementById('chat-insight'), sugs = document.getElementById('chat-sugs');
+      if (!line || !sugs) return;
+      const parts = [];
+      const text = t => parts.push(document.createTextNode(t));
+      const hl = (t, cls) => {
+        const b = document.createElement('b');
+        b.className = 'chat-hl' + (cls ? ' ' + cls : '');
+        b.textContent = t;
+        parts.push(b);
+      };
+      const subj = p && (p.favourite_subjects || [])[0], top = careers[0];
+      if (p) {
+        text("You're a ");
+        hl('Class ' + p.class + (p.board ? ' · ' + p.board : ''));
+        text(' student');
+        if (p.city) { text(' in '); hl(p.city); }
+        if (subj) { text(' who loves '); hl(subj); }
+        text(top ? ', and your top match is ' : '.');
+      } else if (top) text('Your top match is ');
+      if (top) {
+        hl(top.title);
+        if (top.match_pct != null) { text(' at '); hl(Math.round(top.match_pct) + '%', 'chat-hl-pct'); }
+        text('.');
       }
-      const hasCareers = chatFacts.some(f => kind(f) === 'career'), hasProfile = chatFacts.some(f => kind(f) !== 'career');
-      sub.textContent = "I've read your " + (hasCareers && hasProfile ? 'profile and career matches'
-        : hasCareers ? 'career matches' : 'profile') + ". Here's what I know about you:";
-      picked.forEach((f, i) => {
-        const b = document.createElement('button');
-        b.className = 'chat-fact' + (f.rank === 1 ? ' chat-fact-top' : '');
-        b.style.animationDelay = (0.25 + i * 0.08) + 's';
-        b.title = f.ask;
-        b.onclick = () => chatAsk(f.ask);
-        const icon = document.createElement('span');
-        icon.className = 'chat-fact-icon';
-        icon.textContent = f.icon;
-        const label = document.createElement('span');
-        label.className = 'chat-fact-label';
-        label.textContent = f.label;
-        b.append(icon, label);
-        if (f.badge) {
-          const badge = document.createElement('span');
-          badge.className = 'chat-fact-badge';
-          badge.textContent = f.badge;
-          b.appendChild(badge);
-        }
-        box.appendChild(b);
+      if (parts.length) {
+        line.replaceChildren(...parts);
+        // Each highlight underlines itself in turn, as if being read out
+        line.querySelectorAll('.chat-hl').forEach((b, i) => { b.style.animationDelay = (0.45 + i * 0.18) + 's'; });
+        const all = document.createElement('button');
+        all.className = 'chat-insight-more';
+        all.textContent = 'See all I know';
+        all.onclick = () => chatMemOpen(true);
+        line.appendChild(all);
+      }
+
+      const asks = [];
+      const kind = k => chatFacts.find(f => f.key.split(':')[0] === k);
+      [kind('career'), kind('class'), kind('city'), kind('dream') || kind('subj')].forEach(f => {
+        if (f) asks.push([f.icon, f.ask, f.chip]);
       });
+      CHAT_SUGS.forEach(s => { if (asks.length < 4 && !asks.some(a => a[1] === s[1])) asks.push(s); });
+      sugs.replaceChildren(...asks.slice(0, 4).map(([icon, ask, chip], i) => {
+        const b = document.createElement('button');
+        b.className = 'chat-sug';
+        b.title = ask;
+        b.dataset.ask = ask;
+        b.style.animationDelay = (0.3 + i * 0.07) + 's';
+        b.onclick = () => sendSug(b);
+        const ic = document.createElement('span');
+        ic.className = 'chat-sug-icon';
+        ic.textContent = icon;
+        const t = document.createElement('span');
+        t.className = 'chat-sug-text';
+        t.textContent = chip || ask;
+        b.append(ic, t);
+        return b;
+      }));
     }
 
     function chatRenderMem(p, careers) {
@@ -1381,6 +1410,12 @@
         });
         sec.append(el('div', 'chat-mem-tags-title', title), wrap);
       };
+
+      // The collapsed card's subtitle is the short version of what's inside
+      const sub = document.getElementById('chat-mem-sub');
+      if (sub) sub.textContent = [profileSummary(p), careers.length ? careers.length + ' career matches' : '']
+        .filter(Boolean).join(' · ') || 'Shared with me at the start of each chat';
+      body.appendChild(el('p', 'chat-mem-note', 'Shared with me at the start of each chat'));
 
       const you = section('You');
       if (!p) {
@@ -1431,20 +1466,30 @@
       }
     }
 
-    // A side column on wide screens; a drawer below that.
+    // One state for both layouts: on wide screens "open" expands the card
+    // under its header, below that it slides the drawer in. Wide starts
+    // collapsed so the profile only shows when asked for.
     function chatMemOpen(open) {
-      const btn = document.getElementById('chat-mem-btn');
+      const btn = document.getElementById('chat-mem-btn'), toggle = document.getElementById('chat-mem-toggle');
+      const drawer = !window.matchMedia(CHAT_MEM_WIDE).matches;
       document.body.classList.toggle('chat-mem-open', open);
       if (btn) btn.setAttribute('aria-expanded', String(open));
+      if (toggle) toggle.setAttribute('aria-expanded', String(open));
+      if (!drawer) return;
       if (open) document.querySelector('.chat-mem-close').focus();
       else if (btn && document.activeElement && document.activeElement.closest('.chat-mem')) btn.focus();
     }
+    function chatMemToggle() {
+      chatMemOpen(!document.body.classList.contains('chat-mem-open'));
+    }
     function chatInitMem() {
       document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && document.body.classList.contains('chat-mem-open')) chatMemOpen(false);
+        if (e.key === 'Escape' && document.body.classList.contains('chat-mem-open') &&
+          !window.matchMedia(CHAT_MEM_WIDE).matches) chatMemOpen(false);
       });
-      // Growing past the breakpoint turns the drawer back into a column
-      window.matchMedia(CHAT_MEM_WIDE).addEventListener('change', e => { if (e.matches) chatMemOpen(false); });
+      // Crossing the breakpoint either way starts the new layout closed, so
+      // an expanded card never turns into a drawer over the chat
+      window.matchMedia(CHAT_MEM_WIDE).addEventListener('change', () => chatMemOpen(false));
     }
 
     // The facts a reply talks about, by whole-phrase match. Terms under four
@@ -1457,10 +1502,17 @@
       };
       return chatFacts.filter(f => f.terms.some(hit));
     }
-    // While a reply streams, the panel items it mentions glow.
+    // While a reply streams, the panel items it mentions glow, and the
+    // header pulses so a collapsed card still shows it's being used.
     function chatLight(facts) {
-      document.querySelectorAll('.chat-mem [data-fact]').forEach(n =>
-        n.classList.toggle('lit', facts.some(f => f.key === n.dataset.fact)));
+      let any = false;
+      document.querySelectorAll('.chat-mem [data-fact]').forEach(n => {
+        const lit = facts.some(f => f.key === n.dataset.fact);
+        n.classList.toggle('lit', lit);
+        any = any || lit;
+      });
+      const mem = document.getElementById('chat-mem');
+      if (mem) mem.classList.toggle('lit', any);
     }
     // Under a finished reply: "Mentions your" and the facts it named. Tapping
     // one shows it in the panel.
@@ -1482,7 +1534,7 @@
       bubble.parentNode.insertBefore(box, bubble.parentNode.querySelector('.msg-time'));
     }
     function chatMemShow(key) {
-      if (!window.matchMedia(CHAT_MEM_WIDE).matches) chatMemOpen(true);
+      chatMemOpen(true);
       const nodes = [...document.querySelectorAll('.chat-mem [data-fact]')].filter(n => n.dataset.fact === key);
       if (!nodes.length) return;
       nodes[0].scrollIntoView({ block: 'center', behavior: 'smooth' });

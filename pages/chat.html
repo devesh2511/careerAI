@@ -104,17 +104,18 @@
             </div>
             <div class="chat-scroll" id="chat-scroll">
               <div class="chat-welcome" id="chat-welcome">
-                <div class="chat-mirror" aria-hidden="true">
-                  <span class="chat-mirror-ring"></span>
-                  <span class="chat-mirror-ring"></span>
-                  <div class="chat-welcome-avatar">✦</div>
+                <div class="chat-orb" aria-hidden="true">
+                  <span class="chat-orb-ring"></span>
+                  <span class="chat-orb-core">✦</span>
                 </div>
-                <div class="chat-welcome-title">Hi<span id="chat-hello-name"></span>! 👋 How can I help?</div>
-                <div class="chat-welcome-sub" id="chat-mirror-sub">I've read your profile and career matches. Here's what I know about you:</div>
-                <!-- Filled by chatLoadContext(): one card per fact, each asks about itself -->
-                <div class="chat-facts" id="chat-facts"></div>
-                <div class="chat-sugs-label">Or start with</div>
-                <div class="chat-sugs">
+                <div class="chat-welcome-title">Hi<span class="chat-hello" id="chat-hello-name"></span> 👋</div>
+                <div class="chat-welcome-ask">What should we figure out today?</div>
+                <!-- chatRenderWelcome() swaps this for one sentence built from
+                     the profile and top match -->
+                <p class="chat-insight" id="chat-insight">Ask me anything — careers, streams, colleges, or what a day in a job actually looks like.</p>
+                <!-- Replaced by prompts built from the same data; these are the
+                     fallback for a student with no profile or quiz yet -->
+                <div class="chat-sugs" id="chat-sugs">
                   <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🎓</span><span class="chat-sug-text">Which colleges are best for me?</span></button>
                   <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🧭</span><span class="chat-sug-text">Which stream should I choose?</span></button>
                   <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🧬</span><span class="chat-sug-text">What careers fit my personality?</span></button>
@@ -137,17 +138,21 @@
             </div>
           </div>
 
-          <!-- What the counsellor is given about the student. A side column on
-               wide screens, a drawer (bottom sheet on phones) everywhere else. -->
+          <!-- What the counsellor is given about the student. On wide screens a
+               card beside the chat that the header expands; a drawer (bottom
+               sheet on phones) everywhere else. -->
           <div class="chat-mem-scrim" onclick="chatMemOpen(false)"></div>
           <aside class="chat-mem" id="chat-mem" aria-labelledby="chat-mem-title">
             <div class="chat-mem-grip" aria-hidden="true"></div>
             <div class="chat-mem-head">
-              <div class="chat-mem-head-icon" aria-hidden="true">🧠</div>
-              <div class="chat-mem-head-text">
-                <div class="chat-mem-title" id="chat-mem-title">What I know about you</div>
-                <div class="chat-mem-sub">Shared with me at the start of each chat</div>
-              </div>
+              <button class="chat-mem-toggle" id="chat-mem-toggle" onclick="chatMemToggle()" aria-controls="chat-mem-body" aria-expanded="false">
+                <span class="chat-mem-head-icon" aria-hidden="true">🧠</span>
+                <span class="chat-mem-head-text">
+                  <span class="chat-mem-title" id="chat-mem-title">What I know about you</span>
+                  <span class="chat-mem-sub" id="chat-mem-sub">Shared with me at the start of each chat</span>
+                </span>
+                <svg class="chat-mem-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
               <button class="chat-mem-close" onclick="chatMemOpen(false)" aria-label="Close">✕</button>
             </div>
             <div class="chat-mem-body" id="chat-mem-body">
