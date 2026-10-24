@@ -519,6 +519,9 @@ h6 {
   padding: 4px;
   border-radius: 8px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color .15s var(--ease), background .15s var(--ease);
 }
 
@@ -5685,6 +5688,23 @@ body.nav-open .sidebar-overlay {
     transform: translateX(0);
     visibility: visible;
     transition: transform .3s var(--ease-out), visibility 0s;
+  }
+
+  /* In the full-height drawer a growing nav left a tall blank gap above the
+     account row; dock the row under the last link instead. Still shrinks
+     (and scrolls) on short landscape screens. */
+  .sidebar .nav {
+    flex: 0 1 auto;
+  }
+
+  .sidebar-user {
+    border-top: none;
+    padding-top: 8px;
+  }
+
+  /* The top bar already carries the theme switch */
+  .sidebar-theme {
+    display: none;
   }
 
   /* No background scroll while the drawer is open */

@@ -846,10 +846,8 @@
         if (hi) hi.textContent = ' ' + m.student.full_name.split(' ')[0];
       }, () => { });
       CareerAPI.me.profile().then(r => {
-        const text = profileSummary(r.profile);
-        const cls = document.getElementById('user-class'), sub = document.getElementById('logo-sub');
-        if (cls) cls.textContent = text.split(' · ').slice(0, 2).join(' · ');
-        if (sub) { sub.textContent = text; sub.hidden = !text; }
+        const cls = document.getElementById('user-class');
+        if (cls) cls.textContent = profileSummary(r.profile);
       }, () => { });
     }
 
