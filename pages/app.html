@@ -49,18 +49,19 @@
             Chat</button>
           <button class="nav-item" data-page="contests" onclick="navTo('contests',this)"><span
               class="icon">🏆</span>Contests</button>
-          <button class="nav-item" data-page="settings" onclick="navTo('settings',this)"><span
-              class="icon">⚙️</span>Settings</button>
           <button class="nav-item" data-page="space" onclick="navTo('space',this)"><span
               class="icon">📰</span>My Career Space</button>
         </nav>
         <div class="sidebar-user">
           <div class="user-row">
-            <div class="user-avatar">A</div>
-            <div class="user-info">
-              <div class="user-name"></div>
-              <div class="user-class" id="user-class"></div>
-            </div>
+            <button class="user-profile" data-page="settings" onclick="navTo('settings')" title="Settings"
+              aria-label="Open settings">
+              <div class="user-avatar">A</div>
+              <div class="user-info">
+                <div class="user-name"></div>
+                <div class="user-class" id="user-class"></div>
+              </div>
+            </button>
             <div class="user-actions">
               <button class="theme-toggle sidebar-theme" onclick="toggleTheme()" aria-label="Switch theme"
                 aria-pressed="false">

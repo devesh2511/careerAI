@@ -434,6 +434,35 @@ h6 {
   gap: 8px;
 }
 
+/* Avatar + name double as the way into Settings, so the block is a button
+   that takes the free width and leaves the theme/logout cluster alone. */
+.user-profile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px;
+  padding: 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s var(--ease), border-color .15s var(--ease);
+}
+
+.user-profile:hover {
+  background: var(--surface2);
+}
+
+.user-profile.active {
+  border-color: var(--border);
+  background: var(--surface2);
+}
+
 .user-avatar {
   width: 32px;
   height: 32px;

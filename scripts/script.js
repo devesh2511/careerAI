@@ -271,7 +271,7 @@
       // Career detail has no sidebar entry of its own: light up where it was opened from.
       if (r.page === 'careerdetail') cdFrom = CD_BACK[r.params.from] ? r.params.from : null;
       const navPage = r.page === 'careerdetail' ? (cdFrom || 'results') : r.page;
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === navPage));
+      document.querySelectorAll('.nav-item, .user-profile').forEach(n => n.classList.toggle('active', n.dataset.page === navPage));
       document.body.classList.remove('nav-open'); // collapse the mobile drawer
       if (changed) window.scrollTo(0, 0);
       // Sync quiz results into the page just revealed
