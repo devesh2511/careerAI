@@ -100,7 +100,7 @@
                 <div class="chat-head-sub"><span class="chat-dot"></span>Knows your profile and quiz results</div>
               </div>
               <button class="btn btn-ghost btn-sm chat-new" id="chat-new" onclick="newChat()" aria-label="New chat" hidden><span aria-hidden="true">＋</span><span class="chat-new-label">New chat</span></button>
-              <button class="btn btn-ghost btn-sm chat-mem-btn" id="chat-mem-btn" onclick="chatMemOpen(true)" aria-label="What I know about you" aria-controls="chat-mem" aria-expanded="false"><span aria-hidden="true">🧠</span><span class="chat-mem-btn-label">What I know</span></button>
+              <button class="btn btn-ghost btn-sm chat-mem-btn" id="chat-mem-btn" onclick="chatMemOpen(true)" aria-label="What I know about you" title="What I know about you" aria-controls="chat-mem" aria-expanded="false"><span aria-hidden="true">🧠</span></button>
             </div>
             <div class="chat-scroll" id="chat-scroll">
               <div class="chat-welcome" id="chat-welcome">
@@ -138,21 +138,19 @@
             </div>
           </div>
 
-          <!-- What the counsellor is given about the student. On wide screens a
-               card beside the chat that the header expands; a drawer (bottom
-               sheet on phones) everywhere else. -->
+          <!-- What the counsellor is given about the student: a drawer behind
+               the header's brain button (a bottom sheet on phones). -->
           <div class="chat-mem-scrim" onclick="chatMemOpen(false)"></div>
           <aside class="chat-mem" id="chat-mem" aria-labelledby="chat-mem-title">
             <div class="chat-mem-grip" aria-hidden="true"></div>
             <div class="chat-mem-head">
-              <button class="chat-mem-toggle" id="chat-mem-toggle" onclick="chatMemToggle()" aria-controls="chat-mem-body" aria-expanded="false">
+              <div class="chat-mem-heading">
                 <span class="chat-mem-head-icon" aria-hidden="true">🧠</span>
                 <span class="chat-mem-head-text">
                   <span class="chat-mem-title" id="chat-mem-title">What I know about you</span>
                   <span class="chat-mem-sub" id="chat-mem-sub">Shared with me at the start of each chat</span>
                 </span>
-                <svg class="chat-mem-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
+              </div>
               <button class="chat-mem-close" onclick="chatMemOpen(false)" aria-label="Close">✕</button>
             </div>
             <div class="chat-mem-body" id="chat-mem-body">

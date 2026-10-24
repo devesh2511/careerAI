@@ -384,7 +384,11 @@
           cqInitPrint(appPrintTitle);
           break;
         }
-        case 'chat': syncUser(); chatLoadContext(); chatInitMem(); break;
+        case 'chat':
+          syncUser(); chatLoadContext(); chatInitMem();
+          // Ready to type on a laptop; a phone keeps its keyboard down until tapped
+          if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) document.getElementById('chat-input').focus();
+          break;
         case 'onboarding': obInit(); break;
         case 'evaluation': startEval(); break;
         case 'quiz': ctInit(); break;
@@ -1267,7 +1271,7 @@
     // RIASEC scores stay out). Each fact can ask about itself, and its terms
     // are what a reply is searched for to light it up.
     let chatFacts = [];
-    const CHAT_MEM_WIDE = '(min-width: 1180px)';
+    const CHAT_MEM_PHONE = '(max-width: 640px)';
 
     function chatLoadContext() {
       if (!window.CareerAPI) return;
@@ -1296,8 +1300,9 @@
         add('class', '🎒', 'Class ' + p.class + (p.board ? ' · ' + p.board : ''),
           p.class >= 10 ? 'Which stream should I pick after Class 10?' : 'What should I focus on in Class 9?',
           ['Class ' + p.class, p.board], { chip: p.class >= 10 ? 'Which stream after Class 10?' : 'What to focus on in Class 9?' });
-        if (p.dream_job) add('dream', '✨', 'Dream: ' + p.dream_job, 'How do I become a ' + p.dream_job + '?', [p.dream_job],
-          { chip: 'How to become a ' + p.dream_job });
+        const a = /^[aeiou]/i.test(p.dream_job || '') ? 'an ' : 'a ';
+        if (p.dream_job) add('dream', '✨', 'Dream: ' + p.dream_job, 'How do I become ' + a + p.dream_job + '?', [p.dream_job],
+          { chip: 'How to become ' + a + p.dream_job });
         (p.favourite_subjects || []).forEach(s =>
           add('subj:' + s, '📚', 'Loves ' + s, 'Which careers use ' + s + '?', [s], { chip: 'Careers that use ' + s }));
         (p.hobbies || []).forEach(h =>
@@ -1466,30 +1471,23 @@
       }
     }
 
-    // One state for both layouts: on wide screens "open" expands the card
-    // under its header, below that it slides the drawer in. Wide starts
-    // collapsed so the profile only shows when asked for.
+    // The panel is a drawer behind the header's brain button at every width
+    // (a bottom sheet on phones), and starts shut so the profile only shows
+    // when asked for.
     function chatMemOpen(open) {
-      const btn = document.getElementById('chat-mem-btn'), toggle = document.getElementById('chat-mem-toggle');
-      const drawer = !window.matchMedia(CHAT_MEM_WIDE).matches;
+      const btn = document.getElementById('chat-mem-btn');
       document.body.classList.toggle('chat-mem-open', open);
       if (btn) btn.setAttribute('aria-expanded', String(open));
-      if (toggle) toggle.setAttribute('aria-expanded', String(open));
-      if (!drawer) return;
       if (open) document.querySelector('.chat-mem-close').focus();
       else if (btn && document.activeElement && document.activeElement.closest('.chat-mem')) btn.focus();
     }
-    function chatMemToggle() {
-      chatMemOpen(!document.body.classList.contains('chat-mem-open'));
-    }
     function chatInitMem() {
       document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && document.body.classList.contains('chat-mem-open') &&
-          !window.matchMedia(CHAT_MEM_WIDE).matches) chatMemOpen(false);
+        if (e.key === 'Escape' && document.body.classList.contains('chat-mem-open')) chatMemOpen(false);
       });
-      // Crossing the breakpoint either way starts the new layout closed, so
-      // an expanded card never turns into a drawer over the chat
-      window.matchMedia(CHAT_MEM_WIDE).addEventListener('change', () => chatMemOpen(false));
+      // Crossing into the phone layout swaps the side drawer for a bottom
+      // sheet; shut it rather than let one animate into the other
+      window.matchMedia(CHAT_MEM_PHONE).addEventListener('change', () => chatMemOpen(false));
     }
 
     // The facts a reply talks about, by whole-phrase match. Terms under four
@@ -1502,8 +1500,8 @@
       };
       return chatFacts.filter(f => f.terms.some(hit));
     }
-    // While a reply streams, the panel items it mentions glow, and the
-    // header pulses so a collapsed card still shows it's being used.
+    // While a reply streams, the panel items it mentions glow, and the brain
+    // button pulses so a shut drawer still shows it's being used.
     function chatLight(facts) {
       let any = false;
       document.querySelectorAll('.chat-mem [data-fact]').forEach(n => {
@@ -1511,8 +1509,10 @@
         n.classList.toggle('lit', lit);
         any = any || lit;
       });
-      const mem = document.getElementById('chat-mem');
-      if (mem) mem.classList.toggle('lit', any);
+      ['chat-mem', 'chat-mem-btn'].forEach(id => {
+        const n = document.getElementById(id);
+        if (n) n.classList.toggle('lit', any);
+      });
     }
     // Under a finished reply: "Mentions your" and the facts it named. Tapping
     // one shows it in the panel.

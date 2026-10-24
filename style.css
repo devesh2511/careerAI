@@ -3731,12 +3731,6 @@ body.ex-filters-open .ex-drawer {
   border-bottom: 1px solid var(--border);
 }
 
-/* On wide screens the knowledge card's header sits level with this one:
-   both are exactly --chat-head-h tall, icon centre to icon centre. */
-#chat {
-  --chat-head-h: 72px;
-}
-
 .chat-head-avatar,
 .msg-ai-avatar {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -3784,9 +3778,12 @@ body.ex-filters-open .ex-drawer {
   flex-shrink: 0;
 }
 
+/* Same 40px height as the brain button beside it */
 .chat-new {
   flex-shrink: 0;
   gap: 6px;
+  height: 40px;
+  border-radius: 12px;
 }
 
 .chat-new[hidden] {
@@ -3803,8 +3800,22 @@ body.ex-filters-open .ex-drawer {
   padding: 20px 6px 12px 2px;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+  /* The thumb only shows while the pointer is over the thread. Transparent
+     rather than hidden keeps the width, so nothing shifts when it appears,
+     and on Windows Chrome it also hides the classic arrow buttons. */
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.chat-scroll:hover,
+.chat-scroll:focus-within {
   scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+/* The empty state never shows a scrollbar; on a screen too short for it the
+   wheel and touch still scroll */
+.chat-scroll:has(> .chat-welcome:not([hidden])) {
+  scrollbar-width: none;
 }
 
 .chat-scroll::-webkit-scrollbar {
@@ -3816,8 +3827,17 @@ body.ex-filters-open .ex-drawer {
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
+  background: transparent;
   border-radius: 6px;
+}
+
+.chat-scroll:hover::-webkit-scrollbar-thumb,
+.chat-scroll:focus-within::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+}
+
+.chat-scroll:has(> .chat-welcome:not([hidden]))::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── Empty state ── */
@@ -3843,7 +3863,8 @@ body.ex-filters-open .ex-drawer {
   left: 50%;
   top: 0;
   width: min(640px, 100%);
-  height: 340px;
+  /* Never taller than the welcome, or it alone makes the thread scrollable */
+  height: min(340px, 100%);
   transform: translateX(-50%);
   background:
     radial-gradient(closest-side at 35% 45%, color-mix(in srgb, var(--accent) 30%, transparent), transparent),
@@ -4439,18 +4460,44 @@ body.ex-filters-open .ex-drawer {
 }
 
 /* ── What I know (knowledge panel) ── */
+/* An icon-only square at every width; the panel is a drawer behind it */
 .chat-mem-btn {
+  position: relative;
   flex-shrink: 0;
-  gap: 6px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 1.125rem;
   color: var(--accent-text);
   border-color: var(--accent-line);
   background: var(--accent-weak);
+  transition: background .15s var(--ease), border-color .15s var(--ease), box-shadow .2s var(--ease), transform .15s var(--ease);
 }
 
-.chat-mem-btn:hover {
+.chat-mem-btn:hover,
+.chat-mem-btn[aria-expanded="true"] {
   color: var(--accent-text);
   border-color: var(--accent-line);
   background: var(--accent-soft);
+  box-shadow: 0 0 22px -8px var(--accent);
+}
+
+.chat-mem-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* A reply is using your profile: the button pulses, so the cue is there
+   with the drawer shut too */
+.chat-mem-btn.lit::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 14px;
+  border: 2px solid var(--accent2);
+  pointer-events: none;
+  animation: chatMemPulse 1.2s var(--ease-out) infinite;
 }
 
 .chat-mem {
@@ -4477,27 +4524,13 @@ body.ex-filters-open .ex-drawer {
   background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent2) 8%, transparent));
 }
 
-/* The header is the expand button on wide screens */
-.chat-mem-toggle {
+.chat-mem-heading {
   flex: 1;
   min-width: 0;
-  align-self: stretch;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 14px 6px 14px 18px;
-  border: none;
-  background: none;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.chat-mem-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -4px;
-  border-radius: 16px;
 }
 
 .chat-mem-head-icon {
@@ -4536,27 +4569,7 @@ body.ex-filters-open .ex-drawer {
   white-space: nowrap;
 }
 
-.chat-mem-chev {
-  display: none;
-  flex-shrink: 0;
-  box-sizing: content-box;
-  padding: 6px;
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--rim);
-  color: var(--muted);
-  transition: transform .3s var(--ease-out), color .15s var(--ease);
-}
-
-.chat-mem-toggle:hover .chat-mem-chev {
-  color: var(--accent-text);
-}
-
-body.chat-mem-open .chat-mem-chev {
-  transform: rotate(180deg);
-}
-
-/* A reply is using what's in here: the brain pulses even when collapsed */
+/* A reply is using what's in here: the drawer's brain pulses too */
 .chat-mem.lit .chat-mem-head-icon::after {
   content: '';
   position: absolute;
@@ -4585,7 +4598,7 @@ body.chat-mem-open .chat-mem-chev {
 }
 
 .chat-mem-close {
-  display: none;
+  display: flex;
   width: 32px;
   height: 32px;
   border-radius: 10px;
@@ -4597,6 +4610,13 @@ body.chat-mem-open .chat-mem-chev {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: color .15s var(--ease), border-color .15s var(--ease), transform .2s var(--ease);
+}
+
+.chat-mem-close:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  transform: rotate(90deg);
 }
 
 .chat-mem-body {
@@ -4812,129 +4832,115 @@ body.chat-mem-open .chat-mem-chev {
   animation-delay: .3s;
 }
 
-.chat-mem-scrim {
-  display: none;
+/* A drawer from the right at every width, behind the header's brain button
+   (the phone breakpoint turns it into a bottom sheet) */
+.chat-mem {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(380px, calc(100vw - 24px));
+  z-index: 120;
+  transform: translateX(calc(100% + 24px));
+  visibility: hidden;
+  transition: transform .35s var(--ease-out), visibility 0s .35s;
 }
 
-/* Wide screens: the panel is a card beside the chat. Collapsed it is just
-   its header, level with the chat's; opening it grows the card down the
-   column. 1180px covers a 1280px laptop with the sidebar open. */
-@media (min-width: 1180px) {
-  #chat.page.active {
-    flex-direction: row;
-    justify-content: center;
-    align-items: flex-start;
-    gap: clamp(20px, 2vw, 32px);
-  }
+body.chat-mem-open .chat-mem {
+  transform: none;
+  visibility: visible;
+  transition: transform .35s var(--ease-out);
+}
 
-  .chat-col {
-    flex: 1 1 auto;
-    align-self: stretch;
-    min-width: 0;
-    max-width: 980px;
-    margin-inline: 0;
-  }
+/* Each section settles in just after the drawer arrives */
+body.chat-mem-open .chat-mem-body > * {
+  animation: chatMemIn .4s var(--ease-out) both;
+}
 
-  .chat-head {
-    height: var(--chat-head-h);
-    padding-bottom: 0;
-  }
+body.chat-mem-open .chat-mem-body > :nth-child(2) {
+  animation-delay: .06s;
+}
 
-  .chat-mem {
-    flex: 0 0 clamp(300px, 23vw, 400px);
-    max-height: 100%;
-    transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
-  }
-
-  body:not(.chat-mem-open) .chat-mem:hover {
-    border-color: var(--accent-line);
-    box-shadow: var(--shadow), var(--sheen), 0 0 28px -10px var(--accent);
-  }
-
-  body.chat-mem-open .chat-mem {
-    align-self: stretch;
-  }
-
-  /* The card's own top and bottom borders make up the last 2px */
-  .chat-mem-head {
-    height: calc(var(--chat-head-h) - 2px);
-    border-bottom-color: transparent;
-  }
-
-  body.chat-mem-open .chat-mem-head {
-    border-bottom-color: var(--border);
-  }
-
-  .chat-mem-toggle {
-    padding-block: 0;
-  }
-
-  .chat-mem-chev {
-    display: block;
-  }
-
-  .chat-mem-body,
-  .chat-mem-edit {
-    display: none;
-  }
-
-  body.chat-mem-open .chat-mem-body,
-  body.chat-mem-open .chat-mem-edit {
-    display: block;
-    animation: chatMemIn .4s var(--ease-out) both;
-  }
-
-  .chat-mem-btn {
-    display: none;
-  }
+body.chat-mem-open .chat-mem-body > :nth-child(3) {
+  animation-delay: .12s;
 }
 
 @keyframes chatMemIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(8px);
   }
 }
 
-/* Narrower: a drawer from the right, behind the header button */
-@media (max-width: 1179px) {
-  .chat-mem {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    bottom: 12px;
-    width: min(380px, calc(100vw - 24px));
-    z-index: 120;
-    transform: translateX(calc(100% + 24px));
-    visibility: hidden;
-    transition: transform .35s var(--ease-out), visibility 0s .35s;
+.chat-mem-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 119;
+  background: rgba(4, 4, 8, .55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .3s var(--ease), visibility 0s .3s;
+}
+
+body.chat-mem-open .chat-mem-scrim {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .3s var(--ease);
+}
+
+body.chat-mem-open {
+  overflow: hidden;
+}
+
+/* No side card any more, so a wide screen gives the thread a little more room */
+@media (min-width: 1180px) {
+  .chat-col {
+    max-width: 920px;
+  }
+}
+
+/* Laptop screens that are short (a 1366×768 or a 125%-scaled 1080p, minus
+   the browser's own bars): the empty state still fits above the composer */
+@media (min-width: 641px) and (max-height: 820px) {
+  .chat-scroll {
+    padding-top: 12px;
   }
 
-  body.chat-mem-open .chat-mem {
-    transform: none;
-    visibility: visible;
-    transition: transform .35s var(--ease-out);
+  .chat-welcome {
+    padding: 8px 0;
   }
 
-  .chat-mem-close {
-    display: flex;
+  .chat-orb {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 14px;
   }
 
-  .chat-mem-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 119;
-    background: rgba(4, 4, 8, .55);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+  .chat-orb-core {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1875rem;
   }
 
-  body.chat-mem-open .chat-mem-scrim {
-    display: block;
+  .chat-welcome-ask {
+    margin-bottom: 12px;
   }
 
-  body.chat-mem-open {
-    overflow: hidden;
+  .chat-insight {
+    margin-bottom: 18px;
+  }
+
+  .chat-sug {
+    height: 44px;
+  }
+}
+
+@media (min-width: 641px) and (max-height: 620px) {
+  .chat-orb,
+  .chat-foot {
+    display: none;
   }
 }
 
@@ -7213,10 +7219,6 @@ body.nav-open .sidebar-overlay {
     font-size: 1rem;
   }
 
-  .chat-mem-btn-label {
-    display: none;
-  }
-
   /* The drawer becomes a bottom sheet */
   .chat-mem {
     top: auto;
@@ -7246,7 +7248,7 @@ body.nav-open .sidebar-overlay {
     background: none;
   }
 
-  .chat-mem-toggle {
+  .chat-mem-heading {
     padding: 10px 6px 12px 16px;
   }
 
