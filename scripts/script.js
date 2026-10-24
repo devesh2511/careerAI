@@ -192,6 +192,30 @@
       if (e.key === 'Escape' && document.body.classList.contains('nav-open')) closeSidebar();
     });
 
+    // On phones the drawer is a bottom sheet: drag it down to dismiss.
+    // Only from the top of its scroll, so scrolling the sheet still works.
+    (function () {
+      const sheet = document.querySelector('.sidebar');
+      if (!sheet) return;
+      let y0 = null, dy = 0;
+      sheet.addEventListener('touchstart', e => {
+        if (!document.body.classList.contains('nav-open') || sheet.scrollTop > 0) return;
+        y0 = e.touches[0].clientY; dy = 0;
+      }, { passive: true });
+      sheet.addEventListener('touchmove', e => {
+        if (y0 === null) return;
+        dy = Math.max(0, e.touches[0].clientY - y0);
+        if (dy > 0) { sheet.classList.add('dragging'); sheet.style.transform = 'translateY(' + dy + 'px)'; }
+      }, { passive: true });
+      sheet.addEventListener('touchend', () => {
+        if (y0 === null) return;
+        y0 = null;
+        sheet.classList.remove('dragging');
+        sheet.style.transform = '';
+        if (dy > 90) closeSidebar();
+      });
+    })();
+
     // ── App router (app.html) ──
     // The view, and what it is showing, live in the hash, so Back/Forward,
     // a reload and a pasted link all land in the same place:

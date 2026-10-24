@@ -5672,40 +5672,206 @@ body.nav-open .sidebar-overlay {
 }
 
 /* ─────────────────────  PHONE  (≤640px)  ───────────────────── */
-/* ───────────  SIDEBAR → DRAWER  (≤860px)  ─────────── */
+@keyframes tileIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(.94);
+  }
+}
+
+/* ───────────  SIDEBAR → LAUNCHER SHEET  (≤860px)  ─────────── */
 /* Below this the fixed 220px sidebar leaves the page column too narrow for
-   its grids, so it moves off-canvas behind the menu button. */
+   its grids, so it moves behind the menu button. A full-height drawer left
+   most of its height empty under seven links, so instead it rises from the
+   bottom as a sheet sized to its content: profile card, an AI Chat hero tile,
+   and the rest as a grid of app-style tiles. Swipe down (script.js) or tap
+   the backdrop to close. */
 @media (max-width: 860px) {
   .sidebar {
-    width: min(280px, 82vw);
-    transform: translateX(-100%);
-    box-shadow: var(--shadow-lg);
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    width: min(100%, 560px);
+    height: auto;
+    max-height: 88vh;
+    max-height: 88dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    border-right: none;
+    border-top: 1px solid var(--border);
+    border-radius: 26px 26px 0 0;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(108, 99, 255, .16), transparent 70%),
+      linear-gradient(180deg, var(--sidebar-from), var(--sidebar-to));
+    box-shadow: 0 -24px 60px -12px rgba(0, 0, 0, .55);
+    transform: translateY(105%);
     visibility: hidden;
-    transition: transform .3s var(--ease-out), visibility 0s linear .3s;
+    transition: transform .42s cubic-bezier(.22, 1.2, .36, 1), visibility 0s linear .42s;
   }
 
   body.nav-open .sidebar {
-    transform: translateX(0);
+    transform: translateY(0);
     visibility: visible;
-    transition: transform .3s var(--ease-out), visibility 0s;
+    transition: transform .42s cubic-bezier(.22, 1.2, .36, 1), visibility 0s;
   }
 
-  /* In the full-height drawer a growing nav left a tall blank gap above the
-     account row; dock the row under the last link instead. Still shrinks
-     (and scrolls) on short landscape screens. */
-  .sidebar .nav {
-    flex: 0 1 auto;
+  /* Following a finger: no easing while dragged (script.js sets this) */
+  .sidebar.dragging {
+    transition: none;
   }
 
-  .sidebar-user {
-    border-top: none;
-    padding-top: 8px;
+  /* Grab handle */
+  .sidebar::before {
+    content: "";
+    order: -3;
+    flex-shrink: 0;
+    width: 42px;
+    height: 5px;
+    margin: 10px auto 4px;
+    border-radius: 99px;
+    background: var(--border);
   }
 
-  /* The top bar already carries the theme switch */
+  /* The top bar already shows the logo and the theme switch */
+  .sidebar-logo,
   .sidebar-theme {
     display: none;
   }
+
+  /* Profile card leads the sheet */
+  .sidebar-user {
+    order: -2;
+    margin: 8px 16px 2px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface2);
+  }
+
+  .sidebar-user .user-avatar {
+    width: 42px;
+    height: 42px;
+    font-size: 1rem;
+  }
+
+  .sidebar-user .user-name {
+    font-size: 0.9375rem;
+  }
+
+  .sidebar-user .user-class {
+    font-size: 0.75rem;
+  }
+
+  .sidebar-user .logout-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .sidebar .nav {
+    flex: none;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 12px 16px 6px;
+  }
+
+  .sidebar .nav-divider {
+    display: none;
+  }
+
+  .sidebar .nav-item {
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-height: 92px;
+    padding: 12px 6px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 0.75rem;
+    line-height: 1.25;
+    text-align: center;
+    color: var(--text);
+  }
+
+  .sidebar .nav-item .icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 1.375rem;
+    background: var(--surface2);
+  }
+
+  .sidebar .nav-item.active {
+    color: var(--accent-text);
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 1px var(--accent-line), 0 10px 24px -14px var(--accent);
+  }
+
+  .sidebar .nav-item.active .icon {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+  }
+
+  .sidebar .nav-item:active {
+    transform: scale(.96);
+  }
+
+  /* AI Chat: the full-width hero tile across the top of the grid */
+  .sidebar .nav-item[data-page="chat"] {
+    order: -1;
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 0;
+    padding: 14px 16px;
+    font-size: 0.9375rem;
+    text-align: left;
+    color: #fff;
+    border-color: transparent;
+    background:
+      radial-gradient(80% 140% at 100% 0%, rgba(255, 255, 255, .22), transparent 60%),
+      linear-gradient(120deg, var(--accent), var(--accent2));
+    box-shadow: 0 12px 28px -14px var(--accent);
+  }
+
+  .sidebar .nav-item[data-page="chat"] .icon {
+    background: rgba(255, 255, 255, .2);
+  }
+
+  .sidebar .nav-item[data-page="chat"].active {
+    color: #fff;
+    box-shadow: 0 0 0 2px var(--sidebar-from), 0 0 0 4px var(--accent2), 0 12px 28px -14px var(--accent);
+  }
+
+  .sidebar .nav-item[data-page="chat"]::after {
+    content: "Ask anything \2192";
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: .85;
+  }
+
+  /* Tiles pop in one after another as the sheet rises */
+  body.nav-open .sidebar .nav-item {
+    animation: tileIn .38s var(--ease-out) backwards;
+  }
+
+  body.nav-open .sidebar .nav-item:nth-child(2) { animation-delay: .04s; }
+  body.nav-open .sidebar .nav-item:nth-child(3) { animation-delay: .08s; }
+  body.nav-open .sidebar .nav-item:nth-child(5) { animation-delay: .12s; }
+  body.nav-open .sidebar .nav-item:nth-child(7) { animation-delay: .16s; }
+  body.nav-open .sidebar .nav-item:nth-child(8) { animation-delay: .20s; }
+  body.nav-open .sidebar .nav-item:nth-child(9) { animation-delay: .24s; }
 
   /* No background scroll while the drawer is open */
   body.nav-open {
