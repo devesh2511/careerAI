@@ -14,6 +14,9 @@
       quiz: 'pages/quiz.html',
       quizcomplete: 'pages/quiz_complete.html',
       app: 'pages/app.html',
+      // No .html: vercel.json rewrites /pages/chat to the file, and this is
+      // the address students see. Only the deployed site can chat anyway.
+      chat: 'pages/chat',
       careerquiz: 'pages/career_quiz.html',
       ailoading: 'pages/ai_loading.html',
       airesults: 'pages/career_results.html',
@@ -23,7 +26,7 @@
     };
 
     // These are .page divs inside app.html — they still switch in place.
-    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'roadmap', 'chat', 'contests', 'settings', 'space'];
+    const APP_PAGES = ['dashboard', 'results', 'explorer', 'careerdetail', 'roadmap', 'contests', 'settings', 'space'];
 
     // Which file are we on? Set via <body data-page="...">
     const CURRENT_PAGE = (document.body && document.body.dataset.page) || 'landing';
@@ -58,7 +61,7 @@
     // careerAPI exists). The app is all or nothing: every page in PAID_PAGES
     // stays hidden until the access check passes, and otherwise sends the
     // student to login (no session) or the paywall (no plan).
-    const PAID_PAGES = ['app', 'onboarding', 'evaluation', 'quiz', 'quizcomplete', 'careerquiz', 'ailoading', 'airesults'];
+    const PAID_PAGES = ['app', 'chat', 'onboarding', 'evaluation', 'quiz', 'quizcomplete', 'careerquiz', 'ailoading', 'airesults'];
     function isLoggedIn() { return !!(window.CareerAPI && CareerAPI.auth.hasSession()); }
     function requireAccess() {
       if (!window.CareerAPI) return Promise.resolve(true);
@@ -192,7 +195,7 @@
     // ── App router (app.html) ──
     // The view, and what it is showing, live in the hash, so Back/Forward,
     // a reload and a pasted link all land in the same place:
-    //   #/dashboard  #/results  #/chat  #/contests  #/settings
+    //   #/dashboard  #/results  #/contests  #/settings
     //   #/explorer?q=&group=&stream=&fit=&sort=
     //   #/careerdetail/<career>?from=explorer
     //   #/roadmap  (the picked career is kept in state, not the address)
@@ -255,6 +258,8 @@
     }
 
     function appRoute(force) {
+      // The chat used to be a view here; it is its own page now.
+      if (/^#\/?chat(?![\w-])/.test(location.hash)) { redirect('chat'); return; }
       if (!force && location.hash === appRendered) return;
       const r = appParse();
       appSetHash(appHash(r.page, r.arg, r.params));  // tidy an old or hand-typed address
@@ -262,7 +267,7 @@
       appView = r.page;
       document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
       const pg = document.getElementById(r.page);
-      if (pg) { pg.style.display = r.page === 'chat' ? 'flex' : 'block'; pg.classList.add('active'); }
+      if (pg) { pg.style.display = 'block'; pg.classList.add('active'); }
       // Career detail has no sidebar entry of its own: light up where it was opened from.
       if (r.page === 'careerdetail') cdFrom = CD_BACK[r.params.from] ? r.params.from : null;
       const navPage = r.page === 'careerdetail' ? (cdFrom || 'results') : r.page;
@@ -280,8 +285,10 @@
       else if (r.page === 'careerdetail') cdRender(r.arg);
     }
 
-    // Sidebar and in-app buttons. From another page it opens app.html there.
+    // Sidebar and in-app buttons. From another page it opens app.html there;
+    // a screen with a file of its own (the chat) is navigated to instead.
     function navTo(pageId) {
+      if (ROUTES[pageId]) { show(pageId); return; }
       if (CURRENT_PAGE !== 'app') { location.href = routeTo('app') + appHash(pageId); return; }
       appGo(appDefaultHash(pageId));
     }
@@ -353,6 +360,7 @@
           cqInitPrint(appPrintTitle);
           break;
         }
+        case 'chat': syncUser(); break;
         case 'onboarding': obInit(); break;
         case 'evaluation': startEval(); break;
         case 'quiz': ctInit(); break;
@@ -1218,15 +1226,6 @@
       document.getElementById('chat-messages').innerHTML = '';
       chatShowWelcome(true);
       document.getElementById('chat-input').focus();
-    }
-    // Settings → Clear Chat History.
-    function clearChat(btn) {
-      const wrap = document.getElementById('chat-messages');
-      if (!wrap) return;
-      if (!wrap.children.length) { if (btn) btn.textContent = 'Nothing to clear'; return; }
-      if (!confirm('Clear all AI chat messages?')) return;
-      newChat();
-      if (btn) btn.textContent = 'Cleared ✓';
     }
     function sendSug(el) {
       document.getElementById('chat-input').value = el.querySelector('.chat-sug-text').textContent;
