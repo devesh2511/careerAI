@@ -108,11 +108,6 @@
       try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; }
     }
 
-    function systemTheme() {
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark' : 'light';
-    }
-
     function applyTheme(theme) {
       const t = theme === 'dark' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', t);
@@ -132,14 +127,9 @@
     function initTheme() {
       // The head snippet already set the attribute; this re-runs applyTheme
       // only to label the toggle buttons, which do not exist that early.
-      applyTheme(storedTheme() || document.documentElement.getAttribute('data-theme') || systemTheme());
-      // Follow the OS while the user has not made an explicit choice.
-      if (!storedTheme() && window.matchMedia) {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        const onChange = e => { if (!storedTheme()) applyTheme(e.matches ? 'dark' : 'light'); };
-        if (mq.addEventListener) mq.addEventListener('change', onChange);
-        else if (mq.addListener) mq.addListener(onChange);
-      }
+      // Light is the default until the user picks dark with the toggle; the
+      // OS colour-scheme preference is deliberately ignored.
+      applyTheme(storedTheme() || 'light');
     }
 
     // ── Screen switching → real page navigation ──
