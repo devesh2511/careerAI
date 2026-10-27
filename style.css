@@ -8337,6 +8337,11 @@ button.quiz-option {
   line-height: 1.5;
 }
 
+/* The same slot, saying something went right (e.g. "Passwords match.") */
+.form-error.is-ok {
+  color: var(--accent2-text);
+}
+
 .form-error:empty {
   display: none;
 }
@@ -8367,6 +8372,63 @@ button.quiz-option {
   margin-top: 8px;
   text-align: right;
   font-size: 0.7812rem;
+}
+
+/* Password input with a show/hide eye inside its right edge */
+.password-field {
+  position: relative;
+}
+
+.password-field .form-input {
+  padding-right: 44px;
+}
+
+/* Edge draws its own reveal eye; ours replaces it */
+.password-field .form-input::-ms-reveal {
+  display: none;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s var(--ease), background .15s var(--ease);
+}
+
+.password-toggle:hover {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.password-toggle .eye-closed,
+.password-toggle[aria-pressed="true"] .eye-open {
+  display: none;
+}
+
+.password-toggle[aria-pressed="true"] .eye-closed {
+  display: block;
 }
 
 .auth-subtitle {

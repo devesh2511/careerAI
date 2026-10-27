@@ -238,6 +238,8 @@
       });
       document.getElementById('adm-login-err').style.display = 'none';
       document.getElementById('adm-login-ok').style.display = 'none';
+      // A password left showing shouldn't still be showing when its form returns.
+      document.querySelectorAll('.password-toggle').forEach(b => togglePassword(b, true));
       const typed = document.getElementById('adm-email').value.trim();
       if (which === 'forgot') {
         const input = document.getElementById('adm-forgot-email');

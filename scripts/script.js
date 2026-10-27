@@ -425,7 +425,21 @@
       // The form on show is in the hash (#register, #forgot, #reset), so
       // Back steps from the reset form to forgot to login.
       window.addEventListener('popstate', () => authShow(authFromHash(), 'none'));
+      ['reg-password', 'reg-confirm'].forEach(id =>
+        document.getElementById(id).addEventListener('input', authCheckConfirm));
       authShow(authFromHash(), 'none');
+    }
+
+    // Live check under Re-enter password. Quiet while what's typed is still the
+    // start of the password; flags the first wrong character, confirms a match.
+    function authCheckConfirm() {
+      const pw = val('reg-password'), confirm = val('reg-confirm');
+      const input = document.getElementById('reg-confirm'), box = document.getElementById('reg-confirm-error');
+      const wrong = confirm !== '' && !pw.startsWith(confirm);
+      const match = confirm !== '' && confirm === pw;
+      input.classList.toggle('is-invalid', wrong);
+      box.classList.toggle('is-ok', match);
+      box.textContent = wrong ? "The passwords don't match." : match ? 'Passwords match.' : '';
     }
 
     function authFromHash() {
@@ -436,7 +450,7 @@
     // Clears the alert box and every per-field error inside one form.
     function authReset(form, alertId) {
       document.getElementById(alertId).textContent = '';
-      form.querySelectorAll('.form-error').forEach(e => { e.textContent = ''; });
+      form.querySelectorAll('.form-error').forEach(e => { e.textContent = ''; e.classList.remove('is-ok'); });
       form.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
     }
 
@@ -457,6 +471,10 @@
       e.preventDefault();
       const form = e.target, btn = document.getElementById('reg-btn');
       authReset(form, 'reg-alert');
+      // Caught here only: the API takes a single password and never sees this.
+      if (val('reg-password') !== val('reg-confirm')) {
+        return authFieldError('reg', 'reg-alert', { field: 'confirm', message: "The passwords don't match." });
+      }
       setBusy(btn, true);
       CareerAPI.auth.register({
         full_name: val('reg-full_name'), email: val('reg-email'),
@@ -503,6 +521,8 @@
       });
       document.getElementById('auth-tabs').style.display = which === 'forgot' || which === 'reset' ? 'none' : '';
       document.getElementById('login-ok').textContent = '';
+      // A password left showing shouldn't still be showing when its form returns.
+      document.querySelectorAll('.password-toggle').forEach(b => togglePassword(b, true));
       if (which === 'forgot') {
         authReset(document.getElementById('auth-forgot'), 'forgot-alert');
         const input = document.getElementById('forgot-email');
@@ -513,6 +533,15 @@
         document.getElementById('reset-to').textContent = authResetEmail;
         document.getElementById('reset-code').focus();
       }
+    }
+
+    // Eye button beside a password input: flips it between dots and plain text.
+    function togglePassword(btn, hide) {
+      const input = btn.parentElement.querySelector('input');
+      const show = hide ? false : input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', show);
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
     }
 
     // Puts err under its field when the form has one, else in the alert box.
