@@ -28,8 +28,14 @@
   // Same targets as careerapi_mock.js: the /api proxy on the deployed site
   // (first-party cookie), the API directly in local dev.
   const API_ORIGIN = 'https://careerapi.vercel.app';
-  const API_BASE = /^(localhost|127\.0\.0\.1|)$/.test(root.location ? root.location.hostname : '')
-    ? API_ORIGIN : '/api';
+  // Same rule (and the same localStorage.careerai_api_base override) as
+  // careerapi_mock.js.
+  const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\]|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}|[\w-]+\.local|)$/;
+  function apiBase() {
+    try { const o = localStorage.getItem('careerai_api_base'); if (o) return o; } catch (e) { }
+    return LOCAL_HOST.test(root.location ? root.location.hostname : '') ? API_ORIGIN : '/api';
+  }
+  const API_BASE = apiBase();
   const STUDENT_SESSION = 'careerai_session';   // careerapi_mock.js's "logged in" flag
 
   // ── Clock ───────────────────────────────────────────────────────────────
@@ -74,6 +80,8 @@
 
   // Career boards group by the career on the server. A student who took the
   // career quiz before it was sent there has it only in this tab's state.
+  // One the server refuses isn't resent on every getState() this page-load.
+  let careerFailed = null;
   function localCareer() {
     try {
       const s = JSON.parse(sessionStorage.getItem('careerai_state')) || {};
@@ -93,9 +101,9 @@
         // Assume the server stamped server_time halfway through the round trip.
         clockOffset = Date.parse(st.server_time) - (sent + Date.now()) / 2;
         const career = !st.career && localCareer();
-        if (!career) return st;
+        if (!career || career === careerFailed) return st;
         return http('PUT', '/me/career', { career: career })
-          .then(() => Object.assign(st, { career: career }), () => st);
+          .then(() => Object.assign(st, { career: career }), () => { careerFailed = career; return st; });
       });
     },
 

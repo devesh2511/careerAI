@@ -64,6 +64,7 @@
     let ctRun = null;   // { contest, started_at, questions, answers }
     let ctIdx = 0;
     let ctOnReview = false;   // the "Ready to submit?" screen is up
+    let ctSubmitting = false; // a submit is in flight: answers are frozen
 
     function ctRoot() { return document.getElementById('ct-root'); }
     function ctSet(html) {
@@ -127,7 +128,7 @@
       ctLabel('Contest #' + c.number);
       ctSet(
         '<div class="quiz-card">' +
-        '<span class="badge badge-green ct-live">● Live now</span>' +
+        '<span class="badge badge-green">● Live now</span>' +
         '<h2 class="ct-h">Weekly Aptitude Contest #' + c.number + '</h2>' +
         '<p class="ct-p">Closes <strong>' + ctWhen(c.closes_at) + '</strong> · <span data-until="' + c.closes_at + '"></span> left</p>' +
         '<ul class="ct-rules">' +
@@ -184,7 +185,7 @@
         if (m && +m[1] >= 1 && +m[1] <= run.questions.length) ctIdx = +m[1] - 1;
         if (location.hash === '#/review') ctConfirm(); else ctQuestion();
       }).catch(err => {
-        if (err.code === 'already_submitted' || err.code === 'not_open') ctInit();
+        if (err.code === 'already_submitted' || err.code === 'not_open') { ctEnd(); ctInit(); }
         else ctError(err);
       });
     }
@@ -223,26 +224,31 @@
     // Browser Back mid-attempt: review screen → last question → the one before.
     function ctStepBack() {
       if (!ctRun) return false;
+      if (ctSubmitting) { stepSync(true, '#/review'); return true; }   // stay put, keep the guard
       if (ctOnReview) { ctGo(ctRun.questions.length - 1); return true; }
       if (ctIdx > 0) { ctGo(ctIdx - 1); return true; }
       return false;
     }
 
     function ctGo(i) {
-      if (!ctRun || i < 0 || i >= ctRun.questions.length) return;
+      if (!ctRun || ctSubmitting || i < 0 || i >= ctRun.questions.length) return;
       ctIdx = i;
       ctQuestion();
     }
 
     // The answer is shown as picked straight away and saved in the
     // background; a failed save is rolled back so the screen never lies.
+    // A failure that a later tap (or the end of the attempt) has overtaken
+    // is left alone: the later save reports for itself.
     function ctPick(i) {
-      const q = ctRun.questions[ctIdx], prev = ctRun.answers[q.id];
-      ctRun.answers[q.id] = i;
+      if (!ctRun || ctSubmitting) return;
+      const run = ctRun, q = run.questions[ctIdx], prev = run.answers[q.id];
+      run.answers[q.id] = i;
       ctQuestion();
-      ContestAPI.saveAnswer(ctRun.contest.id, q.id, i).catch(err => {
-        if (prev === undefined) delete ctRun.answers[q.id]; else ctRun.answers[q.id] = prev;
-        if (err.code === 'not_open' || err.code === 'already_submitted') { alert(err.message); ctInit(); }
+      ContestAPI.saveAnswer(run.contest.id, q.id, i).catch(err => {
+        if (ctRun !== run || run.answers[q.id] !== i) return;
+        if (prev === undefined) delete run.answers[q.id]; else run.answers[q.id] = prev;
+        if (err.code === 'not_open' || err.code === 'already_submitted') { alert(err.message); ctEnd(); ctInit(); }
         else { alert('Could not save your answer — please pick it again.'); ctQuestion(); }
       });
     }
@@ -277,18 +283,26 @@
     function ctSubmit() {
       const btn = document.getElementById('ct-submit');
       if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+      ctSubmitting = true;
       ContestAPI.submitAttempt(ctRun.contest.id).then(res => {
         ctSubmitted(ctRun.contest, { submitted_at: res.submitted_at, time_taken_s: res.time_taken_s });
       }).catch(err => {
-        if (err.code === 'not_open') ctInit();
-        else { alert(err.message); if (btn) { btn.disabled = false; btn.textContent = 'Submit contest'; } }
+        if (err.code === 'not_open') { ctEnd(); ctInit(); }
+        else { ctSubmitting = false; alert(err.message); if (btn) { btn.disabled = false; btn.textContent = 'Submit contest'; } }
       });
     }
 
-    function ctSubmitted(c, a) {
+    // The attempt is over (submitted, or closed under it): drop it so the
+    // browser's Back can't redraw one of its questions.
+    function ctEnd() {
       ctRun = null;
       ctOnReview = false;
+      ctSubmitting = false;
       stepSync(false, location.pathname + location.search);  // no question to come back to
+    }
+
+    function ctSubmitted(c, a) {
+      ctEnd();
       ctLabel('Contest #' + c.number);
       const took = a.time_taken_s != null ? a.time_taken_s
         : Math.round((Date.parse(a.submitted_at) - Date.parse(a.started_at)) / 1000);
@@ -362,13 +376,13 @@
     let lbScope = 'global';   // 'global' | 'career'
     let lbCareer = null;      // the career board shown when lbScope is 'career'
     let lbPeriod = 'week';    // 'week' (latest closed contest) | 'live' (all contests)
-    let lbData = null;        // { state, week, live, history }
+    let lbData = null;        // { state, week, live, history, scope, career }
     let lbSeq = 0;            // drops responses from superseded requests
 
     function lbRender() {
       const root = document.getElementById('lb-root');
       if (!root || typeof ContestAPI === 'undefined') return;
-      const seq = ++lbSeq;
+      const seq = ++lbSeq, scope = lbScope, career = lbCareer;
       if (!lbData) root.innerHTML = '<div class="ct-loading">Loading leaderboards…</div>';
       Promise.all([
         ContestAPI.getState(),
@@ -377,7 +391,7 @@
         ContestAPI.getHistory()
       ]).then(([state, week, live, history]) => {
         if (seq !== lbSeq) return;
-        lbData = { state, week, live, history };
+        lbData = { state, week, live, history, scope, career };
         lbDraw();
       }).catch(err => {
         if (seq !== lbSeq) return;
@@ -392,7 +406,12 @@
 
     function lbSetScope(s) { if (s !== lbScope) { lbScope = s; lbCareer = null; lbRender(); } }
     function lbSetCareer(c) { if (lbScope !== 'career' || c !== lbCareer) { lbScope = 'career'; lbCareer = c; lbRender(); } }
-    function lbSetPeriod(p) { if (p !== lbPeriod) { lbPeriod = p; lbDraw(); } }
+    // While another board is still loading, its render picks up the new period.
+    function lbSetPeriod(p) {
+      if (p === lbPeriod) return;
+      lbPeriod = p;
+      if (lbData && lbData.scope === lbScope && lbData.career === lbCareer) lbDraw();
+    }
 
     function lbDraw() {
       const root = document.getElementById('lb-root');
@@ -415,7 +434,9 @@
         '</div>' +
         lbBody() +
         lbHistory();
-      ctStartTicker(lbRender);
+      // Refresh at the deadline only if the board is still on screen; coming
+      // back to #/contests renders it afresh (syncProgress).
+      ctStartTicker(() => { if (root.closest('.page.active')) lbRender(); });
     }
 
     // The career list is RIASEC_CAREERS (GET /careers); the server's emoji is the

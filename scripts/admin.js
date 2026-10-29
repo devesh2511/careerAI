@@ -44,6 +44,13 @@
       const d = new Date(t + 5.5 * 3600e3);
       return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
     }
+    // ISO instant of the start of an IST day 'YYYY-MM-DD', plus whole days.
+    // '' if it isn't a real date (e.g. a 5-digit year), so the API reports it
+    // the way it reports a missing date instead of toISOString() throwing.
+    function admIstDayIso(ymd, days) {
+      const d = new Date(Date.parse(ymd + 'T00:00:00+05:30') + (days || 0) * 86400e3);
+      return isNaN(d) ? '' : d.toISOString();
+    }
     function admNow() { return window.ContestAPI ? ContestAPI.now() : Date.now(); }
 
     // ── Toast ──
@@ -88,8 +95,8 @@
     }
     function admBusy(btn, on, label) {
       if (!btn) return;
-      if (on) { btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.textContent = label || 'Saving…'; }
-      else { btn.disabled = false; if (btn.dataset.label) btn.innerHTML = btn.dataset.label; }
+      if (on) { btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = label || 'Saving…'; }
+      else { btn.disabled = false; btn.removeAttribute('aria-busy'); if (btn.dataset.label) btn.innerHTML = btn.dataset.label; }
     }
 
     // ── Modal ──
@@ -117,7 +124,8 @@
         if (btn.disabled) return;
         admClearErrors(form);
         admBusy(btn, true, opts.busy || 'Saving…');
-        Promise.resolve(opts.onSubmit(form)).then(ok => {
+        // Inside .then so a synchronous throw lands in .catch, not on a stuck button.
+        Promise.resolve().then(() => opts.onSubmit(form)).then(ok => {
           if (ok !== false) admCloseModal();
           else admBusy(btn, false);
         }).catch(err => { admBusy(btn, false); admFormError(form, err); });
@@ -169,7 +177,7 @@
 
     function admTabs(items, active, onclickFn) {
       return '<div class="lb-tabs adm-tabs" role="tablist">' + items.map(t =>
-        '<button class="filter-chip' + (t.key === active ? ' active' : '') + '" role="tab" aria-selected="' + (t.key === active) + '" ' +
+        '<button class="filter-chip' + (t.key === active ? ' active' : '') + '" role="tab" aria-selected="' + (t.key === active) + '" data-key="' + t.key + '" ' +
         'onclick="' + onclickFn + '(\'' + t.key + '\')">' + admEsc(t.label) + '</button>').join('') + '</div>';
     }
     function admTable(head, rows, empty) {
@@ -203,7 +211,7 @@
     }
 
     function admLogout() {
-      CareerAPI.admin.logout().finally(() => { location.replace('admin_login.html'); });
+      CareerAPI.admin.logout().catch(() => { }).then(() => { location.replace('admin_login.html'); });
     }
 
     // ── Forgot password ──
@@ -355,7 +363,7 @@
       return { view: parts[0] || 'overview', id: parts[1] || null, sub: parts[2] || null };
     }
     function admRoute() {
-      if (!admRmLeaveOk()) return;
+      if (!admRmLeaveOk() || !admEditorLeaveOk()) return;
       const r = admParse();
       document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.toggle('active', n.dataset.view === r.view));
       admCloseModal();
@@ -378,7 +386,10 @@
     }
     function admFail(seq, err) {
       if (admAuthGuard(err)) return;
-      admPaint(seq, '<div class="adm-error-box">' + admEsc(err && err.message || 'Could not load this page.') + '</div>');
+      admPaint(seq, admErrorHtml(err));
+    }
+    function admErrorHtml(err) {
+      return '<div class="adm-error-box">' + admEsc(err && err.message || 'Could not load this page.') + '</div>';
     }
     function admTopbar(title, sub, actions, crumb) {
       return (crumb ? '<div class="adm-crumb">' + crumb + '</div>' : '') +
@@ -439,7 +450,7 @@
         if (admContestTab === 'active') admContestCache = list;
         const rows = list.map(c => {
           const actions = admContestTab === 'deleted'
-            ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admRestore(\'contests\',' + c.id + ',\'Contest #' + c.id + '\')">Restore</button>' +
+            ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admRestore(\'contests\',' + c.id + ',\'Contest #' + c.id + '\',this)">Restore</button>' +
               (c.locked ? '' : '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();admDeleteContest(' + c.id + ',false,true)">Hard delete</button>')
             : '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admGo(\'contests/' + c.id + '\')">' + (c.locked ? 'View' : 'Edit') + '</button>' +
               '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();admDeleteContest(' + c.id + ',' + c.locked + ',false)">Delete</button>';
@@ -499,31 +510,42 @@
         kind: 'contest', name: 'Contest #' + id, hardOnly: hardOnly, hardDisabled: locked
           ? 'This contest has opened, so students have attempts on it. It can only be soft-deleted.' : null,
         run: mode => CareerAPI.admin.contests.remove(id, mode),
-        done: () => { if (admParse().id) admGo('contests'); else admRoute(); }
+        // Its unsaved question edits went with it, so don't ask about them on the way out.
+        done: () => { admDirty.clear(); if (admParse().id) admGo('contests'); else admRoute(); }
       });
     }
 
     // ── Contest editor: the "Create Contest" screen ──
     let admEditor = null;           // the contest being edited (with questions)
     const admDirty = new Set();     // positions with unsaved edits
+    let admEditorHash = '';         // the editor's hash, to ask before leaving it unsaved
 
     function admContestEditor(r, seq) {
       admDirty.clear();
       CareerAPI.admin.contests.get(r.id).then(c => {
-        admEditor = c;
         if (!admPaint(seq, admEditorHtml(c))) return;
+        admEditor = c;
+        admEditorHash = location.hash;
         admEditorSync();
       }).catch(err => admFail(seq, err));
+    }
+
+    // Ask before leaving the editor with unsaved question edits (as admRmLeaveOk does).
+    function admEditorLeaveOk() {
+      if (!admDirty.size || location.hash === admEditorHash) return true;
+      if (confirm('Some questions have unsaved changes. Leave without saving?')) { admDirty.clear(); return true; }
+      history.replaceState(null, '', admEditorHash);
+      return false;
     }
 
     function admEditorHtml(c) {
       const crumb = '<a href="#/contests">Contests</a> / #' + c.id;
       const sub = 'Opens ' + admEsc(admWhen(c.opens_at)) + ' · closes ' + admEsc(admWhen(c.closes_at));
       let actions = '';
-      if (c.is_deleted) actions = '<button class="btn btn-primary btn-sm" onclick="admRestore(\'contests\',' + c.id + ',\'Contest #' + c.id + '\')">Restore</button>';
+      if (c.is_deleted) actions = '<button class="btn btn-primary btn-sm" onclick="admRestore(\'contests\',' + c.id + ',\'Contest #' + c.id + '\',this)">Restore</button>';
       else {
         if (!c.locked && c.status === 'draft') actions += '<button class="btn btn-primary btn-sm" id="adm-schedule" onclick="admSchedule()">Schedule contest</button>';
-        if (!c.locked && c.status === 'scheduled') actions += '<button class="btn btn-ghost btn-sm" onclick="admUnschedule()">Move back to draft</button>';
+        if (!c.locked && c.status === 'scheduled') actions += '<button class="btn btn-ghost btn-sm" onclick="admUnschedule(this)">Move back to draft</button>';
         actions += '<button class="btn btn-danger btn-sm" onclick="admDeleteContest(' + c.id + ',' + c.locked + ',false)">Delete</button>';
       }
       let html = admTopbar('Contest #' + c.id + ' ' + admContestBadges(c), sub, actions, crumb);
@@ -595,7 +617,8 @@
       }
       const sch = document.getElementById('adm-schedule');
       if (sch) {
-        sch.disabled = n !== 5;
+        // Not while a schedule request is in flight (admBusy owns it then).
+        if (sch.getAttribute('aria-busy') !== 'true') sch.disabled = n !== 5;
         sch.title = n === 5 ? '' : 'Add all 5 questions first';
       }
     }
@@ -605,6 +628,7 @@
       const pos = Number(form.dataset.pos);
       const d = admFormData(form);
       const btn = form.querySelector('button[type=submit]');
+      const seq = admRenderSeq, sent = JSON.stringify(d);
       admClearErrors(form);
       admBusy(btn, true);
       CareerAPI.admin.contests.saveQuestion(admEditor.id, pos, {
@@ -612,9 +636,13 @@
         correct_index: d.correct_index == null ? null : Number(d.correct_index), explanation: d.explanation
       }).then(c => {
         admBusy(btn, false);
-        admEditor = c;
-        admDirty.delete(pos);
-        admEditorSync();
+        // Only if this contest's page is still the one on show.
+        if (seq === admRenderSeq) {
+          admEditor = c;
+          // Edits typed while it saved are still unsaved.
+          if (JSON.stringify(admFormData(form)) === sent) admDirty.delete(pos);
+          admEditorSync();
+        }
         admToast('Question ' + pos + ' saved.');
       }).catch(err => {
         admBusy(btn, false);
@@ -637,11 +665,13 @@
         box.textContent = err.message; box.style.display = 'block';
       });
     }
-    function admUnschedule() {
-      CareerAPI.admin.contests.unschedule(admEditor.id).then(() => {
-        admToast('Contest #' + admEditor.id + ' moved back to draft.');
+    function admUnschedule(btn) {
+      const id = admEditor.id;
+      admBusy(btn, true);
+      CareerAPI.admin.contests.unschedule(id).then(() => {
+        admToast('Contest #' + id + ' moved back to draft.');
         admRoute();
-      }).catch(err => { if (!admAuthGuard(err)) alert(err.message); });
+      }).catch(err => { admBusy(btn, false); if (!admAuthGuard(err)) alert(err.message); });
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -660,7 +690,15 @@
     let admRmDirty = false;
     let admRmHash = '';             // the editor's hash, to ask before leaving it unsaved
 
-    function admRmTabSet(t) { admRmTab = t; admRmRefresh(); }
+    // Only the table re-draws, so move the tab highlight here.
+    function admRmTabSet(t) {
+      admRmTab = t;
+      admView().querySelectorAll('.adm-tabs .filter-chip').forEach(b => {
+        b.classList.toggle('active', b.dataset.key === t);
+        b.setAttribute('aria-selected', b.dataset.key === t);
+      });
+      admRmRefresh();
+    }
     function admRmSearch(value) { admRmQuery = value; admRmRefresh(); }
 
     function admRoadmaps(r, seq) {
@@ -828,16 +866,20 @@
     function admRmSave() {
       const btn = document.getElementById('adm-rm-save');
       const steps = admRm.steps.map(s => ({ period: s.period.trim(), title: s.title.trim(), actions: admRmLines(s.actionsText) }));
+      const seq = admRenderSeq;
       admRmError('');
       admBusy(btn, true);
       CareerAPI.admin.roadmaps.save(admRm.career.title, steps, admRm.roadmap ? admRm.roadmap.version : null).then(res => {
+        admToast('Roadmap saved. Students see it now.');
+        // Left the editor meanwhile: admRm and the page may be another view's now.
+        if (seq !== admRenderSeq) return;
         admRmLoad(res);
         admView().innerHTML = admRmHtml();
         admRmSync();
-        admToast('Roadmap saved. Students see it now.');
       }).catch(err => {
         admBusy(btn, false);
         if (admAuthGuard(err)) return;
+        if (seq !== admRenderSeq) { alert(err.message); return; }
         admRmError(err.message, err.code === 'roadmap_changed');
       });
     }
@@ -866,7 +908,7 @@
       history.replaceState(null, '', admRmHash);
       return false;
     }
-    window.addEventListener('beforeunload', e => { if (admRmDirty) { e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('beforeunload', e => { if (admRmDirty || admDirty.size) { e.preventDefault(); e.returnValue = ''; } });
 
     // ══════════════════════════════════════════════════════════════
     // SCHOOLS
@@ -874,6 +916,7 @@
     let admSchoolTab = 'active';
     let admSchoolQuery = '';
     let admSearchTimer = null;
+    let admListSeq = 0;             // drops search results a newer search has replaced
 
     function admPlanBadge(s) {
       if (!s.subscription) return '<span class="badge badge-orange">No plan</span>';
@@ -896,16 +939,19 @@
     function admRefreshList(kind) {
       const slot = document.getElementById('adm-list');
       if (!slot) return;
-      const seq = admRenderSeq;
+      const seq = admRenderSeq, req = ++admListSeq;
+      const latest = () => seq === admRenderSeq && req === admListSeq;
       const p = kind === 'schools' ? admSchoolRows() : admStudentRows();
-      p.then(html => { if (seq === admRenderSeq) slot.innerHTML = html; }).catch(err => admFail(seq, err));
+      // A failed search shows its error in the table's place, keeping the search box.
+      p.then(html => { if (latest()) slot.innerHTML = html; })
+        .catch(err => { if (!admAuthGuard(err) && latest()) slot.innerHTML = admErrorHtml(err); });
     }
 
     function admSchoolRows() {
       return CareerAPI.admin.schools.list({ deleted: admSchoolTab === 'deleted', q: admSchoolQuery }).then(list => {
         const rows = list.map(s => {
           const actions = admSchoolTab === 'deleted'
-            ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admRestore(\'schools\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ')">Restore</button>' +
+            ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admRestore(\'schools\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ',this)">Restore</button>' +
               '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();admDeleteSchool(' + s.id + ',true)">Hard delete</button>'
             : '';
           return '<tr class="adm-click" onclick="admGo(\'schools/' + s.id + '\')"><td><b>' + admEsc(s.name) + '</b><div class="adm-sub">' + admEsc(s.board || '—') + '</div></td>' +
@@ -973,7 +1019,7 @@
       const tab = ['details', 'roster', 'subscriptions'].includes(r.sub) ? r.sub : 'details';
       return CareerAPI.admin.schools.get(r.id).then(s => {
         const actions = s.is_deleted
-          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'schools\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ')">Restore</button>' +
+          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'schools\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ',this)">Restore</button>' +
             '<button class="btn btn-danger btn-sm" onclick="admDeleteSchool(' + s.id + ',true,' + admEsc(JSON.stringify(s.name)) + ')">Hard delete</button>'
           : '<button class="btn btn-danger btn-sm" onclick="admDeleteSchool(' + s.id + ',false,' + admEsc(JSON.stringify(s.name)) + ')">Delete school</button>';
         const head = admTopbar(admEsc(s.name),
@@ -1047,13 +1093,20 @@
       const text = document.getElementById('adm-roster-text').value;
       const btn = e.target.querySelector('button[type=submit]');
       if (!text.trim()) { document.getElementById('adm-roster-text').focus(); return; }
+      const seq = admRenderSeq;     // the page the upload started on; don't paint over another
       admBusy(btn, true, 'Uploading…');
       CareerAPI.admin.roster.upload(schoolId, text).then(res => {
         // Re-draw the list, then show what happened under the upload box.
-        admSchoolDetail({ id: schoolId, sub: 'roster' }, admRenderSeq).then(painted => {
+        admSchoolDetail({ id: schoolId, sub: 'roster' }, seq).then(painted => {
           const slot = painted && document.getElementById('adm-roster-result');
           if (slot) slot.innerHTML = admRosterResult(res);
-        }).catch(err => admFail(admRenderSeq, err));
+        }).catch(err => {
+          // The upload itself worked: keep this page and its summary rather than an error page.
+          if (admAuthGuard(err) || seq !== admRenderSeq) return;
+          admBusy(btn, false);
+          const slot = document.getElementById('adm-roster-result');
+          if (slot) slot.innerHTML = admRosterResult(res);
+        });
         admToast(res.added.length + ' email' + (res.added.length === 1 ? '' : 's') + ' added.');
       }).catch(err => { admBusy(btn, false); admFormError(e.target, err); });
     }
@@ -1104,8 +1157,8 @@
         onSubmit: form => {
           const d = admFormData(form);
           // Dates are IST days; the plan ends at the start of the day after the last day covered.
-          const start = d.starts_at ? new Date(Date.parse(d.starts_at + 'T00:00:00+05:30')).toISOString() : '';
-          const end = d.ends_at ? new Date(Date.parse(d.ends_at + 'T00:00:00+05:30') + 86400e3).toISOString() : '';
+          const start = admIstDayIso(d.starts_at);
+          const end = admIstDayIso(d.ends_at, 1);
           return CareerAPI.admin.subscriptions.create(schoolId, {
             starts_at: start, ends_at: end, amount_rupees: d.amount_rupees === '' ? NaN : d.amount_rupees,
             payment_provider: d.payment_provider, payment_ref: d.payment_ref
@@ -1131,7 +1184,7 @@
         const rows = list.map(s => {
           const n = admEsc(JSON.stringify(s.full_name));
           const actions = admStudentTab === 'deleted'
-            ? '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ')">Restore</button>' +
+            ? '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ',this)">Restore</button>' +
               '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',true)">Hard delete</button>'
             : '<button class="btn btn-ghost btn-sm" onclick="admGo(\'students/' + s.id + '\')">Payments</button>' +
               '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',false)">Delete</button>';
@@ -1187,7 +1240,7 @@
       return Promise.all([CareerAPI.admin.students.get(r.id), CareerAPI.admin.students.payments(r.id)]).then(([s, rows]) => {
         const n = admEsc(JSON.stringify(s.full_name));
         const actions = s.is_deleted
-          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ')">Restore</button>' +
+          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ',this)">Restore</button>' +
             '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',true)">Hard delete</button>'
           : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',false)">Delete student</button>';
         const t = admNow();
@@ -1218,7 +1271,7 @@
       const p = String(start || '').split('-').map(Number);
       if (p.length !== 3 || p.some(isNaN)) return '';
       const d = new Date(Date.UTC(p[0], p[1] - 1 + months, p[2] - 1));
-      return d.toISOString().slice(0, 10);
+      return isNaN(d) ? '' : d.toISOString().slice(0, 10);
     }
 
     function admStudentPaymentModal(studentId) {
@@ -1246,8 +1299,8 @@
         onSubmit: form => {
           const d = admFormData(form);
           // Dates are IST days; the plan ends at the start of the day after the last day covered.
-          const start = d.starts_at ? new Date(Date.parse(d.starts_at + 'T00:00:00+05:30')).toISOString() : '';
-          const end = d.ends_at ? new Date(Date.parse(d.ends_at + 'T00:00:00+05:30') + 86400e3).toISOString() : '';
+          const start = admIstDayIso(d.starts_at);
+          const end = admIstDayIso(d.ends_at, 1);
           return CareerAPI.admin.students.recordPayment(studentId, {
             plan: d.plan, starts_at: start, ends_at: end, amount_rupees: d.amount_rupees,
             payment_provider: d.payment_provider, payment_ref: d.payment_ref
@@ -1268,7 +1321,7 @@
           const n = admEsc(JSON.stringify(a.full_name));
           let actions = '';
           if (a.is_me) actions = '<span class="badge badge-purple">You</span>';
-          else if (admAdminTab === 'deleted') actions = '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'admins\',\'' + a.id + '\',' + n + ')">Restore</button>' +
+          else if (admAdminTab === 'deleted') actions = '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'admins\',\'' + a.id + '\',' + n + ',this)">Restore</button>' +
             '<button class="btn btn-danger btn-sm" onclick="admDeleteAdmin(\'' + a.id + '\',' + n + ',true)">Hard delete</button>';
           else actions = '<button class="btn btn-danger btn-sm" onclick="admDeleteAdmin(\'' + a.id + '\',' + n + ',false)">Delete</button>';
           return '<tr><td><b>' + admEsc(a.full_name) + '</b></td><td>' + admEsc(a.email) + '</td>' +
@@ -1364,9 +1417,10 @@
       btn.textContent = mode === 'hard' ? 'Delete permanently' : 'Delete';
     }
 
-    function admRestore(kind, id, name) {
+    function admRestore(kind, id, name, btn) {
+      admBusy(btn, true, 'Restoring…');
       CareerAPI.admin[kind].restore(id).then(() => { admToast(name + ' restored.'); admRoute(); })
-        .catch(err => { if (!admAuthGuard(err)) alert(err.message); });
+        .catch(err => { admBusy(btn, false); if (!admAuthGuard(err)) alert(err.message); });
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -1377,6 +1431,13 @@
         // Already logged in? Skip the form.
         CareerAPI.admin.me().then(() => { location.replace('admin.html'); }).catch(() => { });
         window.addEventListener('popstate', () => admShowAuth(admAuthFromHash(), 'none'));
+        // The code box holds 6 characters, but a pasted " 123456" has to lose its
+        // spaces first (a maxlength would cut it to " 12345").
+        const code = document.getElementById('adm-reset-code');
+        code.addEventListener('input', () => {
+          const v = code.value.replace(/\s+/g, '').slice(0, 6);
+          if (v !== code.value) code.value = v;
+        });
         if (admAuthFromHash() !== 'login') admShowAuth(admAuthFromHash(), 'none');
         return;
       }

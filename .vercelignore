@@ -1,2 +1,4 @@
 *.har
 .claude
+# Unit tests and fixtures are for npm test, not the deployed site.
+tests/

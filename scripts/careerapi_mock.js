@@ -3,40 +3,21 @@
 //
 // Every screen outside the weekly contest talks to the backend ONLY through
 // window.CareerAPI. Each method returns a Promise shaped like the HTTP
-// endpoint in careerAPI/docs/database-schema.md §11, so swapping this mock
-// for real fetch() calls is a change to this file alone.
+// endpoint in careerAPI/docs/database-schema.md §11.
 //
-// LIVE: the endpoints the backend has built call the production API at
-// API_BASE (session = httpOnly cookie, so fetch uses credentials: 'include'):
-//   POST /auth/register   POST /auth/login   POST /auth/logout
-//   POST /auth/forgot-password   POST /auth/reset-password
-//   GET  /me   PUT /me    GET  /me/access      PUT /me/career    PUT /me/school
-//   GET  /me/profile      PUT  /me/profile
-//   GET  /roadmaps        GET  /roadmap?career=     GET /careers
-//   GET  /career-news?career=
-//   every /admin/* endpoint (CareerAPI.admin), with its own admin cookie
-// As more endpoints ship, move their methods from reply(...) to http(...).
+// Every method is live: it calls the production API at API_BASE (session =
+// httpOnly cookie, so fetch uses credentials: 'include'). The file keeps its
+// old name so no page has to change its <script> tag.
 //
 // Payments happen outside the website: an admin records each one in the
 // admin panel, and that is what grants access. There is no checkout here.
 //
 // Students can't delete their own account; only an admin can
-// (DELETE /admin/students/:id). No endpoint uses the localStorage mock
-// server below any more.
+// (DELETE /admin/students/:id).
 //
 // Errors reject with an Error carrying .status (HTTP) and .code (API code).
 //
-// Demo accounts — MOCK ONLY: student login is live now, so these students
-// don't exist on production; register a real account instead.
-// (password for all students: password123)
-//   ananya.sharma@dps.edu.in  School ID DPS-RKP, on roster, school paid → access
-//   priya.k@kvpowai.edu.in    School ID KV-POWAI, school hasn't paid    → paywall
-//   rahul.verma@gmail.com     no school                                 → paywall
-//   arjun.nair@gmail.com      paid individually                         → access
-// Admins are live too: the first one is created with `npm run create-admin`
-// in the careerAPI repo.
-//
-// CareerAPI.resetDemo() in the console restores the seed data.
+// Admins are created with `npm run create-admin` in the careerAPI repo.
 // ══════════════════════════════════════════════════════════════
 (function (root) {
   'use strict';
@@ -47,14 +28,18 @@
   // otherwise). Local dev (Live Server, file://) has no proxy, so it calls the
   // API directly.
   const API_ORIGIN = 'https://careerapi.vercel.app';
-  const API_BASE = /^(localhost|127\.0\.0\.1|)$/.test(root.location ? root.location.hostname : '')
-    ? API_ORIGIN : '/api';
+  // Local means this machine, a LAN address (a phone on the same Wi-Fi) or
+  // file://; the API's CORS_ORIGINS has to list that origin. `vercel dev`
+  // does have the proxy: run localStorage.careerai_api_base = '/api' there
+  // to keep the cookie first-party.
+  const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\]|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}|[\w-]+\.local|)$/;
+  function apiBase() {
+    try { const o = localStorage.getItem('careerai_api_base'); if (o) return o; } catch (e) { }
+    return LOCAL_HOST.test(root.location ? root.location.hostname : '') ? API_ORIGIN : '/api';
+  }
+  const API_BASE = apiBase();
 
-  const DB_KEY = 'careerai_api_mock';
   const STUDENT_SESSION = 'careerai_session';
-  const DB_VERSION = 1;
-  const LATENCY = 150;                       // fake network delay, ms
-  const HOUR = 3600e3, DAY = 24 * HOUR;
 
   // Prices are placeholders until the business sets them.
   const PLANS = {
@@ -62,109 +47,17 @@
     student_annual: { plan: 'student_annual', label: 'Annual', amount_paise: 149900, months: 12 }
   };
 
-  // Server time when contest_api.js is loaded (it syncs with the API).
-  function now() { return root.ContestAPI ? root.ContestAPI.now() : Date.now(); }
-  function iso(t) { return new Date(t).toISOString(); }
-  function addMonths(t, m) { const d = new Date(t); d.setUTCMonth(d.getUTCMonth() + m); return d.getTime(); }
-
-  // ── Storage ─────────────────────────────────────────────────────────────
-  let db = null;
-  function load() {
-    if (db) return db;
-    try { db = JSON.parse(localStorage.getItem(DB_KEY)); } catch (e) { db = null; }
-    if (!db || db.v !== DB_VERSION) { db = seed(); save(); }
-    return db;
-  }
-  function save() { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) { } }
-  function nextId(table) { load(); db.seq[table] = (db.seq[table] || 0) + 1; return db.seq[table]; }
-  function uuid() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0;
-      return (c === 'x' ? r : (r & 3 | 8)).toString(16);
-    });
-  }
   function sessionGet(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
   function sessionSet(key, v) { try { v == null ? sessionStorage.removeItem(key) : sessionStorage.setItem(key, v); } catch (e) { } }
 
-  // ── Seed data ───────────────────────────────────────────────────────────
-  function seed() {
-    const t = Date.now();
-    const d = {
-      v: DB_VERSION, seq: {}, schools: [], roster: [], subscriptions: [],
-      students: [], admins: []
-    };
-    db = d;
-    const ts = iso(t - 30 * DAY);
-    const admin = {
-      id: uuid(), email: 'admin@careerai.in', full_name: 'Meera Iyer', password: 'admin123',
-      last_login_at: null, is_deleted: false, deleted_at: null, created_at: ts
-    };
-    d.admins.push(admin,
-      { id: uuid(), email: 'karan@careerai.in', full_name: 'Karan Malhotra', password: 'admin123',
-        last_login_at: iso(t - 3 * DAY), is_deleted: false, deleted_at: null, created_at: ts });
-
-    function school(o) {
-      const s = Object.assign({
-        id: nextId('schools'), udise_code: null, board: 'CBSE', status: 'active',
-        contact_phone: null, created_by: admin.id, is_deleted: false, deleted_at: null,
-        created_at: ts, updated_at: ts
-      }, o);
-      d.schools.push(s);
-      return s;
-    }
-    const dps = school({ name: 'Delhi Public School, R.K. Puram', school_code: 'DPS-RKP', udise_code: '07050117501',
-      city: 'New Delhi', state: 'Delhi', contact_name: 'Dr. Sunita Rao', contact_email: 'principal@dpsrkp.net', contact_phone: '+91 11 2617 1265' });
-    const kv = school({ name: 'Kendriya Vidyalaya, IIT Powai', school_code: 'KV-POWAI', city: 'Mumbai', state: 'Maharashtra',
-      contact_name: 'Mr. Anil Deshmukh', contact_email: 'kvpowai@kvs.gov.in' });
-    school({ name: 'St. Xavier\'s High School', school_code: 'SXHS-BLR', board: 'ICSE', city: 'Bengaluru', state: 'Karnataka',
-      status: 'suspended', contact_name: 'Fr. Thomas', contact_email: 'office@sxhs.edu.in' });
-
-    ['ananya.sharma@dps.edu.in', 'rohan.mehta@dps.edu.in', 'isha.gupta@dps.edu.in', 'kabir.singh@dps.edu.in']
-      .forEach(e => d.roster.push({ id: nextId('roster'), school_id: dps.id, email: e, added_by: admin.id, created_at: ts }));
-    ['priya.k@kvpowai.edu.in', 'aditya.patil@kvpowai.edu.in']
-      .forEach(e => d.roster.push({ id: nextId('roster'), school_id: kv.id, email: e, added_by: admin.id, created_at: ts }));
-
-    // School plans run for an academic year, 1 Apr → 1 Apr IST.
-    d.subscriptions.push(sub({ payer_type: 'school', school_id: dps.id, plan: 'school_annual',
-      starts_at: '2026-03-31T18:30:00.000Z', ends_at: '2027-03-31T18:30:00.000Z', amount_paise: 15000000,
-      status: 'active', payment_provider: 'invoice', payment_ref: 'INV-2026-0012' }));
-    d.subscriptions.push(sub({ payer_type: 'school', school_id: kv.id, plan: 'school_annual',
-      starts_at: '2025-03-31T18:30:00.000Z', ends_at: '2026-03-31T18:30:00.000Z', amount_paise: 6000000,
-      status: 'active', payment_provider: 'invoice', payment_ref: 'INV-2025-0031' }));
-
-    function student(o) {
-      const s = Object.assign({
-        id: uuid(), password: 'password123', school_id: null, current_career: null,
-        is_deleted: false, deleted_at: null, created_at: ts
-      }, o);
-      d.students.push(s);
-      return s;
-    }
-    student({ email: 'ananya.sharma@dps.edu.in', full_name: 'Ananya Sharma', school_id: dps.id, current_career: 'UX Designer' });
-    student({ email: 'rohan.mehta@dps.edu.in', full_name: 'Rohan Mehta', school_id: dps.id, current_career: 'Computer Science Engineer (Software & Systems)' });
-    student({ email: 'priya.k@kvpowai.edu.in', full_name: 'Priya Kulkarni', school_id: kv.id });
-    student({ email: 'rahul.verma@gmail.com', full_name: 'Rahul Verma' });
-    const arjun = student({ email: 'arjun.nair@gmail.com', full_name: 'Arjun Nair', current_career: 'Data Scientist' });
-    student({ email: 'neha.joshi@gmail.com', full_name: 'Neha Joshi', is_deleted: true, deleted_at: iso(t - 5 * DAY) });
-    d.subscriptions.push(sub({ payer_type: 'student', student_id: arjun.id, plan: 'student_annual',
-      starts_at: iso(t - 40 * DAY), ends_at: iso(addMonths(t - 40 * DAY, 12)), amount_paise: PLANS.student_annual.amount_paise,
-      status: 'active', payment_provider: 'razorpay', payment_ref: 'pay_Mock' + Math.random().toString(36).slice(2, 10) }));
-    // A record whose payer was hard-deleted: kept for GST, no person attached.
-    d.subscriptions.push(sub({ payer_type: 'student', plan: 'student_monthly',
-      starts_at: iso(t - 70 * DAY), ends_at: iso(addMonths(t - 70 * DAY, 1)), amount_paise: PLANS.student_monthly.amount_paise,
-      status: 'active', payment_provider: 'razorpay', payment_ref: 'pay_MockDeleted01' }));
-    return d;
-  }
-  function sub(o) {
-    return Object.assign({
-      id: nextId('subscriptions'), school_id: null, student_id: null, currency: 'INR',
-      created_at: o.starts_at || iso(Date.now()), updated_at: o.starts_at || iso(Date.now())
-    }, o);
-  }
+  // The browser-side mock server kept every student who logged in on this
+  // device (email, name) in localStorage. Nothing reads it any more; clear
+  // what earlier versions left behind.
+  try { localStorage.removeItem('careerai_api_mock'); } catch (e) { }
 
   // ── Live API ────────────────────────────────────────────────────────────
-  // Rejects the same way the mock does: an Error with .status, .code and,
-  // for validation errors, .field. JSON body unless contentType is given,
+  // Rejects with an Error carrying .status, .code and, for validation
+  // errors, .field. JSON body unless contentType is given,
   // in which case body is sent as-is (the roster CSV).
   function http(method, path, body, contentType) {
     return fetch(API_BASE + path, {
@@ -195,40 +88,10 @@
     return parts.length ? '?' + parts.join('&') : '';
   }
 
-  // After a live login, mirror the student into the mock tables under the
-  // same id, so the endpoints that are still mocked find them.
+  // Marks this tab as logged in as the student a response came back for.
   function shadow(student) {
-    load();
-    let st = db.students.find(s => s.id === student.id);
-    if (!st) {
-      st = { id: student.id, password: null, current_career: null, is_deleted: false, deleted_at: null,
-        created_at: student.created_at || iso(now()) };
-      db.students.push(st);
-    }
-    const sch = student.school && schoolByCode(student.school.school_code);
-    Object.assign(st, { email: lower(student.email), full_name: student.full_name,
-      school_id: sch ? sch.id : st.school_id || null, is_deleted: false, deleted_at: null });
-    save();
     sessionSet(STUDENT_SESSION, student.id);
   }
-
-  // ── Helpers ─────────────────────────────────────────────────────────────
-  function reply(fn) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        try { load(); resolve(clone(fn())); } catch (e) { reject(e); }
-      }, LATENCY);
-    });
-  }
-  function clone(v) { return v === undefined ? v : JSON.parse(JSON.stringify(v)); }
-  function fail(status, code, message, extra) {
-    const e = new Error(message);
-    e.status = status; e.code = code;
-    if (extra) Object.assign(e, extra);
-    throw e;
-  }
-  const lower = s => String(s || '').trim().toLowerCase();
-  function normCode(c) { return String(c || '').trim().toUpperCase(); }
 
   // "Ananya Sharma" → "Ananya S." (§2.1)
   function leaderboardName(fullName) {
@@ -237,16 +100,10 @@
     return w.length === 1 ? w[0] : w[0] + ' ' + w[w.length - 1][0].toUpperCase() + '.';
   }
 
-  function schoolByCode(code) {
-    const c = normCode(code);
-    return db.schools.find(s => s.school_code === c && !s.is_deleted && s.status === 'active') || null;
-  }
-
   // ══════════════════════════════════════════════════════════════
   // PUBLIC API — one method per backend endpoint
   // ══════════════════════════════════════════════════════════════
   const CareerAPI = {
-    demo: true,
     plans: PLANS,
     leaderboardName: leaderboardName,
 
@@ -448,13 +305,6 @@
         // DELETE /admin/roadmap?career=
         remove(career) { return http('DELETE', '/admin/roadmap' + query({ career: career })); }
       }
-    },
-
-    // ── Mock-only helpers (not part of the backend contract) ──
-    resetDemo() {
-      try { localStorage.removeItem(DB_KEY); } catch (e) { }
-      sessionSet(STUDENT_SESSION, null);
-      db = null;
     }
   };
 

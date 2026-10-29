@@ -12,7 +12,6 @@
       onboarding: 'pages/onboarding.html',
       evaluation: 'pages/evaluation.html',
       quiz: 'pages/quiz.html',
-      quizcomplete: 'pages/quiz_complete.html',
       app: 'pages/app.html',
       // No .html: vercel.json rewrites /pages/chat to the file, and this is
       // the address students see. Only the deployed site can chat anyway.
@@ -70,19 +69,33 @@
     // careerAPI exists). The app is all or nothing: every page in PAID_PAGES
     // stays hidden until the access check passes, and otherwise sends the
     // student to login (no session) or the paywall (no plan).
-    const PAID_PAGES = ['app', 'chat', 'onboarding', 'evaluation', 'quiz', 'quizcomplete', 'careerquiz', 'ailoading', 'airesults'];
+    const PAID_PAGES = ['app', 'chat', 'onboarding', 'evaluation', 'quiz', 'careerquiz', 'ailoading', 'airesults'];
     function isLoggedIn() { return !!(window.CareerAPI && CareerAPI.auth.hasSession()); }
     function requireAccess() {
       if (!window.CareerAPI) return Promise.resolve(true);
       return CareerAPI.me.access().then(a => {
-        if (a.has_access) return true;
+        // A new tab has a valid cookie but no session flag yet, and the flag
+        // is what quiz saving and the login page go by. GET /me sets it.
+        if (a.has_access) return isLoggedIn() ? true : CareerAPI.me.get().then(() => true, () => true);
         redirect('paywall');
         return false;
       }, err => {
         if (err.status === 401) redirect('auth');
-        else alert(err.message);
+        else accessFailed(err);
         return false;
       });
+    }
+    // The access check itself failed (network, 5xx). The page stays hidden,
+    // since access is unknown, so say what happened in its place and offer
+    // a retry instead of leaving the student on a blank screen.
+    function accessFailed(err) {
+      document.body.innerHTML =
+        '<div style="max-width:420px;margin:20vh auto;padding:0 20px;text-align:center;">' +
+        '<div style="font-size:2.5rem;margin-bottom:16px;">⚠️</div>' +
+        '<p style="margin-bottom:24px;">' + esc(err.message) + '</p>' +
+        '<button class="btn btn-primary" onclick="location.reload()">Try again</button>' +
+        '</div>';
+      document.body.style.visibility = '';
     }
 
     // -- Career catalogue --
@@ -287,6 +300,8 @@
       const navPage = r.page === 'careerdetail' ? (cdFrom || 'results') : r.page;
       document.querySelectorAll('.nav-item, .user-profile').forEach(n => n.classList.toggle('active', n.dataset.page === navPage));
       document.body.classList.remove('nav-open'); // collapse the mobile drawer
+      // The explorer's filter drawer sits on <body>, outside the page divs.
+      if (document.body.classList.contains('ex-filters-open')) exCloseFilters();
       if (changed) window.scrollTo(0, 0);
       // Sync quiz results into the page just revealed
       if (r.page === 'dashboard') syncDashboard();
@@ -779,7 +794,7 @@
           : esc((CareerAPI.plans[a.plan] || { label: '' }).label) + ' plan · active until ' + longDate(a.ends_at) +
           ' · non-refundable';
         document.getElementById('st-plan-badge').textContent = a.source === 'school' ? 'School plan' : 'Individual';
-      }, err => { if (err.status === 401) show('auth'); });
+      }, err => { if (err.status === 401) redirect('auth'); });
     }
 
     function stEditSchool() {
@@ -969,9 +984,10 @@
     }
     // Next saves the current step before moving on; Back doesn't save.
     function obStep(dir) {
-      if (dir < 0) { obShow(obCurrent + dir); return; }
       const btn = document.getElementById('ob-next'), errEl = document.getElementById('ob-error');
+      // Not while a step is saving: the save moves on from the step it saved.
       if (btn.disabled) return;
+      if (dir < 0) { obShow(obCurrent + dir); return; }
       const step = obCurrent;
       if (step === 2) {
         const bad = [...document.querySelectorAll('#ob-step-2 [data-subject]')].find(inp =>
@@ -983,7 +999,8 @@
       CareerAPI.me.saveProfile(obFields(step)).then(() => {
         setBusy(btn, false);
         if (step === 4) { stepLeave(() => show('evaluation')); return; }
-        obShow(step + 1);
+        // Browser Back during the save already moved the student elsewhere.
+        if (obCurrent === step) obShow(step + 1);
       }, err => {
         setBusy(btn, false);
         errEl.textContent = err.message;
@@ -996,7 +1013,14 @@
       stepInit(() => { if (obCurrent <= 1) return false; obShow(obCurrent - 1); return true; });
       const m = /^#\/step\/([1-4])$/.exec(location.hash);
       obShow(m ? +m[1] : 1);
-      CareerAPI.me.profile().then(r => obFill(r.profile), () => { });
+      // The saved profile arrives after the form is on screen; once the
+      // student has typed or tapped anything, theirs wins.
+      let touched = false;
+      const root = document.getElementById('onboarding');
+      ['input', 'change', 'click'].forEach(t => root.addEventListener(t, e => {
+        if (e.target.closest('input, select, textarea, .chip')) touched = true;
+      }, true));
+      CareerAPI.me.profile().then(r => { if (!touched) obFill(r.profile); }, () => { });
     }
 
     // ── Chip single-select helper ──
@@ -1043,14 +1067,27 @@
     // no transcript. Only the deployed site can chat: locally there is no
     // proxy and the cookie belongs to careerapi.vercel.app.
     const CHAT_URL = '/chat/messages';
-    let chatId = crypto.randomUUID();
+    // crypto.randomUUID needs a secure context (and Safari 15.4+); this runs
+    // at load on every page, so a throw here would stop the rest of the file.
+    // getRandomValues works everywhere, so build the v4 UUID from it instead.
+    function newChatId() {
+      if (window.crypto && crypto.randomUUID) {
+        try { return crypto.randomUUID(); } catch (e) { }
+      }
+      const b = crypto.getRandomValues(new Uint8Array(16));
+      b[6] = (b[6] & 0x0f) | 0x40;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+      return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+    }
+    let chatId = newChatId();
     let chatHistory = [];
     let chatAbort = null;
 
     function resetChat() {
       if (chatAbort) chatAbort.abort();
       chatAbort = null;
-      chatId = crypto.randomUUID();
+      chatId = newChatId();
       chatHistory = [];
       setChatBusy(false);
     }
@@ -1239,11 +1276,16 @@
           addChatError(bubble, 'Reply stopped.', true);
           return;
         }
-        if (err.status === 401) { redirect('auth'); return; }
+        if (err.status === 401) {
+          // This fetch bypasses CareerAPI, so end the tab's session flag here
+          // (as its http() does), or the login page would bounce straight back.
+          try { sessionStorage.removeItem('careerai_session'); } catch (e) { }
+          redirect('auth'); return;
+        }
         if (err.status === 402) { redirect('paywall'); return; }
         bubble.innerHTML = reply ? renderReply(reply) : '';
         if (err.code === 'conversation_expired') {
-          chatId = crypto.randomUUID();
+          chatId = newChatId();
           chatHistory = [];
           addChatError(bubble, "This chat expired, so I've started a new one. Please send your question again.");
         } else {
@@ -1620,23 +1662,29 @@
       return { qi: qi, q: RS_QUESTIONS[qi] };
     }
 
-    // Sends a logged-out visitor to the login page. Returns true if they may stay.
+    // Sends a logged-out visitor to the login page. Resolves true if they may
+    // stay. The flag isLoggedIn() reads is per tab, so a new tab with a valid
+    // session cookie has no flag yet: ask the server (GET /me sets it) before
+    // treating the student as logged out.
     function requireLogin() {
-      if (isLoggedIn()) return true;
-      show('auth');
-      return false;
+      if (isLoggedIn()) return Promise.resolve(true);
+      const out = () => { show('auth'); return false; };
+      if (!window.CareerAPI) return Promise.resolve(out());
+      return CareerAPI.me.get().then(() => true, out);
     }
 
     // Called from any page ("Take the quiz" / "Retake") — clears the old run
     // and hands off to career_quiz.html, which renders the first question.
     function cqStart() {
-      if (!requireLogin()) return;
+      requireLogin().then(ok => { if (ok) cqBegin(); });
+    }
+    function cqBegin() {
       cqIdx = 0;
       cqAnswers = [];
       cqOrder = rsBuildOrder();
       saveState({
         cqIdx: 0, cqAnswers: [], cqOrder: cqOrder,
-        appResults: null, isDemo: true
+        appResults: null, isDemo: true, localRunAt: null
       });
       // From the evaluation interstitial the quiz takes its place in history.
       show('careerquiz', CURRENT_PAGE === 'evaluation');
@@ -1652,6 +1700,9 @@
       cqOrder = s.cqOrder && typeof s.cqOrder.seed === 'number'
         ? rsBuildOrder(s.cqOrder.seed)
         : rsBuildOrder();
+      // A fresh order (no cqStart() in this tab) is saved at once, or a
+      // reload would reshuffle and cqIdx would point at different questions.
+      if (!s.cqOrder) saveState({ cqOrder: cqOrder });
       cqIdx = typeof s.cqIdx === 'number' ? s.cqIdx : 0;
       if (cqIdx < 0 || cqIdx >= RS_QUESTIONS.length) cqIdx = 0;
       // Browser Back goes to the previous question; the session, not the
@@ -1733,8 +1784,13 @@
       cqSelect(el, true);
     }
 
+    // True while a question slides out. cqIdx has already moved on but the
+    // old options are still on screen, so Next/Back wait until it lands.
+    let cqSliding = false;
+
     // "Next →" — collects the selected options then advances
     function cqNextQ() {
+      if (cqSliding) return;
       const { qi, q } = cqQuestionAt(cqIdx);
       const selected = [...document.querySelectorAll('#cq-opts .cq-opt.selected')];
 
@@ -1763,7 +1819,7 @@
     }
 
     function cqPrev() {
-      if (cqIdx <= 0) return;
+      if (cqSliding || cqIdx <= 0) return;
       cqIdx--;
       saveState({ cqIdx: cqIdx });
       cqSlide('prev');
@@ -1773,9 +1829,11 @@
       const wrap = document.getElementById('cq-question-wrap');
       const outX = dir === 'next' ? '-24px' : '24px';
       wrap.style.cssText = 'opacity:0;transform:translateX(' + outX + ');transition:opacity .16s,transform .16s;';
+      cqSliding = true;
       setTimeout(() => {
         wrap.style.transform = 'translateX(' + (dir === 'next' ? '24px' : '-24px') + ')';
         cqRender();
+        cqSliding = false;
         requestAnimationFrame(() => {
           wrap.style.cssText = 'opacity:1;transform:translateX(0);transition:opacity .22s,transform .22s;';
         });
@@ -1840,7 +1898,10 @@
           riasec_pct: pct, riasec_code: scoring.code, confidence: scoring.confidence,
           top_career: top.title, results: results, answers: cqAnswers,
           engine_version: RS_ENGINE_VERSION
-        } : null
+        } : null,
+        // A run with no match can't be saved (the API needs a top_career),
+        // so cqLoadSaved must not swap it for an older run from the server.
+        localRunAt: top ? null : Date.now()
       });
       await cqSaveRun();
       redirect('airesults');
@@ -1868,9 +1929,12 @@
         return CareerAPI.me.latestCareerQuiz().then(r => {
           const run = r.result;
           if (!run) return;
+          const localAt = loadState().localRunAt;
+          if (localAt && !(Date.parse(run.created_at) > localAt)) return;
           saveState({
             appResults: run.results,
             isDemo: true,
+            localRunAt: null,
             riasecScores: { pct: run.riasec_pct, code: run.riasec_code, confidence: run.confidence }
           });
           appResults = run.results;
@@ -2038,7 +2102,7 @@
         div.style.animationDelay = (i * 0.1) + 's';
         div.innerHTML =
           '<div class="air-rank ' + (i === 0 ? 'air-rank-top' : '') + '">' + (i + 1) + '</div>' +
-          '<div class="air-career-icon">' + c.emoji + '</div>' +
+          '<div class="air-career-icon">' + esc(c.emoji) + '</div>' +
           '<div class="air-career-info">' +
           '<div class="air-career-name"></div>' +
           '<div class="air-career-field"></div>' +
@@ -2048,7 +2112,7 @@
           '<span class="badge" style="background:var(--well);color:var(--muted);border:1px solid var(--border);"></span>' +
           '</div>' +
           '</div>' +
-          '<div class="air-pct" style="color:' + color + ';">' + c.match_pct + '%' +
+          '<div class="air-pct" style="color:' + color + ';">' + esc(c.match_pct) + '%' +
           (c.fit_label ? '<div class="air-fit-label"></div>' : '') + '</div>';
         div.querySelector('.air-career-name').textContent = c.title;
         div.querySelector('.air-career-field').textContent = c.field;
@@ -2227,14 +2291,15 @@
 
     // Builds one stat tile. Four of these sit in a fixed row, so the value,
     // label and sub-line all come through the same shape whether the card is
-    // populated or still locked.
+    // populated or still locked. Every value is text (career titles and the
+    // stream reason come from the API or a saved run), so all of it is escaped.
     function dbStat(o) {
       return '<div class="stat-card' + (o.locked ? ' locked' : '') + '">' +
-        '<div class="stat-icon" style="background:' + (o.tint || 'var(--surface2)') + ';">' + o.icon + '</div>' +
+        '<div class="stat-icon" style="background:' + (o.tint || 'var(--surface2)') + ';">' + esc(o.icon) + '</div>' +
         '<div class="stat-val' + (o.isText ? ' is-text' : '') + '"' +
-        (o.color ? ' style="color:' + o.color + ';"' : '') + '>' + o.val + '</div>' +
-        '<div class="stat-label">' + o.label + '</div>' +
-        '<div class="stat-change">' + o.sub + '</div>' +
+        (o.color ? ' style="color:' + o.color + ';"' : '') + '>' + esc(o.val) + '</div>' +
+        '<div class="stat-label">' + esc(o.label) + '</div>' +
+        '<div class="stat-change">' + esc(o.sub) + '</div>' +
         '</div>';
     }
 
@@ -2291,10 +2356,10 @@
         '<div class="welcome-banner">' +
         '<div class="welcome-text">' +
         (top
-          ? '<h2>Top match: ' + top.emoji + ' ' + top.title +
-            ' <span class="wb-pct">' + top.match_pct + '%</span></h2>'
+          ? '<h2>Top match: ' + esc(top.emoji) + ' ' + esc(top.title) +
+            ' <span class="wb-pct">' + esc(top.match_pct) + '%</span></h2>'
           : '<h2>No strong career match yet</h2>') +
-        '<p>' + d.personality_type + ' · Recommending <strong>' + d.stream_recommendation + '</strong> for Class 11</p>' +
+        '<p>' + esc(d.personality_type) + ' · Recommending <strong>' + esc(d.stream_recommendation) + '</strong> for Class 11</p>' +
         '</div>' +
         (top
           ? '<button class="btn btn-primary" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See All Matches →</button>'
@@ -2309,9 +2374,9 @@
         d.top_careers.forEach((c, i) => {
           bannerHtml +=
             '<div class="career-pill" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
-            '<span style="font-size:1.125rem;">' + c.emoji + '</span>' +
-            '<div><div class="career-pill-name">' + c.title + '</div></div>' +
-            '<div class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + c.match_pct + '%</div>' +
+            '<span style="font-size:1.125rem;">' + esc(c.emoji) + '</span>' +
+            '<div><div class="career-pill-name">' + esc(c.title) + '</div></div>' +
+            '<div class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + esc(c.match_pct) + '%</div>' +
             '</div>';
         });
         bannerHtml += '</div>';
@@ -2394,15 +2459,15 @@
         div.onclick = () => cdOpen(c.title);
         div.innerHTML =
           '<div class="career-rank ' + (i < 2 ? 'top' : '') + '">' + (i + 1) + '</div>' +
-          '<div class="career-icon-wrap" style="background:' + ICON_BG[i] + ';">' + c.emoji + '</div>' +
+          '<div class="career-icon-wrap" style="background:' + ICON_BG[i] + ';">' + esc(c.emoji) + '</div>' +
           '<div class="career-info">' +
-          '<div class="career-name">' + c.title + '</div>' +
-          '<div class="career-field">' + c.field + '</div>' +
-          '<div class="career-reason">"' + c.why + '"</div>' +
+          '<div class="career-name">' + esc(c.title) + '</div>' +
+          '<div class="career-field">' + esc(c.field) + '</div>' +
+          '<div class="career-reason">"' + esc(c.why) + '"</div>' +
           '</div>' +
           '<div class="career-score-wrap">' +
-          '<div class="career-pct" style="color:' + color + ';">' + c.match_pct + '%</div>' +
-          '<div class="pct-mini-bar"><div class="pct-mini-fill" style="width:' + c.match_pct + '%;background:' + PCT_FILL[i] + ';"></div></div>' +
+          '<div class="career-pct" style="color:' + color + ';">' + esc(c.match_pct) + '%</div>' +
+          '<div class="pct-mini-bar"><div class="pct-mini-fill" style="width:' + Number(c.match_pct) + '%;background:' + PCT_FILL[i] + ';"></div></div>' +
           '</div>';
         list.appendChild(div);
       });
