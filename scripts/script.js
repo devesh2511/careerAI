@@ -1306,9 +1306,11 @@
     // source because chatHistory caps each turn at 2,000 characters and drops
     // old turns. The browser lays the copy out in a hidden frame and
     // html2canvas draws it page by page into jsPDF: jsPDF's own text can't
-    // shape Hindi or draw emoji, a picture of the browser's text can. The
-    // cost is text that can't be selected, so links are added back on top.
-    // Both libraries are vendored in assets/vendor/ and load on first click.
+    // shape Hindi or draw emoji, a picture of the browser's text can. A
+    // picture can't be selected or searched, so invisible text is laid over
+    // each line (as in a scanned PDF) and clickable areas over the links.
+    // Both libraries and the text font are vendored in assets/vendor/ and
+    // load on first click.
     const CHAT_SAVE_SKIP = new Set(('a an the i me my mine we our you your is are am was be can could ' +
       'should would will shall do does did how what which who whom whose why when where there this that ' +
       'these those it its to for of in on at by with from about into after before and or but if so as ' +
@@ -1427,6 +1429,36 @@
       }
       return pages;
     }
+    // What assets/vendor/pdf-text-font.js has no glyph for, such as emoji;
+    // the picture still shows it, the text layer leaves it out.
+    const CHAT_PDF_NO_GLYPH = /[^ -~ -ɏऀ-ॿ᳐-᳿ -⁯₠-⃏℀-⅟←-⇿−꣠-ꣿ]/gu;
+    // The copy's text as one run per line, with where the browser drew it.
+    // Words a gap apart join with a space, pieces that touch (a bold word
+    // and its comma) join without, and a wide gap (name … time) splits.
+    function chatPdfLines(doc) {
+      const lines = [], range = doc.createRange();
+      const walk = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+      let line = null;
+      for (let node; (node = walk.nextNode());) {
+        const size = parseFloat(doc.defaultView.getComputedStyle(node.parentElement).fontSize);
+        for (const m of node.data.matchAll(/\S+/g)) {
+          const text = m[0].replace(CHAT_PDF_NO_GLYPH, '');
+          if (!text) continue;
+          range.setStart(node, m.index);
+          range.setEnd(node, m.index + m[0].length);
+          const r = range.getClientRects()[0];
+          if (!r || !r.width) continue;
+          const gap = line ? r.left - line.right : 0;
+          if (line && line.size === size && Math.abs(r.top - line.top) < 2 && gap > -1 && gap < size) {
+            line.text += (gap > 1 ? ' ' : '') + text;
+            line.right = r.right;
+          } else {
+            lines.push(line = { text, size, left: r.left, right: r.right, top: r.top, height: r.height });
+          }
+        }
+      }
+      return lines;
+    }
     async function chatSavePdf(btn) {
       if (chatSaving) return;
       const title = chatSaveTitle();
@@ -1444,6 +1476,7 @@
         await Promise.all([
           chatLoadScript(BASE + 'assets/vendor/html2canvas.min.js'),
           chatLoadScript(BASE + 'assets/vendor/jspdf.umd.min.js'),
+          chatLoadScript(BASE + 'assets/vendor/pdf-text-font.js'),
           new Promise(ok => { frame.onload = ok; frame.srcdoc = html; document.body.appendChild(frame); })
         ]);
         const doc = frame.contentDocument;
@@ -1470,7 +1503,25 @@
             pdf.text((i + 1) + ' / ' + pages.length, 105, 297 - margin / 2, { align: 'center' });
           }
         }
-        // The text is a picture now, so put clickable areas over the links.
+        // The text is a picture now, so lay the same words over it unseen,
+        // each line stretched to the width the browser gave it, for copy
+        // and search. Its baseline sits about 4/5 down the line's box.
+        pdf.addFileToVFS('chat-text.ttf', window.CHAT_PDF_FONT);
+        pdf.addFont('chat-text.ttf', 'chat-text', 'normal');
+        pdf.setFont('chat-text', 'normal');
+        chatPdfLines(doc).forEach(l => {
+          const i = pages.findIndex(p => l.top + l.height / 2 >= p.top && l.top + l.height / 2 < p.bottom);
+          if (i < 0) return;
+          pdf.setPage(i + 1);
+          pdf.setFontSize(l.size * k * 72 / 25.4);
+          // A lone vowel sign has no width in the font; don't scale by 1/0.
+          const width = pdf.getTextWidth(l.text);
+          pdf.text(l.text, l.left * k, margin + (l.top + l.height * 0.8 - pages[i].top) * k, {
+            renderingMode: 'invisible',
+            horizontalScale: width > 0 ? (l.right - l.left) * k / width : 1
+          });
+        });
+        // And clickable areas over the links.
         doc.querySelectorAll('a[href]').forEach(a => {
           [...a.getClientRects()].forEach(r => {
             const i = pages.findIndex(p => r.top >= p.top && r.top < p.bottom);
