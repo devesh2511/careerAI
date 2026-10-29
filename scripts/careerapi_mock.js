@@ -20,9 +20,9 @@
 // Payments happen outside the website: an admin records each one in the
 // admin panel, and that is what grants access. There is no checkout here.
 //
-// Only DELETE /me is still a MOCK SERVER that runs in the browser and keeps
-// its tables in localStorage. A live login copies the student into it (see
-// shadow()) so it can find them.
+// Students can't delete their own account; only an admin can
+// (DELETE /admin/students/:id). No endpoint uses the localStorage mock
+// server below any more.
 //
 // Errors reject with an Error carrying .status (HTTP) and .code (API code).
 //
@@ -241,13 +241,6 @@
     const c = normCode(code);
     return db.schools.find(s => s.school_code === c && !s.is_deleted && s.status === 'active') || null;
   }
-  function me() {
-    const id = sessionGet(STUDENT_SESSION);
-    const st = id && db.students.find(s => s.id === id && !s.is_deleted);
-    if (!st) { sessionSet(STUDENT_SESSION, null); fail(401, 'unauthenticated', 'Please log in.'); }
-    return st;
-  }
-  function softDelete(row) { row.is_deleted = true; row.deleted_at = iso(now()); }
 
   // ══════════════════════════════════════════════════════════════
   // PUBLIC API — one method per backend endpoint
@@ -322,15 +315,6 @@
       // PUT /me/school — live; code '' / null clears it. → { student, access }
       setSchool(code) {
         return http('PUT', '/me/school', { school_code: code || null }).then(r => { shadow(r.student); return r; });
-      },
-      // DELETE /me  — a soft delete; an admin can restore it
-      remove() {
-        return reply(() => {
-          const st = me();
-          softDelete(st); save();
-          sessionSet(STUDENT_SESSION, null);
-          return { ok: true };
-        });
       }
     },
 

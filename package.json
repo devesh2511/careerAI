@@ -1,0 +1,11 @@
+{
+  "name": "career-ai",
+  "private": true,
+  "description": "careerAI static frontend. No build step and no dependencies.",
+  "scripts": {
+    "dev": "npm start",
+    "start": "npx vercel dev",
+    "build": "echo no build step",
+    "test": "node --test tests/riasec.test.js"
+  }
+}

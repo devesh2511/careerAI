@@ -55,6 +55,15 @@
       try { sessionStorage.setItem(STATE_KEY, JSON.stringify(s)); } catch (e) { /* private mode */ }
     }
     function clearState() { try { sessionStorage.removeItem(STATE_KEY); } catch (e) { } }
+    // The state belongs to the student who was logged in when it was saved.
+    // A different student logging in on the same tab (the last one's cookie
+    // expired, so logout() never ran) must not inherit their answers, results
+    // or unsaved quiz run, which cqSaveRun would post to the new account.
+    // The same student logging back in keeps everything.
+    function claimState(studentId) {
+      if (loadState().owner !== studentId) clearState();
+      saveState({ owner: studentId });
+    }
 
     // -- Session + access --
     // Accounts live behind window.CareerAPI (scripts/careerapi_mock.js until
@@ -164,15 +173,6 @@
       const done = () => { clearState(); location.replace(routeTo('landing')); };
       if (window.CareerAPI) CareerAPI.auth.logout().then(done, done);
       else done();
-    }
-
-    // A student closing their own account is a soft delete on the server
-    // (DELETE /me): the account is hidden and logged out, and an admin can
-    // restore it.
-    function deleteAccount() {
-      if (!confirm('Delete your Crackeer account? You will be logged out and removed from leaderboards.')) return;
-      CareerAPI.me.remove().then(() => { clearState(); location.replace(routeTo('landing')); },
-        err => alert(err.message));
     }
 
     // ── Mobile sidebar drawer (phone breakpoint only) ──
@@ -450,6 +450,7 @@
       authReset(form, 'login-alert');
       setBusy(btn, true);
       CareerAPI.auth.login({ email: val('login-email'), password: val('login-password') }).then(r => {
+        claimState(r.student.id);
         redirect(r.access.has_access ? 'dashboard' : 'paywall');
       }, err => {
         setBusy(btn, false);
@@ -470,6 +471,7 @@
         full_name: val('reg-full_name'), email: val('reg-email'),
         password: val('reg-password'), school_code: val('reg-school_code')
       }).then(r => {
+        claimState(r.student.id);
         // New students fill in onboarding next, after paying if they must.
         if (r.access.has_access) redirect('onboarding');
         else location.replace(routeTo('paywall') + '?next=onboarding');
@@ -2022,6 +2024,12 @@
 
       const list = document.getElementById('air-careers');
       list.innerHTML = '';
+      if (!(data.top_careers || []).length) {
+        list.innerHTML =
+          '<div style="font-size:0.875rem;color:var(--muted);">None of them is a strong match yet. ' +
+          '<button class="btn btn-ghost btn-sm no-print" onclick="navTo(\'explorer\')">Explore every career →</button></div>';
+        return;
+      }
       const pcts = PCT_COLORS;
       (data.top_careers || []).forEach((c, i) => {
         const color = pcts[i] || 'var(--accent)';
@@ -2269,37 +2277,45 @@
       }
 
       // ── HAS RESULTS: populate from appResults ──────────────────────
+      // top is undefined when every career scored under RS_MIN_FIT: the
+      // engine shows fewer matches rather than weak ones, down to none.
       const d = appResults, top = d.top_careers[0];
 
       title.textContent = 'Your Dashboard 🎯';
       sub.textContent = d.personality_type + ' · Quiz completed · ' + d.stream_recommendation + ' recommended';
-      ctaBtn.textContent = 'View All Matches →';
-      ctaBtn.onclick = () => navTo('results');
+      ctaBtn.textContent = top ? 'View All Matches →' : 'Explore Careers →';
+      ctaBtn.onclick = () => navTo(top ? 'results' : 'explorer');
 
       // Welcome banner
       let bannerHtml =
         '<div class="welcome-banner">' +
         '<div class="welcome-text">' +
-        '<h2>Top match: ' + top.emoji + ' ' + top.title +
-        ' <span class="wb-pct">' + top.match_pct + '%</span></h2>' +
+        (top
+          ? '<h2>Top match: ' + top.emoji + ' ' + top.title +
+            ' <span class="wb-pct">' + top.match_pct + '%</span></h2>'
+          : '<h2>No strong career match yet</h2>') +
         '<p>' + d.personality_type + ' · Recommending <strong>' + d.stream_recommendation + '</strong> for Class 11</p>' +
         '</div>' +
-        '<button class="btn btn-primary" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See All Matches →</button>' +
+        (top
+          ? '<button class="btn btn-primary" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See All Matches →</button>'
+          : '<button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore Careers →</button>') +
         '</div>';
 
       // Career strip
-      bannerHtml += '<div class="section-label">Top Career Matches' +
-        '<button class="sl-link" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See all →</button></div>';
-      bannerHtml += '<div class="top-career-strip" id="db-strip">';
-      d.top_careers.forEach((c, i) => {
-        bannerHtml +=
-          '<div class="career-pill" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
-          '<span style="font-size:1.125rem;">' + c.emoji + '</span>' +
-          '<div><div class="career-pill-name">' + c.title + '</div></div>' +
-          '<div class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + c.match_pct + '%</div>' +
-          '</div>';
-      });
-      bannerHtml += '</div>';
+      if (top) {
+        bannerHtml += '<div class="section-label">Top Career Matches' +
+          '<button class="sl-link" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See all →</button></div>';
+        bannerHtml += '<div class="top-career-strip" id="db-strip">';
+        d.top_careers.forEach((c, i) => {
+          bannerHtml +=
+            '<div class="career-pill" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
+            '<span style="font-size:1.125rem;">' + c.emoji + '</span>' +
+            '<div><div class="career-pill-name">' + c.title + '</div></div>' +
+            '<div class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + c.match_pct + '%</div>' +
+            '</div>';
+        });
+        bannerHtml += '</div>';
+      }
       // A result from the old question set still shows, but the student is
       // asked to retake, and the main button becomes the retake.
       if (!rsIsCurrentResult(d)) {
@@ -2311,10 +2327,15 @@
 
       // Stat cards
       stats.innerHTML =
-        dbStat({
-          icon: top.emoji, tint: ICON_BG[0], color: PCT_COLORS[0],
-          val: top.match_pct + '%', label: 'Top Career Match', sub: top.title
-        }) +
+        (top
+          ? dbStat({
+            icon: top.emoji, tint: ICON_BG[0], color: PCT_COLORS[0],
+            val: top.match_pct + '%', label: 'Top Career Match', sub: top.title
+          })
+          : dbStat({
+            icon: '🔍', tint: ICON_BG[0], val: '—', isText: 1,
+            label: 'Top Career Match', sub: 'None above ' + RS_MIN_FIT + '% yet'
+          })) +
         dbStat({
           icon: '🛤️', tint: ICON_BG[1], color: PCT_COLORS[1],
           val: d.stream_recommendation, isText: 1, label: 'Recommended Stream',
@@ -2355,6 +2376,17 @@
 
       if (!list) return;
       list.innerHTML = '';
+      if (!d.top_careers.length) {
+        list.innerHTML =
+          '<div style="text-align:center;padding:56px 20px;color:var(--muted);">' +
+          '<div style="font-size:2.5rem;margin-bottom:16px;">🔍</div>' +
+          '<div style="font-size:1rem;font-weight:700;margin-bottom:8px;">No strong career match yet</div>' +
+          '<div style="font-size:0.875rem;margin-bottom:24px;">No career scored above ' + RS_MIN_FIT +
+          '% from your answers. Browse every career and see how each one fits you.</div>' +
+          '<button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore Careers →</button>' +
+          '</div>';
+        return;
+      }
       d.top_careers.forEach((c, i) => {
         const color = PCT_COLORS[i];
         const div = document.createElement('div');
@@ -3104,7 +3136,8 @@
       const note = document.querySelector('#pg-ai-note div:last-child');
       if (note) note.textContent =
         '"Your profile points strongly toward ' + d.personality_type.replace('The ', '') + '. ' +
-        top.title + ' is your top career at ' + top.match_pct + '%. Stream recommendation: ' + d.stream_recommendation + '."';
+        (top ? top.title + ' is your top career at ' + top.match_pct + '%. ' : '') +
+        'Stream recommendation: ' + d.stream_recommendation + '."';
     }
 
     // ── Roadmap (app.html#/roadmap) ──
