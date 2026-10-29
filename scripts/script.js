@@ -1243,6 +1243,7 @@
       chatAutosize(inp);
       inp.focus();
       chatShowWelcome(false);
+      chatPlaceSave(false);
       addMsg(msg, 'user');
       const bubble = addMsg('', 'ai');
       bubble.innerHTML = '<span class="msg-typing" aria-label="Thinking"><span></span><span></span><span></span></span>';
@@ -1295,6 +1296,199 @@
       } finally {
         if (chatAbort === controller) { chatAbort = null; setChatBusy(false); }
         chatLight([]);
+        // newChat() mid-reply has emptied the thread, so the save has nowhere to go
+        if (bubble.isConnected) chatPlaceSave(true);
+      }
+    }
+
+    // ── Save this chat ──
+    // One click downloads the thread on screen as a PDF. The screen is the
+    // source because chatHistory caps each turn at 2,000 characters and drops
+    // old turns. The browser lays the copy out in a hidden frame and
+    // html2canvas draws it page by page into jsPDF: jsPDF's own text can't
+    // shape Hindi or draw emoji, a picture of the browser's text can. The
+    // cost is text that can't be selected, so links are added back on top.
+    // Both libraries are vendored in assets/vendor/ and load on first click.
+    const CHAT_SAVE_SKIP = new Set(('a an the i me my mine we our you your is are am was be can could ' +
+      'should would will shall do does did how what which who whom whose why when where there this that ' +
+      'these those it its to for of in on at by with from about into after before and or but if so as ' +
+      'tell know want need get pick choose select help please like really just some any more much many ' +
+      'make hi hello hey ok okay thanks thank').split(' '));
+    // The file name: the first few keywords the student asked about, e.g.
+    // "Which stream should I pick after Class 10?" → "Stream Class 10".
+    // Later questions only fill in when the first has under two keywords.
+    function chatSaveTitle() {
+      const words = [];
+      for (const b of document.querySelectorAll('#chat-messages .msg.user .msg-bubble')) {
+        if (words.length >= 2) break;
+        words.push(...b.textContent.replace(/[^\p{L}\p{M}\p{N}\s]+/gu, ' ').split(/\s+/)
+          .filter(w => w && !CHAT_SAVE_SKIP.has(w.toLowerCase())));
+      }
+      words.splice(4);
+      let title = words.map(w => w[0].toUpperCase() + w.slice(1)).join(' ').slice(0, 40).trim();
+      if (words.length < 2) title = (title + ' Career Chat').trim();
+      return title;
+    }
+    // Shows the button under the latest finished reply, or just removes it.
+    function chatPlaceSave(show) {
+      document.querySelectorAll('.msg-actions').forEach(n => n.remove());
+      if (!show) return;
+      const replies = [...document.querySelectorAll('#chat-messages .msg:not(.user) .msg-bubble')]
+        .filter(b => b.textContent.trim());
+      if (!replies.length) return;
+      const row = document.createElement('div');
+      row.className = 'msg-actions';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-ghost btn-sm msg-save';
+      btn.setAttribute('aria-label', 'Save this chat as PDF');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Save this chat</span>';
+      btn.onclick = () => chatSavePdf(btn);
+      if (chatSaving) chatSaveBusy(btn, true);
+      row.appendChild(btn);
+      replies[replies.length - 1].closest('.msg-body').appendChild(row);
+    }
+    // A4 at 96 dpi: the copy is laid out 794px wide, and each PDF page holds
+    // 1123px less 18mm (68px) top and bottom.
+    const CHAT_PDF_W = 794, CHAT_PDF_PAGE = 1123 - 2 * 68, CHAT_PDF_MM = 210 / CHAT_PDF_W;
+    let chatSaving = false;
+    const chatScripts = {};
+    function chatLoadScript(src) {
+      return chatScripts[src] || (chatScripts[src] = new Promise((ok, fail) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = ok;
+        // Forget a failed load so the next click tries again.
+        s.onerror = () => { delete chatScripts[src]; s.remove(); fail(new Error('Could not load ' + src)); };
+        document.head.appendChild(s);
+      }));
+    }
+    function chatSaveBusy(btn, busy, label) {
+      btn.disabled = busy;
+      btn.querySelector('span').textContent = label || (busy ? 'Saving…' : 'Save this chat');
+    }
+    // The standalone page the PDF is drawn from, or '' for an empty thread.
+    function chatSaveDoc(title) {
+      const me = (document.querySelector('.user-name') || {}).textContent;
+      const turns = [...document.querySelectorAll('#chat-messages .msg')].map(m => {
+        const bubble = m.querySelector('.msg-bubble'), time = m.querySelector('.msg-time');
+        const user = m.classList.contains('user');
+        if (!bubble || !bubble.textContent.trim()) return '';
+        // A user turn is plain text; a reply is already escaped by renderReply.
+        return '<section class="turn' + (user ? ' user' : '') + '"><div class="who">' +
+          esc(user ? (me && me.trim()) || 'You' : 'AI Career Counsellor') +
+          (time ? '<span>' + esc(time.textContent) + '</span>' : '') + '</div>' +
+          '<div class="text">' + (user ? esc(bubble.textContent) : bubble.innerHTML) + '</div></section>';
+      }).join('');
+      if (!turns) return '';
+      const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+      return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>' + esc(title) + '</title><style>' +
+        '*{box-sizing:border-box}html{background:#fff}' +
+        'body{margin:0;padding:0 60px 1px;font:11pt/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari",sans-serif;color:#1d1b2e}' +
+        'header{border-bottom:2px solid #6c63ff;padding-bottom:10px;margin-bottom:18px}' +
+        '.brand{font-weight:800;font-size:15pt}.brand span{color:#6c63ff}' +
+        'h1{font-size:13pt;margin:4px 0 2px}.meta{color:#6b6880;font-size:9pt}' +
+        '.turn{margin:0 0 14px;padding:10px 14px;border-radius:10px;border:1px solid #e4e2f0}' +
+        '.turn.user{background:#f1f0ff;border-color:#d9d6ff}' +
+        '.who{font-weight:700;font-size:9pt;color:#6c63ff;margin-bottom:4px;display:flex;justify-content:space-between}' +
+        '.who span{font-weight:400;color:#8a879c}.turn.user .text{white-space:pre-wrap}' +
+        '.text p{margin:0 0 8px}.text h4{font-size:11.5pt;margin:12px 0 4px}' +
+        '.text ul,.text ol{margin:0 0 8px;padding-left:22px}.text li{margin:3px 0}' +
+        '.text>:first-child{margin-top:0}.text>:last-child{margin-bottom:0}' +
+        '.text code{font-family:ui-monospace,Consolas,monospace;font-size:.9em;background:#f3f2f8;border-radius:4px;padding:0 4px}' +
+        '.text a{color:#4b43d6;overflow-wrap:anywhere}' +
+        'footer{margin-top:18px;color:#8a879c;font-size:8.5pt;text-align:center}' +
+        '</style></head><body><header><div class="brand">Crack<span>eer</span></div>' +
+        '<h1>' + esc(title) + '</h1><div class="meta">Chat with the AI Career Counsellor · ' + esc(date) + '</div></header>' +
+        turns + '<footer>AI can make mistakes, so double-check admissions and fees.</footer></body></html>';
+    }
+    // Page breaks go under the lowest line or block that still fits, so no
+    // line of text is sliced in two; only a block taller than a page is cut.
+    function chatPdfPages(doc) {
+      const height = doc.documentElement.scrollHeight;
+      const stops = [...doc.querySelectorAll('header, .who, .text > *, .text li, .turn, footer')]
+        .map(n => n.getBoundingClientRect().bottom);
+      // A tall user message is one block, so let it break between its lines.
+      doc.querySelectorAll('.turn.user .text').forEach(t => {
+        const range = doc.createRange();
+        range.selectNodeContents(t);
+        [...range.getClientRects()].forEach(r => stops.push(r.bottom));
+      });
+      const pages = [];
+      for (let top = 0; top < height - 1;) {
+        let cut = top + CHAT_PDF_PAGE;
+        if (cut >= height) cut = height;
+        else {
+          const fit = stops.filter(b => b > top + 1 && b <= cut);
+          if (fit.length) cut = Math.max(...fit);
+        }
+        cut = Math.ceil(cut);
+        pages.push({ top: Math.floor(top), bottom: cut });
+        top = cut;
+      }
+      return pages;
+    }
+    async function chatSavePdf(btn) {
+      if (chatSaving) return;
+      const title = chatSaveTitle();
+      const html = chatSaveDoc(title);
+      if (!html) return;
+      chatSaving = true;
+      chatSaveBusy(btn, true);
+      // Off screen at the page's real width: html2canvas draws what the frame
+      // lays out, so a 0×0 frame would come out blank.
+      const frame = document.createElement('iframe');
+      frame.setAttribute('aria-hidden', 'true');
+      frame.tabIndex = -1;
+      frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + CHAT_PDF_W + 'px;height:' + CHAT_PDF_PAGE + 'px;border:0';
+      try {
+        await Promise.all([
+          chatLoadScript(BASE + 'assets/vendor/html2canvas.min.js'),
+          chatLoadScript(BASE + 'assets/vendor/jspdf.umd.min.js'),
+          new Promise(ok => { frame.onload = ok; frame.srcdoc = html; document.body.appendChild(frame); })
+        ]);
+        const doc = frame.contentDocument;
+        if (doc.fonts) await doc.fonts.ready;
+        const height = doc.documentElement.scrollHeight;
+        frame.style.height = height + 'px';
+        const pages = chatPdfPages(doc);
+        const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
+        const k = CHAT_PDF_MM, margin = 68 * k;
+        // One canvas per page: a single tall one passes Safari's canvas size
+        // limit after a few pages.
+        for (let i = 0; i < pages.length; i++) {
+          const p = pages[i];
+          const canvas = await html2canvas(doc.body, {
+            x: 0, y: p.top, width: CHAT_PDF_W, height: p.bottom - p.top,
+            scrollX: 0, scrollY: 0, windowWidth: CHAT_PDF_W, windowHeight: height,
+            scale: 2, backgroundColor: '#ffffff', logging: false
+          });
+          if (i) pdf.addPage();
+          pdf.addImage(canvas.toDataURL('image/jpeg', 0.8), 'JPEG', 0, margin, 210, (p.bottom - p.top) * k, undefined, 'FAST');
+          if (pages.length > 1) {
+            pdf.setFontSize(8);
+            pdf.setTextColor(138, 135, 156);
+            pdf.text((i + 1) + ' / ' + pages.length, 105, 297 - margin / 2, { align: 'center' });
+          }
+        }
+        // The text is a picture now, so put clickable areas over the links.
+        doc.querySelectorAll('a[href]').forEach(a => {
+          [...a.getClientRects()].forEach(r => {
+            const i = pages.findIndex(p => r.top >= p.top && r.top < p.bottom);
+            if (i < 0) return;
+            pdf.setPage(i + 1);
+            pdf.link(r.left * k, margin + (r.top - pages[i].top) * k, r.width * k, r.height * k, { url: a.href });
+          });
+        });
+        pdf.save(title + '.pdf');
+        chatSaveBusy(btn, false);
+      } catch (err) {
+        console.error(err);
+        chatSaveBusy(btn, false, "Couldn't save · Try again");
+      } finally {
+        frame.remove();
+        chatSaving = false;
+        // A reply that finished meanwhile moved the button; free the new one.
+        document.querySelectorAll('.msg-save').forEach(b => { if (b !== btn) chatSaveBusy(b, false); });
       }
     }
     function chatSendOrStop() {

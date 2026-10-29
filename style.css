@@ -4308,6 +4308,13 @@ body.ex-filters-open .ex-drawer {
   opacity: .8;
 }
 
+/* "Save this chat" under the latest reply, at its right edge */
+.msg-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
 /* Three bouncing dots while the first words of a reply are on their way */
 .msg-typing {
   display: inline-flex;
