@@ -1487,16 +1487,18 @@
         const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
         const k = CHAT_PDF_MM, margin = 68 * k;
         // One canvas per page: a single tall one passes Safari's canvas size
-        // limit after a few pages.
+        // limit after a few pages. 3× is about 290 dpi, sharp when zoomed or
+        // printed, and a page (2382×2961) stays well under that limit. PNG,
+        // not JPEG: JPEG blurs and rings around the edges of letters.
         for (let i = 0; i < pages.length; i++) {
           const p = pages[i];
           const canvas = await html2canvas(doc.body, {
             x: 0, y: p.top, width: CHAT_PDF_W, height: p.bottom - p.top,
             scrollX: 0, scrollY: 0, windowWidth: CHAT_PDF_W, windowHeight: height,
-            scale: 2, backgroundColor: '#ffffff', logging: false
+            scale: 3, backgroundColor: '#ffffff', logging: false
           });
           if (i) pdf.addPage();
-          pdf.addImage(canvas.toDataURL('image/jpeg', 0.8), 'JPEG', 0, margin, 210, (p.bottom - p.top) * k, undefined, 'FAST');
+          pdf.addImage(canvas, 'PNG', 0, margin, 210, (p.bottom - p.top) * k, undefined, 'FAST');
           if (pages.length > 1) {
             pdf.setFontSize(8);
             pdf.setTextColor(138, 135, 156);
