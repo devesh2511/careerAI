@@ -18,3 +18,9 @@ node_modules/
 
 # Brainstorming visual companion mockups
 .superpowers/
+
+# Prototype tooling dependencies
+ui_redesign/tools/node_modules/
+
+# Browser test dependencies
+tests/browser/node_modules/

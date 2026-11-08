@@ -1,0 +1,127 @@
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  .bn{--paper:#f6f1e7;--surface:#fffdf8;--ink:#1d1b18;--muted:#6f675b;--accent:#e0482b;--shadow:#1d1b18;font-family:Inter,sans-serif;color:var(--ink)}
+  .bn.dark{--paper:#1b1916;--surface:#25221e;--ink:#f3ecdf;--muted:#a99f90;--accent:#ff6f4f;--shadow:#000}
+  .bn-stage{background:var(--paper);border-radius:10px;padding:14px 12px 18px;position:relative;border:1px solid #ccc;margin:0 auto}
+  .bn-stage .fake{display:grid;gap:8px;margin-bottom:16px}
+  .bn-stage .fake i{display:block;height:34px;border-radius:8px;border:1.5px dashed color-mix(in srgb,var(--ink) 30%,transparent)}
+  .bar{margin:0 auto;max-width:440px;display:flex;justify-content:space-between;gap:2px;background:var(--surface);border:1.5px solid var(--ink);border-radius:20px;padding:6px;box-shadow:3px 3px 0 var(--shadow)}
+  .t{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 6px;border-radius:14px;font-size:11px;font-weight:600;color:var(--muted);position:relative;min-width:0}
+  .t svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+  .t.on{background:var(--ink);color:var(--paper)}
+  .t .dot{position:absolute;top:4px;right:calc(50% - 16px);width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
+  .t.on .dot{border-color:var(--ink)}
+  .t .live{position:absolute;top:1px;left:calc(50% + 4px);background:var(--accent);color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:999px;letter-spacing:.04em;border:1.5px solid var(--surface)}
+  .bn-row{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:end}
+  .bn-cap{font-size:12px;color:#888;margin:6px 0 0;text-align:center}
+  .bn-variant{margin-top:22px}
+  .bn-variant h3{margin-bottom:4px}
+  @media (max-width:900px){.bn-row{grid-template-columns:1fr}}
+</style>
+
+<h2>Navigation, v4: phone, tablet and laptop</h2>
+<p class="subtitle">Changes: Contests gets a tab with a LIVE badge, the selected tab is a solid ink pill, and the bar floats in notebook style (ink outline, hard shadow, bolder icons). It's <b>centred and responsive</b>: it fills a phone, caps at 440px wide and centres on tablets. The sidebar takes over from 1024px up. Each variant is shown at phone width (360px) and tablet width, in light and dark.</p>
+
+<template id="ic-home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></template>
+<template id="ic-match"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></template>
+<template id="ic-road"><svg viewBox="0 0 24 24"><path d="M5 19c3 0 3-6 7-6s4-6 7-6"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="7" r="2"/></svg></template>
+<template id="ic-trophy"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8"/></svg></template>
+<template id="ic-chat"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></template>
+<template id="ic-more"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></template>
+
+<div class="cards">
+  <div class="card bn-variant" data-choice="roadmap-in-bar" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px"><div data-bar="home,road,contest,chat,more" data-active="home"></div></div>
+    <div class="card-body">
+      <h3>A · Home · Roadmap · Contests · AI Chat · More</h3>
+      <p>Career Matches moves under More. It's still one tap from Home, because the dashboard leads with your top matches. Roadmap stays in the bar as the "what do I do next" screen.</p>
+    </div>
+  </div>
+  <div class="card bn-variant" data-choice="matches-in-bar" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px"><div data-bar="home,match,contest,chat,more" data-active="contest"></div></div>
+    <div class="card-body">
+      <h3>B · Home · Matches · Contests · AI Chat · More</h3>
+      <p>Roadmap moves under More, but it's still reachable from each career card and from the dashboard's "next step" card. Shown with Contests selected so you can see the active pill and LIVE badge together.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dsk{--paper:#f6f1e7;--surface:#fffdf8;--sunk:#efe8da;--ink:#1d1b18;--muted:#6f675b;--accent:#e0482b;--accent-weak:#ffe3d8;--shadow:#1d1b18;font-family:Inter,sans-serif;color:var(--ink)}
+  .dsk.dark{--paper:#1b1916;--surface:#25221e;--sunk:#141210;--ink:#f3ecdf;--muted:#a99f90;--accent:#ff6f4f;--accent-weak:#3d231c;--shadow:#000}
+  .lap{max-width:1040px;margin:0 auto}
+  .lap .scr{background:var(--paper);border:10px solid #2a2826;border-bottom-width:14px;border-radius:14px 14px 4px 4px;height:440px;display:flex;overflow:hidden}
+  .lap .base{height:12px;background:#3a3836;border-radius:0 0 12px 12px;margin:0 -30px;position:relative}
+  .lap .base:after{content:"";position:absolute;left:50%;top:0;width:110px;height:5px;margin-left:-55px;background:#2a2826;border-radius:0 0 6px 6px}
+  .sb{width:216px;flex:0 0 216px;padding:16px 12px;display:flex;flex-direction:column;gap:3px;border-right:1.5px solid var(--ink);background:var(--surface)}
+  .sb .logo{font-family:Fraunces,serif;font-weight:700;font-size:21px;padding:2px 10px 14px}
+  .sb .logo span{color:var(--accent)}
+  .sb .grp{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 10px 4px}
+  .sb .it{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;font-size:14px;font-weight:600;color:var(--muted)}
+  .sb .it svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;flex:0 0 19px}
+  .sb .it.on{background:var(--ink);color:var(--paper)}
+  .sb .it .lv{margin-left:auto;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:999px;letter-spacing:.04em}
+  .sb .sp{flex:1}
+  .sb .me{display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid var(--ink);border-radius:12px;box-shadow:2px 2px 0 var(--shadow);background:var(--paper)}
+  .sb .av{width:32px;height:32px;border-radius:50%;background:#9ad1f5;border:1.5px solid #1d1b18;display:grid;place-items:center;font-family:Fraunces,serif;font-weight:700;color:#1d1b18}
+  .sb .me b{display:block;font-size:13px}.sb .me small{font-size:11px;color:var(--muted)}
+  .sb .me .th{margin-left:auto;width:28px;height:28px;border-radius:8px;border:1.5px solid var(--ink);display:grid;place-items:center}
+  .sb .me .th svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+  .mn{flex:1;padding:22px 26px;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .mn .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .mn h4{font-family:Fraunces,serif;font-weight:800;font-size:28px;margin:0}
+  .mn .g{display:grid;grid-template-columns:2fr 1fr;gap:12px;flex:1}
+  .mn .c{background:var(--surface);border:1.5px solid var(--ink);border-radius:8px;box-shadow:3px 3px 0 var(--shadow);padding:14px}
+  .mn .ph{display:block;height:9px;border-radius:4px;background:var(--sunk);margin-bottom:8px}
+  .dsk-note{font-size:13px;color:#888;text-align:center;margin:10px 0 0}
+</style>
+
+<div class="section" style="margin-top:28px">
+  <h3>Laptop / desktop (1024px and up): the sidebar</h3>
+  <p class="subtitle">The sidebar lists every section, because desktop has room. It uses the same ink pill for the selected item and the same LIVE badge as the phone bar. It's grouped into <b>My path</b> (Home, Matches, Roadmap), <b>Discover</b> (Explore, Career Space) and <b>Do</b> (Contests, AI Chat). Your profile card at the bottom opens Settings and has the light/dark toggle. Content is capped at about 1200px and centred on very wide screens.</p>
+  <div id="dsk-light"></div>
+  <div id="dsk-dark" style="margin-top:26px"></div>
+</div>
+
+<script>
+(function(){
+  const ic=id=>document.getElementById(id).innerHTML;
+  const extra={explore:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+    space:'<svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6"/></svg>'};
+  const sun='<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+  function item(svg,label,on,live){return '<div class="it'+(on?' on':'')+'">'+svg+label+(live?'<span class="lv">LIVE</span>':'')+'</div>';}
+  function laptop(dark){
+    return '<div class="dsk'+(dark?' dark':'')+'"><div class="lap"><div class="scr">'+
+      '<aside class="sb"><div class="logo">Crackeer</div>'+
+      '<div class="grp">My path</div>'+item(ic('ic-home'),'Home',true)+item(ic('ic-match'),'Career Matches')+item(ic('ic-road'),'Roadmap')+
+      '<div class="grp">Discover</div>'+item(extra.explore,'Explore careers')+item(extra.space,'Career Space')+
+      '<div class="grp">Do</div>'+item(ic('ic-trophy'),'Contests',false,true)+item(ic('ic-chat'),'AI Chat')+
+      '<div class="sp"></div><div class="me"><div class="av">A</div><div><b>Aarav Mehta</b><small>Class 10 · Settings</small></div><div class="th">'+sun+'</div></div></aside>'+
+      '<main class="mn"><div class="k">Saturday · Week 12</div><h4>Hey Aarav, your path is taking shape.</h4>'+
+      '<div class="g"><div class="c"><i class="ph" style="width:40%"></i><i class="ph"></i><i class="ph" style="width:80%"></i></div><div class="c"><i class="ph" style="width:60%"></i><i class="ph"></i></div></div></main>'+
+      '</div><div class="base"></div></div><p class="dsk-note">Laptop · 1280px · '+(dark?'dark':'light')+'</p></div>';}
+  document.getElementById('dsk-light').innerHTML=laptop(false);
+  document.getElementById('dsk-dark').innerHTML=laptop(true);
+})();
+(function(){
+  const L={home:'Home',match:'Matches',road:'Roadmap',contest:'Contests',chat:'AI Chat',more:'More'};
+  const IC={home:'ic-home',match:'ic-match',road:'ic-road',contest:'ic-trophy',chat:'ic-chat',more:'ic-more'};
+  function bar(keys,active){
+    const b=document.createElement('div');b.className='bar';
+    keys.forEach(k=>{const t=document.createElement('div');t.className='t'+(k===active?' on':'');
+      t.appendChild(document.getElementById(IC[k]).content.cloneNode(true));
+      if(k==='contest'){const l=document.createElement('span');l.className='live';l.textContent='LIVE';t.appendChild(l);}
+      t.appendChild(document.createTextNode(L[k]));b.appendChild(t);});
+    return b;}
+  function stage(keys,active,w,dark){
+    const wrap=document.createElement('div');wrap.className='bn'+(dark?' dark':'');
+    const s=document.createElement('div');s.className='bn-stage';s.style.maxWidth=w?w+'px':'none';
+    s.innerHTML='<div class="fake"><i></i><i></i></div>';s.appendChild(bar(keys,active));wrap.appendChild(s);
+    const c=document.createElement('p');c.className='bn-cap';c.textContent=(w?'Phone · '+w+'px':'Tablet · bar capped at 440px, centred')+(dark?' · dark':' · light');wrap.appendChild(c);return wrap;}
+  document.querySelectorAll('[data-bar]').forEach(h=>{
+    const keys=h.dataset.bar.split(','),a=h.dataset.active;
+    const r1=document.createElement('div');r1.className='bn-row';r1.append(stage(keys,a,360,false),stage(keys,a,0,false));
+    const r2=document.createElement('div');r2.className='bn-row';r2.style.marginTop='12px';r2.append(stage(keys,a,360,true),stage(keys,a,0,true));
+    h.append(r1,r2);});
+})();
+</script>

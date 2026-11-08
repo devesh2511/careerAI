@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Contests · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/shell.js" defer></script>
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="app" data-screen="contests">
+  <div data-shell="app" data-active="contests" data-live="true"></div>
+  <main class="app-main" data-proto-root></main>
+
+  <template data-state="live" data-label="Contest live now">
+    <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>Contests</h1>
+        <p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p>
+      </div>
+      
+    </header>
+      <div id="lb-root" class="stack-lg stack">
+      <section class="card-ink lb-status is-live" aria-labelledby="lb-status-title">
+        <div class="illo illo-sm"><img src="../assets/illustrations/trophy-200.webp" alt=""></div>
+        <div class="stack-sm stack">
+          <div class="cluster"><span class="live-badge"><span class="live-dot"></span>LIVE</span><span class="muted small">5 questions, about 4 minutes</span></div>
+          <h2 class="card-title-lg" id="lb-status-title">Tech Thinkers, week 12</h2>
+          <p class="muted">Closes in <span class="countdown countdown-inline" data-until="2026-11-08T21:00:00+05:30">02:14:37</span></p>
+        </div>
+        <a class="btn btn-primary" href="contest.html?state=intro">Play now</a>
+      </section>
+      <div class="tabs" role="tablist" aria-label="Leaderboard scope" data-proto-tabs>
+        <button class="tab-btn active" role="tab" aria-selected="true" type="button">Global</button>
+        <button class="tab-btn" role="tab" aria-selected="false" type="button" data-career="Software Engineer">Software Engineer</button>
+        <button class="tab-btn" role="tab" aria-selected="false" type="button" data-career="Data Scientist">Data Scientist</button>
+      </div>
+      <div class="grid-2">
+        <div class="card-flat lb-card stack-sm stack">
+          <p class="small muted">This week so far</p>
+          <div class="cluster cluster-lg"><span class="rank-big">#14</span><span class="muted small">of 1,240 students<br>4/5 correct</span></div>
+        </div>
+        <div class="card-flat lb-card stack-sm stack">
+          <p class="small muted">Your best</p>
+          <div class="cluster cluster-lg"><span class="rank-big">#6</span><span class="muted small">in week 9<br><span class="trend trend-up"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-flame"/></svg>3-week streak</span></span></div>
+        </div>
+      </div>
+      <section class="card-flat stack" aria-labelledby="lb-board-title">
+        <div class="section-head">
+          <h2 class="card-title" id="lb-board-title">This week's leaderboard</h2>
+          <div class="seg lb-seg" role="tablist" aria-label="Leaderboard view" data-proto-tabs>
+            <button class="seg-btn active" role="tab" aria-selected="true" type="button">Top</button>
+            <button class="seg-btn" role="tab" aria-selected="false" type="button">Around me</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table lb-table">
+            <thead><tr><th scope="col">Rank</th><th scope="col">Student</th><th scope="col" class="lb-hide-sm">School</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num lb-hide-sm">Time</th></tr></thead>
+            <tbody><tr><td class="num">#1</td><td>Ishita Rao<span class="muted small lb-school-sm"><br>DPS Pune</span></td><td class="lb-hide-sm muted">DPS Pune</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">2:41</td></tr><tr><td class="num">#2</td><td>Kabir Shah<span class="muted small lb-school-sm"><br>Bishop's School</span></td><td class="lb-hide-sm muted">Bishop's School</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">2:58</td></tr><tr><td class="num">#3</td><td>Meera Iyer<span class="muted small lb-school-sm"><br>Kendriya Vidyalaya</span></td><td class="lb-hide-sm muted">Kendriya Vidyalaya</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">3:05</td></tr><tr><td class="num">#12</td><td>Rohan Gupta<span class="muted small lb-school-sm"><br>The Orchid School</span></td><td class="lb-hide-sm muted">The Orchid School</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">2:49</td></tr><tr><td class="num">#13</td><td>Ananya Desai<span class="muted small lb-school-sm"><br>Vibgyor High</span></td><td class="lb-hide-sm muted">Vibgyor High</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">3:01</td></tr><tr class="is-me"><td class="num">#14</td><td>You (Aarav)<span class="muted small lb-school-sm"><br><span data-stress>Vidya Valley School</span></span></td><td class="lb-hide-sm" data-stress>Vidya Valley School</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">3:12</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card-flat stack" aria-labelledby="lb-hist-title">
+        <h2 class="card-title" id="lb-hist-title">Your past contests</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">Week</th><th scope="col" class="lb-hide-sm">Contest</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num">Rank</th><th scope="col"><span class="visually-hidden">Answers</span></th></tr></thead>
+            <tbody>
+              <tr><td>Week 11</td><td class="lb-hide-sm">Code Detectives</td><td class="col-num">4/5</td><td class="col-num">#22</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+              <tr><td>Week 10</td><td class="lb-hide-sm">Build It</td><td class="col-num">3/5</td><td class="col-num">#58</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+              <tr><td>Week 9</td><td class="lb-hide-sm">Logic Lab</td><td class="col-num">5/5</td><td class="col-num">#6</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+      <section class="card-sunk ai-note" id="pg-ai-note" aria-label="What your contests say">
+        <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span>
+        <div class="stack-xs stack"><p class="list-title">What your contests say</p><div><p>You score best on logic questions and drop marks on maths-under-time-pressure. Ten minutes of timed practice twice a week would help.</p></div></div>
+      </section>
+      <section class="card-flat stack" aria-labelledby="pg-evo-title">
+        <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+        <div class="list" id="pg-evolution-rows">
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="grow"><span class="list-title">Software Engineer, 86%</span><br><span class="list-meta">Quiz on 2 November</span></span><span class="badge fit-strong">Latest</span></div>
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg></span><span class="grow"><span class="list-title">Data Scientist, 79%</span><br><span class="list-meta">Quiz on 14 September</span></span></div>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template data-state="upcoming" data-label="Next contest coming up" data-shell-live="false">
+    <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>Contests</h1>
+        <p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p>
+      </div>
+      
+    </header>
+      <div id="lb-root" class="stack-lg stack">
+      <section class="card lb-status is-soon" aria-labelledby="lb-status-title">
+        <div class="illo illo-sm"><img src="../assets/illustrations/calendar-200.webp" alt=""></div>
+        <div class="stack-sm stack">
+          <span class="badge badge-accent"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg>Opens Saturday at 6 pm</span>
+          <h2 class="card-title-lg" id="lb-status-title">Tech Thinkers, week 13</h2>
+          <p class="muted">Starts in <span class="countdown countdown-inline" data-until="2026-11-15T18:00:00+05:30">1d 04:12:09</span></p>
+        </div>
+        <button class="btn btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-calendar"/></svg>Remind me</button>
+      </section>
+      <div class="tabs" role="tablist" aria-label="Leaderboard scope" data-proto-tabs>
+        <button class="tab-btn active" role="tab" aria-selected="true" type="button">Global</button>
+        <button class="tab-btn" role="tab" aria-selected="false" type="button" data-career="Software Engineer">Software Engineer</button>
+        <button class="tab-btn" role="tab" aria-selected="false" type="button" data-career="Data Scientist">Data Scientist</button>
+      </div>
+      <div class="grid-2">
+        <div class="card-flat lb-card stack-sm stack">
+          <p class="small muted">Last week</p>
+          <div class="cluster cluster-lg"><span class="rank-big">#14</span><span class="muted small">of 1,240 students<br>4/5 correct</span></div>
+        </div>
+        <div class="card-flat lb-card stack-sm stack">
+          <p class="small muted">Your best</p>
+          <div class="cluster cluster-lg"><span class="rank-big">#6</span><span class="muted small">in week 9<br><span class="trend trend-up"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-flame"/></svg>3-week streak</span></span></div>
+        </div>
+      </div>
+      <section class="card-flat stack" aria-labelledby="lb-board-title">
+        <div class="section-head">
+          <h2 class="card-title" id="lb-board-title">Last week's leaderboard</h2>
+          <div class="seg lb-seg" role="tablist" aria-label="Leaderboard view" data-proto-tabs>
+            <button class="seg-btn active" role="tab" aria-selected="true" type="button">Top</button>
+            <button class="seg-btn" role="tab" aria-selected="false" type="button">Around me</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table lb-table">
+            <thead><tr><th scope="col">Rank</th><th scope="col">Student</th><th scope="col" class="lb-hide-sm">School</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num lb-hide-sm">Time</th></tr></thead>
+            <tbody><tr><td class="num">#1</td><td>Ishita Rao<span class="muted small lb-school-sm"><br>DPS Pune</span></td><td class="lb-hide-sm muted">DPS Pune</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">2:41</td></tr><tr><td class="num">#2</td><td>Kabir Shah<span class="muted small lb-school-sm"><br>Bishop's School</span></td><td class="lb-hide-sm muted">Bishop's School</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">2:58</td></tr><tr><td class="num">#3</td><td>Meera Iyer<span class="muted small lb-school-sm"><br>Kendriya Vidyalaya</span></td><td class="lb-hide-sm muted">Kendriya Vidyalaya</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">3:05</td></tr><tr><td class="num">#12</td><td>Rohan Gupta<span class="muted small lb-school-sm"><br>The Orchid School</span></td><td class="lb-hide-sm muted">The Orchid School</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">2:49</td></tr><tr><td class="num">#13</td><td>Ananya Desai<span class="muted small lb-school-sm"><br>Vibgyor High</span></td><td class="lb-hide-sm muted">Vibgyor High</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">3:01</td></tr><tr class="is-me"><td class="num">#14</td><td>You (Aarav)<span class="muted small lb-school-sm"><br><span data-stress>Vidya Valley School</span></span></td><td class="lb-hide-sm" data-stress>Vidya Valley School</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">3:12</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card-flat stack" aria-labelledby="lb-hist-title">
+        <h2 class="card-title" id="lb-hist-title">Your past contests</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">Week</th><th scope="col" class="lb-hide-sm">Contest</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num">Rank</th><th scope="col"><span class="visually-hidden">Answers</span></th></tr></thead>
+            <tbody>
+              <tr><td>Week 11</td><td class="lb-hide-sm">Code Detectives</td><td class="col-num">4/5</td><td class="col-num">#22</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+              <tr><td>Week 10</td><td class="lb-hide-sm">Build It</td><td class="col-num">3/5</td><td class="col-num">#58</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+              <tr><td>Week 9</td><td class="lb-hide-sm">Logic Lab</td><td class="col-num">5/5</td><td class="col-num">#6</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+      <section class="card-flat stack" aria-labelledby="pg-evo-title">
+        <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+        <div class="list" id="pg-evolution-rows">
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="grow"><span class="list-title">Software Engineer, 86%</span><br><span class="list-meta">Quiz on 2 November</span></span><span class="badge fit-strong">Latest</span></div>
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg></span><span class="grow"><span class="list-title">Data Scientist, 79%</span><br><span class="list-meta">Quiz on 14 September</span></span></div>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template data-state="done" data-label="Contest closed, results in" data-shell-live="false">
+    <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>Contests</h1>
+        <p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p>
+      </div>
+      
+    </header>
+      <div id="lb-root" class="stack-lg stack">
+      <section class="card lb-status is-done" aria-labelledby="lb-status-title">
+        <div class="illo illo-sm"><img src="../assets/illustrations/medal-200.webp" alt=""></div>
+        <div class="stack-sm stack">
+          <span class="badge fit-strong"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Results are in</span>
+          <h2 class="card-title-lg" id="lb-status-title">You placed #14 of 1,240</h2>
+          <p class="muted">Tech Thinkers, week 12. You got 4 of 5 right in 3 min 12 s.</p>
+        </div>
+        <a class="btn btn-secondary" href="contest.html?state=review">See your answers</a>
+      </section>
+      <div class="tabs" role="tablist" aria-label="Leaderboard scope" data-proto-tabs>
+        <button class="tab-btn active" role="tab" aria-selected="true" type="button">Global</button>
+        <button class="tab-btn" role="tab" aria-selected="false" type="button" data-career="Software Engineer">Software Engineer</button>
+        <button class="tab-btn" role="tab" aria-selected="false" type="button" data-career="Data Scientist">Data Scientist</button>
+      </div>
+      <div class="grid-2">
+        <div class="card-flat lb-card stack-sm stack">
+          <p class="small muted">Last week</p>
+          <div class="cluster cluster-lg"><span class="rank-big">#14</span><span class="muted small">of 1,240 students<br>4/5 correct</span></div>
+        </div>
+        <div class="card-flat lb-card stack-sm stack">
+          <p class="small muted">Your best</p>
+          <div class="cluster cluster-lg"><span class="rank-big">#6</span><span class="muted small">in week 9<br><span class="trend trend-up"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-flame"/></svg>3-week streak</span></span></div>
+        </div>
+      </div>
+      <section class="card-flat stack" aria-labelledby="lb-board-title">
+        <div class="section-head">
+          <h2 class="card-title" id="lb-board-title">Final leaderboard</h2>
+          <div class="seg lb-seg" role="tablist" aria-label="Leaderboard view" data-proto-tabs>
+            <button class="seg-btn active" role="tab" aria-selected="true" type="button">Top</button>
+            <button class="seg-btn" role="tab" aria-selected="false" type="button">Around me</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table lb-table">
+            <thead><tr><th scope="col">Rank</th><th scope="col">Student</th><th scope="col" class="lb-hide-sm">School</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num lb-hide-sm">Time</th></tr></thead>
+            <tbody><tr><td class="num">#1</td><td>Ishita Rao<span class="muted small lb-school-sm"><br>DPS Pune</span></td><td class="lb-hide-sm muted">DPS Pune</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">2:41</td></tr><tr><td class="num">#2</td><td>Kabir Shah<span class="muted small lb-school-sm"><br>Bishop's School</span></td><td class="lb-hide-sm muted">Bishop's School</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">2:58</td></tr><tr><td class="num">#3</td><td>Meera Iyer<span class="muted small lb-school-sm"><br>Kendriya Vidyalaya</span></td><td class="lb-hide-sm muted">Kendriya Vidyalaya</td><td class="col-num">5/5</td><td class="col-num lb-hide-sm">3:05</td></tr><tr><td class="num">#12</td><td>Rohan Gupta<span class="muted small lb-school-sm"><br>The Orchid School</span></td><td class="lb-hide-sm muted">The Orchid School</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">2:49</td></tr><tr><td class="num">#13</td><td>Ananya Desai<span class="muted small lb-school-sm"><br>Vibgyor High</span></td><td class="lb-hide-sm muted">Vibgyor High</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">3:01</td></tr><tr class="is-me"><td class="num">#14</td><td>You (Aarav)<span class="muted small lb-school-sm"><br><span data-stress>Vidya Valley School</span></span></td><td class="lb-hide-sm" data-stress>Vidya Valley School</td><td class="col-num">4/5</td><td class="col-num lb-hide-sm">3:12</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card-flat stack" aria-labelledby="lb-hist-title">
+        <h2 class="card-title" id="lb-hist-title">Your past contests</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">Week</th><th scope="col" class="lb-hide-sm">Contest</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num">Rank</th><th scope="col"><span class="visually-hidden">Answers</span></th></tr></thead>
+            <tbody>
+              <tr><td>Week 11</td><td class="lb-hide-sm">Code Detectives</td><td class="col-num">4/5</td><td class="col-num">#22</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+              <tr><td>Week 10</td><td class="lb-hide-sm">Build It</td><td class="col-num">3/5</td><td class="col-num">#58</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+              <tr><td>Week 9</td><td class="lb-hide-sm">Logic Lab</td><td class="col-num">5/5</td><td class="col-num">#6</td><td><a href="contest.html?state=review">Answers</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+      <section class="card-sunk ai-note" id="pg-ai-note" aria-label="What your contests say">
+        <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span>
+        <div class="stack-xs stack"><p class="list-title">What your contests say</p><div><p>You score best on logic questions and drop marks on maths-under-time-pressure. Ten minutes of timed practice twice a week would help.</p></div></div>
+      </section>
+      <section class="card-flat stack" aria-labelledby="pg-evo-title">
+        <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+        <div class="list" id="pg-evolution-rows">
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="grow"><span class="list-title">Software Engineer, 86%</span><br><span class="list-meta">Quiz on 2 November</span></span><span class="badge fit-strong">Latest</span></div>
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg></span><span class="grow"><span class="list-title">Data Scientist, 79%</span><br><span class="list-meta">Quiz on 14 September</span></span></div>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template data-state="no-career" data-label="No career picked yet">
+    <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>Contests</h1>
+        <p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p>
+      </div>
+      
+    </header>
+      <div id="lb-root" class="stack-lg stack">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/target-400.webp" alt=""></div>
+          <h2 class="empty-title">Pick a career to join contests</h2>
+          <p class="empty-text">Each week's questions are about the career you choose. Pick one from your matches and you're in.</p>
+          <div class="cluster"><a class="btn btn-primary" href="career-matches.html">Choose from my matches</a></div>
+        </div>
+      </section>
+      </div>
+      <section class="card-flat stack" aria-labelledby="pg-evo-title">
+        <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+        <div class="list" id="pg-evolution-rows">
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="grow"><span class="list-title">Software Engineer, 86%</span><br><span class="list-meta">Quiz on 2 November</span></span><span class="badge fit-strong">Latest</span></div>
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg></span><span class="grow"><span class="list-title">Data Scientist, 79%</span><br><span class="list-meta">Quiz on 14 September</span></span></div>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template data-state="no-results" data-label="No quiz results yet">
+    <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>Contests</h1>
+        <p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p>
+      </div>
+      
+    </header>
+      <div id="lb-root" class="stack-lg stack">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/rocket-400.webp" alt=""></div>
+          <h2 class="empty-title">Take the career quiz first</h2>
+          <p class="empty-text">Contests are built around your career match. The quiz takes about 6 minutes.</p>
+          <div class="cluster"><a class="btn btn-primary" href="career-quiz.html">Start the career quiz</a></div>
+        </div>
+      </section>
+      </div>
+      <section class="card-flat stack" hidden aria-labelledby="pg-evo-title">
+        <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+        <div class="list" id="pg-evolution-rows">
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="grow"><span class="list-title">Software Engineer, 86%</span><br><span class="list-meta">Quiz on 2 November</span></span><span class="badge fit-strong">Latest</span></div>
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg></span><span class="grow"><span class="list-title">Data Scientist, 79%</span><br><span class="list-meta">Quiz on 14 September</span></span></div>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template data-state="payment-required" data-label="Plan needed">
+    <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>Contests</h1>
+        <p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p>
+      </div>
+      
+    </header>
+      <div id="lb-root" class="stack-lg stack">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/lock-400.webp" alt=""></div>
+          <h2 class="empty-title">Contests come with the full plan</h2>
+          <p class="empty-text">Ask your school about Crackeer, or get a personal plan to unlock weekly contests and leaderboards.</p>
+          <div class="cluster"><a class="btn btn-primary" href="paywall.html">See plans</a></div>
+        </div>
+      </section>
+      </div>
+      <section class="card-flat stack" hidden aria-labelledby="pg-evo-title">
+        <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+        <div class="list" id="pg-evolution-rows">
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="grow"><span class="list-title">Software Engineer, 86%</span><br><span class="list-meta">Quiz on 2 November</span></span><span class="badge fit-strong">Latest</span></div>
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg></span><span class="grow"><span class="list-title">Data Scientist, 79%</span><br><span class="list-meta">Quiz on 14 September</span></span></div>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template data-state="signed-out" data-label="Signed out">
+    <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>Contests</h1>
+        <p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p>
+      </div>
+      
+    </header>
+      <div id="lb-root" class="stack-lg stack">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/lock-400.webp" alt=""></div>
+          <h2 class="empty-title">Log in to see contests</h2>
+          <p class="empty-text">Your rank, streak and past answers are saved to your account.</p>
+          <div class="cluster"><a class="btn btn-primary" href="auth.html">Log in</a></div>
+        </div>
+      </section>
+      </div>
+      <section class="card-flat stack" hidden aria-labelledby="pg-evo-title">
+        <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+        <div class="list" id="pg-evolution-rows">
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="grow"><span class="list-title">Software Engineer, 86%</span><br><span class="list-meta">Quiz on 2 November</span></span><span class="badge fit-strong">Latest</span></div>
+          <div class="list-row"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg></span><span class="grow"><span class="list-title">Data Scientist, 79%</span><br><span class="list-meta">Quiz on 14 September</span></span></div>
+        </div>
+      </section>
+    </div>
+  </template>
+</body>
+</html>

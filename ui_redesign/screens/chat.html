@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AI Chat · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/shell.js" defer></script>
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="chat" data-screen="chat">
+  <div data-shell="app" data-active="chat" data-live="true"></div>
+  <main class="app-main" data-proto-root></main>
+
+  <template data-state="welcome" data-label="New chat">
+    <div class="chat">
+      <header class="chat-top">
+        <a class="btn btn-icon chat-back" href="dashboard.html" aria-label="Back to home"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></a>
+        <div class="chat-top-title"><h1>AI Chat</h1><p class="small muted">Knows your quiz results and profile</p></div>
+        <div class="cluster">
+          <button class="btn btn-secondary btn-sm chat-mem-btn" id="chat-mem-btn" type="button" data-proto-body="chat-mem-open" aria-controls="chat-mem"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg><span class="chat-btn-label">What I know</span></button>
+          <button class="btn btn-ghost btn-sm" id="chat-new" type="button" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-plus"/></svg><span class="chat-btn-label">New chat</span></button>
+        </div>
+      </header>
+      <div class="chat-scroll" id="chat-scroll">
+        <div class="chat-inner">
+          <section class="chat-welcome stack-lg stack" id="chat-welcome" aria-labelledby="chat-hello">
+            <div class="stack-sm stack"><h2 class="chat-hello" id="chat-hello">Hi <span id="chat-hello-name">Aarav</span>, what's on your mind?</h2><p class="muted">Ask about careers, streams, exams or colleges. I'll answer with your results in mind.</p></div>
+            <div class="card-sunk chat-insight" id="chat-insight">
+              <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg></span>
+              <div class="stack-sm stack"><p>I know your top match is <b>Software Engineer</b> at 86%, you're in Class 10 with CBSE, and maths is your favourite subject.</p><div><button class="btn btn-ghost btn-sm" type="button" data-proto-body="chat-mem-open">See all I know</button></div></div>
+            </div>
+            <div class="chat-sugs" id="chat-sugs" aria-label="Suggested questions"><button class="chat-sug" type="button" data-ask="Which entrance exams do I need for software engineering?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg></span><span class="chat-sug-text">Which entrance exams do I need for software engineering?</span></button><button class="chat-sug" type="button" data-ask="What does a data scientist do all day?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-compass"/></svg></span><span class="chat-sug-text">What does a data scientist do all day?</span></button><button class="chat-sug" type="button" data-ask="Is Science (PCM) right for me?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-graduation-cap"/></svg></span><span class="chat-sug-text">Is Science (PCM) right for me?</span></button><button class="chat-sug" type="button" data-ask="How can I start coding in Class 10?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="chat-sug-text">How can I start coding in Class 10?</span></button></div>
+          </section>
+          <div class="chat-messages" id="chat-messages" aria-live="polite">
+
+          </div>
+        </div>
+      </div>
+      <form class="chat-composer" novalidate>
+        <div class="chat-composer-inner">
+          <label class="visually-hidden" for="chat-input">Message AI Chat</label>
+          <textarea class="textarea chat-input" id="chat-input" rows="1" placeholder="Ask about careers, exams or colleges"></textarea>
+          <button class="btn btn-primary btn-icon chat-send idle" id="chat-send" type="submit" aria-label="Send"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-send"/></svg></button>
+        </div>
+        <p class="chat-hint small muted">Enter to send, Shift and Enter for a new line. AI Chat can make mistakes, so check important dates.</p>
+      </form>
+    </div>
+  <div class="scrim chat-mem-scrim" data-proto-close></div>
+  <aside class="drawer chat-mem" id="chat-mem" role="dialog" aria-modal="true" aria-labelledby="chat-mem-title">
+    <div class="sheet-handle chat-mem-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="chat-mem-title">What I know about you</h2><p class="small muted" id="chat-mem-sub">From your profile and quiz. Highlighted facts shaped my last answer.</p></div><button class="btn btn-icon btn-sm chat-mem-close" type="button" data-proto-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body"><ul class="mem-list" id="chat-mem-body"><li class="mem-fact lit" data-fact="Top match"><span class="list-meta">Top match</span><span class="list-title">Software Engineer, 86%</span></li><li class="mem-fact lit" data-fact="Interest code"><span class="list-meta">Interest code</span><span class="list-title">Thinker, Doer, Creator</span></li><li class="mem-fact" data-fact="Class and board"><span class="list-meta">Class and board</span><span class="list-title">Class 10, CBSE</span></li><li class="mem-fact" data-fact="City"><span class="list-meta">City</span><span class="list-title">Pune</span></li><li class="mem-fact" data-fact="Favourite subjects"><span class="list-meta">Favourite subjects</span><span class="list-title">Maths, Science, Computer</span></li><li class="mem-fact" data-fact="Hobbies"><span class="list-meta">Hobbies</span><span class="list-title">Coding, Gaming</span></li><li class="mem-fact" data-fact="Recommended stream"><span class="list-meta">Recommended stream</span><span class="list-title">Science (PCM)</span></li></ul><a class="btn btn-secondary btn-sm" href="settings.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Change these in Settings</a></div>
+  </aside>
+  </template>
+
+  <template data-state="conversation" data-label="Conversation">
+    <div class="chat">
+      <header class="chat-top">
+        <a class="btn btn-icon chat-back" href="dashboard.html" aria-label="Back to home"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></a>
+        <div class="chat-top-title"><h1>AI Chat</h1><p class="small muted">Knows your quiz results and profile</p></div>
+        <div class="cluster">
+          <button class="btn btn-secondary btn-sm chat-mem-btn" id="chat-mem-btn" type="button" data-proto-body="chat-mem-open" aria-controls="chat-mem"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg><span class="chat-btn-label">What I know</span></button>
+          <button class="btn btn-ghost btn-sm" id="chat-new" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-plus"/></svg><span class="chat-btn-label">New chat</span></button>
+        </div>
+      </header>
+      <div class="chat-scroll" id="chat-scroll">
+        <div class="chat-inner">
+          <section class="chat-welcome stack-lg stack" id="chat-welcome" hidden aria-labelledby="chat-hello">
+            <div class="stack-sm stack"><h2 class="chat-hello" id="chat-hello">Hi <span id="chat-hello-name">Aarav</span>, what's on your mind?</h2><p class="muted">Ask about careers, streams, exams or colleges. I'll answer with your results in mind.</p></div>
+            <div class="card-sunk chat-insight" id="chat-insight">
+              <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg></span>
+              <div class="stack-sm stack"><p>I know your top match is <b>Software Engineer</b> at 86%, you're in Class 10 with CBSE, and maths is your favourite subject.</p><div><button class="btn btn-ghost btn-sm" type="button" data-proto-body="chat-mem-open">See all I know</button></div></div>
+            </div>
+            <div class="chat-sugs" id="chat-sugs" aria-label="Suggested questions"><button class="chat-sug" type="button" data-ask="Which entrance exams do I need for software engineering?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg></span><span class="chat-sug-text">Which entrance exams do I need for software engineering?</span></button><button class="chat-sug" type="button" data-ask="What does a data scientist do all day?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-compass"/></svg></span><span class="chat-sug-text">What does a data scientist do all day?</span></button><button class="chat-sug" type="button" data-ask="Is Science (PCM) right for me?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-graduation-cap"/></svg></span><span class="chat-sug-text">Is Science (PCM) right for me?</span></button><button class="chat-sug" type="button" data-ask="How can I start coding in Class 10?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="chat-sug-text">How can I start coding in Class 10?</span></button></div>
+          </section>
+          <div class="chat-messages" id="chat-messages" aria-live="polite">
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble">Which entrance exams do I need for software engineering?</div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg"><span class="msg-avatar msg-avatar-ai" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><div class="msg-body"><div class="msg-bubble"><p>For a B.Tech in computer science, these are the main ones:</p>
+                <ul><li><b>JEE Main</b> for NITs and many state colleges. It's held in January and April.</li><li><b>JEE Advanced</b> if you want an IIT. You take it after clearing JEE Main.</li><li><b>BITSAT</b> for the BITS campuses in Pilani, Goa and Hyderabad.</li><li><b>MHT-CET</b>, since you're in Pune. It covers most engineering colleges in Maharashtra.</li></ul>
+                <p>You're in Class 10, so the most useful thing now is a strong maths base. Your <span class="chat-hl">Software Engineer roadmap</span> has this year's steps.</p></div><div class="msg-mentions"><a class="pill" href="roadmap.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg>Software Engineer roadmap</a></div><div class="msg-sources"><p class="label">Sources</p><a href="https://example.com/jee-main" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>JEE Main information bulletin</a><a href="https://example.com/bitsat" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>BITSAT admissions</a></div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble"><span data-stress>Can you check this course link for me? https://example.com/courses/introduction-to-programming-with-python-for-school-students-class-9-to-12</span></div><span class="msg-time">6:44 pm</span></div></div>
+            <div class="msg"><span class="msg-avatar msg-avatar-ai" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><div class="msg-body"><div class="msg-bubble"><p data-stress>That one is a beginner Python course aimed at school students. It starts from zero and ends with small projects, which suits Class 10 well.</p></div><span class="msg-time">6:44 pm</span><div class="msg-actions"><button class="btn btn-ghost btn-sm msg-save" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-download"/></svg>Save this chat as PDF</button></div></div></div>
+          </div>
+        </div>
+      </div>
+      <form class="chat-composer" novalidate>
+        <div class="chat-composer-inner">
+          <label class="visually-hidden" for="chat-input">Message AI Chat</label>
+          <textarea class="textarea chat-input" id="chat-input" rows="1" placeholder="Ask about careers, exams or colleges"></textarea>
+          <button class="btn btn-primary btn-icon chat-send idle" id="chat-send" type="submit" aria-label="Send"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-send"/></svg></button>
+        </div>
+        <p class="chat-hint small muted">Enter to send, Shift and Enter for a new line. AI Chat can make mistakes, so check important dates.</p>
+      </form>
+    </div>
+  <div class="scrim chat-mem-scrim" data-proto-close></div>
+  <aside class="drawer chat-mem" id="chat-mem" role="dialog" aria-modal="true" aria-labelledby="chat-mem-title">
+    <div class="sheet-handle chat-mem-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="chat-mem-title">What I know about you</h2><p class="small muted" id="chat-mem-sub">From your profile and quiz. Highlighted facts shaped my last answer.</p></div><button class="btn btn-icon btn-sm chat-mem-close" type="button" data-proto-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body"><ul class="mem-list" id="chat-mem-body"><li class="mem-fact lit" data-fact="Top match"><span class="list-meta">Top match</span><span class="list-title">Software Engineer, 86%</span></li><li class="mem-fact lit" data-fact="Interest code"><span class="list-meta">Interest code</span><span class="list-title">Thinker, Doer, Creator</span></li><li class="mem-fact" data-fact="Class and board"><span class="list-meta">Class and board</span><span class="list-title">Class 10, CBSE</span></li><li class="mem-fact" data-fact="City"><span class="list-meta">City</span><span class="list-title">Pune</span></li><li class="mem-fact" data-fact="Favourite subjects"><span class="list-meta">Favourite subjects</span><span class="list-title">Maths, Science, Computer</span></li><li class="mem-fact" data-fact="Hobbies"><span class="list-meta">Hobbies</span><span class="list-title">Coding, Gaming</span></li><li class="mem-fact" data-fact="Recommended stream"><span class="list-meta">Recommended stream</span><span class="list-title">Science (PCM)</span></li></ul><a class="btn btn-secondary btn-sm" href="settings.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Change these in Settings</a></div>
+  </aside>
+  </template>
+
+  <template data-state="streaming" data-label="Reply streaming">
+    <div class="chat">
+      <header class="chat-top">
+        <a class="btn btn-icon chat-back" href="dashboard.html" aria-label="Back to home"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></a>
+        <div class="chat-top-title"><h1>AI Chat</h1><p class="small muted">Knows your quiz results and profile</p></div>
+        <div class="cluster">
+          <button class="btn btn-secondary btn-sm chat-mem-btn" id="chat-mem-btn" type="button" data-proto-body="chat-mem-open" aria-controls="chat-mem"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg><span class="chat-btn-label">What I know</span></button>
+          <button class="btn btn-ghost btn-sm" id="chat-new" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-plus"/></svg><span class="chat-btn-label">New chat</span></button>
+        </div>
+      </header>
+      <div class="chat-scroll" id="chat-scroll">
+        <div class="chat-inner">
+          <section class="chat-welcome stack-lg stack" id="chat-welcome" hidden aria-labelledby="chat-hello">
+            <div class="stack-sm stack"><h2 class="chat-hello" id="chat-hello">Hi <span id="chat-hello-name">Aarav</span>, what's on your mind?</h2><p class="muted">Ask about careers, streams, exams or colleges. I'll answer with your results in mind.</p></div>
+            <div class="card-sunk chat-insight" id="chat-insight">
+              <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg></span>
+              <div class="stack-sm stack"><p>I know your top match is <b>Software Engineer</b> at 86%, you're in Class 10 with CBSE, and maths is your favourite subject.</p><div><button class="btn btn-ghost btn-sm" type="button" data-proto-body="chat-mem-open">See all I know</button></div></div>
+            </div>
+            <div class="chat-sugs" id="chat-sugs" aria-label="Suggested questions"><button class="chat-sug" type="button" data-ask="Which entrance exams do I need for software engineering?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg></span><span class="chat-sug-text">Which entrance exams do I need for software engineering?</span></button><button class="chat-sug" type="button" data-ask="What does a data scientist do all day?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-compass"/></svg></span><span class="chat-sug-text">What does a data scientist do all day?</span></button><button class="chat-sug" type="button" data-ask="Is Science (PCM) right for me?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-graduation-cap"/></svg></span><span class="chat-sug-text">Is Science (PCM) right for me?</span></button><button class="chat-sug" type="button" data-ask="How can I start coding in Class 10?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="chat-sug-text">How can I start coding in Class 10?</span></button></div>
+          </section>
+          <div class="chat-messages" id="chat-messages" aria-live="polite">
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble">Which entrance exams do I need for software engineering?</div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg"><span class="msg-avatar msg-avatar-ai" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><div class="msg-body"><div class="msg-bubble"><p>For a B.Tech in computer science, these are the main ones:</p>
+                <ul><li><b>JEE Main</b> for NITs and many state colleges. It's held in January and April.</li><li><b>JEE Advanced</b> if you want an IIT. You take it after clearing JEE Main.</li><li><b>BITSAT</b> for the BITS campuses in Pilani, Goa and Hyderabad.</li><li><b>MHT-CET</b>, since you're in Pune. It covers most engineering colleges in Maharashtra.</li></ul>
+                <p>You're in Class 10, so the most useful thing now is a strong maths base. Your <span class="chat-hl">Software Engineer roadmap</span> has this year's steps.</p></div><div class="msg-mentions"><a class="pill" href="roadmap.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg>Software Engineer roadmap</a></div><div class="msg-sources"><p class="label">Sources</p><a href="https://example.com/jee-main" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>JEE Main information bulletin</a><a href="https://example.com/bitsat" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>BITSAT admissions</a></div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble">And what about the CUET?</div><span class="msg-time">6:45 pm</span></div></div>
+            <div class="msg"><span class="msg-avatar msg-avatar-ai" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><div class="msg-body"><div class="msg-bubble"><p>CUET is the common entrance for central universities. For computer science it&rsquo;s mostly used for a B.Sc rather than a B.Tech, and</p></div><span class="msg-typing" role="status"><span></span><span></span><span></span><span class="visually-hidden">AI Chat is typing</span></span></div></div>
+          </div>
+        </div>
+      </div>
+      <form class="chat-composer" novalidate>
+        <div class="chat-composer-inner">
+          <label class="visually-hidden" for="chat-input">Message AI Chat</label>
+          <textarea class="textarea chat-input" id="chat-input" rows="1" placeholder="Ask about careers, exams or colleges"></textarea>
+          <button class="btn btn-primary btn-icon chat-send busy" id="chat-send" type="button" aria-label="Stop the reply"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-square"/></svg></button>
+        </div>
+        <p class="chat-hint small muted">Enter to send, Shift and Enter for a new line. AI Chat can make mistakes, so check important dates.</p>
+      </form>
+    </div>
+  <div class="scrim chat-mem-scrim" data-proto-close></div>
+  <aside class="drawer chat-mem" id="chat-mem" role="dialog" aria-modal="true" aria-labelledby="chat-mem-title">
+    <div class="sheet-handle chat-mem-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="chat-mem-title">What I know about you</h2><p class="small muted" id="chat-mem-sub">From your profile and quiz. Highlighted facts shaped my last answer.</p></div><button class="btn btn-icon btn-sm chat-mem-close" type="button" data-proto-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body"><ul class="mem-list" id="chat-mem-body"><li class="mem-fact lit" data-fact="Top match"><span class="list-meta">Top match</span><span class="list-title">Software Engineer, 86%</span></li><li class="mem-fact lit" data-fact="Interest code"><span class="list-meta">Interest code</span><span class="list-title">Thinker, Doer, Creator</span></li><li class="mem-fact" data-fact="Class and board"><span class="list-meta">Class and board</span><span class="list-title">Class 10, CBSE</span></li><li class="mem-fact" data-fact="City"><span class="list-meta">City</span><span class="list-title">Pune</span></li><li class="mem-fact" data-fact="Favourite subjects"><span class="list-meta">Favourite subjects</span><span class="list-title">Maths, Science, Computer</span></li><li class="mem-fact" data-fact="Hobbies"><span class="list-meta">Hobbies</span><span class="list-title">Coding, Gaming</span></li><li class="mem-fact" data-fact="Recommended stream"><span class="list-meta">Recommended stream</span><span class="list-title">Science (PCM)</span></li></ul><a class="btn btn-secondary btn-sm" href="settings.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Change these in Settings</a></div>
+  </aside>
+  </template>
+
+  <template data-state="error" data-label="Reply failed">
+    <div class="chat">
+      <header class="chat-top">
+        <a class="btn btn-icon chat-back" href="dashboard.html" aria-label="Back to home"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></a>
+        <div class="chat-top-title"><h1>AI Chat</h1><p class="small muted">Knows your quiz results and profile</p></div>
+        <div class="cluster">
+          <button class="btn btn-secondary btn-sm chat-mem-btn" id="chat-mem-btn" type="button" data-proto-body="chat-mem-open" aria-controls="chat-mem"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg><span class="chat-btn-label">What I know</span></button>
+          <button class="btn btn-ghost btn-sm" id="chat-new" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-plus"/></svg><span class="chat-btn-label">New chat</span></button>
+        </div>
+      </header>
+      <div class="chat-scroll" id="chat-scroll">
+        <div class="chat-inner">
+          <section class="chat-welcome stack-lg stack" id="chat-welcome" hidden aria-labelledby="chat-hello">
+            <div class="stack-sm stack"><h2 class="chat-hello" id="chat-hello">Hi <span id="chat-hello-name">Aarav</span>, what's on your mind?</h2><p class="muted">Ask about careers, streams, exams or colleges. I'll answer with your results in mind.</p></div>
+            <div class="card-sunk chat-insight" id="chat-insight">
+              <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg></span>
+              <div class="stack-sm stack"><p>I know your top match is <b>Software Engineer</b> at 86%, you're in Class 10 with CBSE, and maths is your favourite subject.</p><div><button class="btn btn-ghost btn-sm" type="button" data-proto-body="chat-mem-open">See all I know</button></div></div>
+            </div>
+            <div class="chat-sugs" id="chat-sugs" aria-label="Suggested questions"><button class="chat-sug" type="button" data-ask="Which entrance exams do I need for software engineering?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg></span><span class="chat-sug-text">Which entrance exams do I need for software engineering?</span></button><button class="chat-sug" type="button" data-ask="What does a data scientist do all day?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-compass"/></svg></span><span class="chat-sug-text">What does a data scientist do all day?</span></button><button class="chat-sug" type="button" data-ask="Is Science (PCM) right for me?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-graduation-cap"/></svg></span><span class="chat-sug-text">Is Science (PCM) right for me?</span></button><button class="chat-sug" type="button" data-ask="How can I start coding in Class 10?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="chat-sug-text">How can I start coding in Class 10?</span></button></div>
+          </section>
+          <div class="chat-messages" id="chat-messages" aria-live="polite">
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble">Which entrance exams do I need for software engineering?</div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg"><span class="msg-avatar msg-avatar-ai" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><div class="msg-body"><div class="msg-bubble"><p>For a B.Tech in computer science, these are the main ones:</p>
+                <ul><li><b>JEE Main</b> for NITs and many state colleges. It's held in January and April.</li><li><b>JEE Advanced</b> if you want an IIT. You take it after clearing JEE Main.</li><li><b>BITSAT</b> for the BITS campuses in Pilani, Goa and Hyderabad.</li><li><b>MHT-CET</b>, since you're in Pune. It covers most engineering colleges in Maharashtra.</li></ul>
+                <p>You're in Class 10, so the most useful thing now is a strong maths base. Your <span class="chat-hl">Software Engineer roadmap</span> has this year's steps.</p></div><div class="msg-mentions"><a class="pill" href="roadmap.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg>Software Engineer roadmap</a></div><div class="msg-sources"><p class="label">Sources</p><a href="https://example.com/jee-main" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>JEE Main information bulletin</a><a href="https://example.com/bitsat" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>BITSAT admissions</a></div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble">And what about the CUET?</div><span class="msg-time">6:45 pm</span></div></div>
+            <div class="msg-error alert alert-error" role="alert"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><div class="stack-sm stack"><span>The reply didn't finish because the connection dropped.</span><div><button class="btn btn-secondary btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Try again</button></div></div></div>
+            <p class="msg-note"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-info"/></svg><span>Your earlier chat expired, so this is a new conversation.</span></p>
+          </div>
+        </div>
+      </div>
+      <form class="chat-composer" novalidate>
+        <div class="chat-composer-inner">
+          <label class="visually-hidden" for="chat-input">Message AI Chat</label>
+          <textarea class="textarea chat-input" id="chat-input" rows="1" placeholder="Ask about careers, exams or colleges"></textarea>
+          <button class="btn btn-primary btn-icon chat-send idle" id="chat-send" type="submit" aria-label="Send"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-send"/></svg></button>
+        </div>
+        <p class="chat-hint small muted">Enter to send, Shift and Enter for a new line. AI Chat can make mistakes, so check important dates.</p>
+      </form>
+    </div>
+  <div class="scrim chat-mem-scrim" data-proto-close></div>
+  <aside class="drawer chat-mem" id="chat-mem" role="dialog" aria-modal="true" aria-labelledby="chat-mem-title">
+    <div class="sheet-handle chat-mem-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="chat-mem-title">What I know about you</h2><p class="small muted" id="chat-mem-sub">From your profile and quiz. Highlighted facts shaped my last answer.</p></div><button class="btn btn-icon btn-sm chat-mem-close" type="button" data-proto-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body"><ul class="mem-list" id="chat-mem-body"><li class="mem-fact lit" data-fact="Top match"><span class="list-meta">Top match</span><span class="list-title">Software Engineer, 86%</span></li><li class="mem-fact lit" data-fact="Interest code"><span class="list-meta">Interest code</span><span class="list-title">Thinker, Doer, Creator</span></li><li class="mem-fact" data-fact="Class and board"><span class="list-meta">Class and board</span><span class="list-title">Class 10, CBSE</span></li><li class="mem-fact" data-fact="City"><span class="list-meta">City</span><span class="list-title">Pune</span></li><li class="mem-fact" data-fact="Favourite subjects"><span class="list-meta">Favourite subjects</span><span class="list-title">Maths, Science, Computer</span></li><li class="mem-fact" data-fact="Hobbies"><span class="list-meta">Hobbies</span><span class="list-title">Coding, Gaming</span></li><li class="mem-fact" data-fact="Recommended stream"><span class="list-meta">Recommended stream</span><span class="list-title">Science (PCM)</span></li></ul><a class="btn btn-secondary btn-sm" href="settings.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Change these in Settings</a></div>
+  </aside>
+  </template>
+
+  <template data-state="memory-open" data-label="What I know, open" data-body-class="chat-mem-open">
+    <div class="chat">
+      <header class="chat-top">
+        <a class="btn btn-icon chat-back" href="dashboard.html" aria-label="Back to home"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></a>
+        <div class="chat-top-title"><h1>AI Chat</h1><p class="small muted">Knows your quiz results and profile</p></div>
+        <div class="cluster">
+          <button class="btn btn-secondary btn-sm chat-mem-btn" id="chat-mem-btn" type="button" data-proto-body="chat-mem-open" aria-controls="chat-mem"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg><span class="chat-btn-label">What I know</span></button>
+          <button class="btn btn-ghost btn-sm" id="chat-new" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-plus"/></svg><span class="chat-btn-label">New chat</span></button>
+        </div>
+      </header>
+      <div class="chat-scroll" id="chat-scroll">
+        <div class="chat-inner">
+          <section class="chat-welcome stack-lg stack" id="chat-welcome" hidden aria-labelledby="chat-hello">
+            <div class="stack-sm stack"><h2 class="chat-hello" id="chat-hello">Hi <span id="chat-hello-name">Aarav</span>, what's on your mind?</h2><p class="muted">Ask about careers, streams, exams or colleges. I'll answer with your results in mind.</p></div>
+            <div class="card-sunk chat-insight" id="chat-insight">
+              <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-brain"/></svg></span>
+              <div class="stack-sm stack"><p>I know your top match is <b>Software Engineer</b> at 86%, you're in Class 10 with CBSE, and maths is your favourite subject.</p><div><button class="btn btn-ghost btn-sm" type="button" data-proto-body="chat-mem-open">See all I know</button></div></div>
+            </div>
+            <div class="chat-sugs" id="chat-sugs" aria-label="Suggested questions"><button class="chat-sug" type="button" data-ask="Which entrance exams do I need for software engineering?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg></span><span class="chat-sug-text">Which entrance exams do I need for software engineering?</span></button><button class="chat-sug" type="button" data-ask="What does a data scientist do all day?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-compass"/></svg></span><span class="chat-sug-text">What does a data scientist do all day?</span></button><button class="chat-sug" type="button" data-ask="Is Science (PCM) right for me?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-graduation-cap"/></svg></span><span class="chat-sug-text">Is Science (PCM) right for me?</span></button><button class="chat-sug" type="button" data-ask="How can I start coding in Class 10?"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="chat-sug-text">How can I start coding in Class 10?</span></button></div>
+          </section>
+          <div class="chat-messages" id="chat-messages" aria-live="polite">
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble">Which entrance exams do I need for software engineering?</div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg"><span class="msg-avatar msg-avatar-ai" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><div class="msg-body"><div class="msg-bubble"><p>For a B.Tech in computer science, these are the main ones:</p>
+                <ul><li><b>JEE Main</b> for NITs and many state colleges. It's held in January and April.</li><li><b>JEE Advanced</b> if you want an IIT. You take it after clearing JEE Main.</li><li><b>BITSAT</b> for the BITS campuses in Pilani, Goa and Hyderabad.</li><li><b>MHT-CET</b>, since you're in Pune. It covers most engineering colleges in Maharashtra.</li></ul>
+                <p>You're in Class 10, so the most useful thing now is a strong maths base. Your <span class="chat-hl">Software Engineer roadmap</span> has this year's steps.</p></div><div class="msg-mentions"><a class="pill" href="roadmap.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg>Software Engineer roadmap</a></div><div class="msg-sources"><p class="label">Sources</p><a href="https://example.com/jee-main" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>JEE Main information bulletin</a><a href="https://example.com/bitsat" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-external-link"/></svg>BITSAT admissions</a></div><span class="msg-time">6:42 pm</span></div></div>
+            <div class="msg user"><span class="msg-avatar avatar">A</span><div class="msg-body"><div class="msg-bubble"><span data-stress>Can you check this course link for me? https://example.com/courses/introduction-to-programming-with-python-for-school-students-class-9-to-12</span></div><span class="msg-time">6:44 pm</span></div></div>
+            <div class="msg"><span class="msg-avatar msg-avatar-ai" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg></span><div class="msg-body"><div class="msg-bubble"><p data-stress>That one is a beginner Python course aimed at school students. It starts from zero and ends with small projects, which suits Class 10 well.</p></div><span class="msg-time">6:44 pm</span><div class="msg-actions"><button class="btn btn-ghost btn-sm msg-save" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-download"/></svg>Save this chat as PDF</button></div></div></div>
+          </div>
+        </div>
+      </div>
+      <form class="chat-composer" novalidate>
+        <div class="chat-composer-inner">
+          <label class="visually-hidden" for="chat-input">Message AI Chat</label>
+          <textarea class="textarea chat-input" id="chat-input" rows="1" placeholder="Ask about careers, exams or colleges"></textarea>
+          <button class="btn btn-primary btn-icon chat-send idle" id="chat-send" type="submit" aria-label="Send"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-send"/></svg></button>
+        </div>
+        <p class="chat-hint small muted">Enter to send, Shift and Enter for a new line. AI Chat can make mistakes, so check important dates.</p>
+      </form>
+    </div>
+  <div class="scrim chat-mem-scrim" data-proto-close></div>
+  <aside class="drawer chat-mem" id="chat-mem" role="dialog" aria-modal="true" aria-labelledby="chat-mem-title">
+    <div class="sheet-handle chat-mem-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="chat-mem-title">What I know about you</h2><p class="small muted" id="chat-mem-sub">From your profile and quiz. Highlighted facts shaped my last answer.</p></div><button class="btn btn-icon btn-sm chat-mem-close" type="button" data-proto-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body"><ul class="mem-list" id="chat-mem-body"><li class="mem-fact lit" data-fact="Top match"><span class="list-meta">Top match</span><span class="list-title">Software Engineer, 86%</span></li><li class="mem-fact lit" data-fact="Interest code"><span class="list-meta">Interest code</span><span class="list-title">Thinker, Doer, Creator</span></li><li class="mem-fact" data-fact="Class and board"><span class="list-meta">Class and board</span><span class="list-title">Class 10, CBSE</span></li><li class="mem-fact" data-fact="City"><span class="list-meta">City</span><span class="list-title">Pune</span></li><li class="mem-fact" data-fact="Favourite subjects"><span class="list-meta">Favourite subjects</span><span class="list-title">Maths, Science, Computer</span></li><li class="mem-fact" data-fact="Hobbies"><span class="list-meta">Hobbies</span><span class="list-title">Coding, Gaming</span></li><li class="mem-fact" data-fact="Recommended stream"><span class="list-meta">Recommended stream</span><span class="list-title">Science (PCM)</span></li></ul><a class="btn btn-secondary btn-sm" href="settings.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Change these in Settings</a></div>
+  </aside>
+  </template>
+</body>
+</html>

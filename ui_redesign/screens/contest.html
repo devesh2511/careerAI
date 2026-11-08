@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Weekly contest · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="quiz" data-screen="contest">
+  <div class="flow" data-proto-root></div>
+
+  <template data-state="loading" data-label="Loading">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Loading</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div></div>
+      <p class="visually-hidden" role="status">Loading the contest</p>
+    </main>
+  </template>
+
+  <template data-state="none-scheduled" data-label="No contest this week">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">This week</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/calendar-400.webp" alt=""></div>
+          <h2 class="empty-title">No contest this week</h2>
+          <p class="empty-text">Contests run every Saturday. The next one hasn't been scheduled yet, so check back soon.</p>
+          <div class="cluster"><a class="btn btn-secondary" href="contests.html">Back to contests</a></div>
+        </div>
+      </section>
+    </main>
+  </template>
+
+  <template data-state="upcoming" data-label="Opens soon">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Week 13</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card stack contest-hero" aria-labelledby="ct-up-title">
+        <div class="illo illo-lg"><img src="../assets/illustrations/calendar-400.webp" alt=""></div>
+        <h1 id="ct-up-title">Opens Saturday at 6 pm</h1>
+        <p class="muted">Tech Thinkers, week 13: five questions about software and logic.</p>
+        <p class="countdown" data-until="2026-11-15T18:00:00+05:30">1d 04:12:09</p>
+        <div><button class="btn btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-calendar"/></svg>Remind me</button></div>
+      </section>
+    </main>
+  </template>
+
+  <template data-state="intro" data-label="Rules before starting">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">5 questions</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card stack-lg stack contest-hero" aria-labelledby="ct-intro-title">
+        <div class="illo illo-lg"><img src="../assets/illustrations/trophy-400.webp" alt=""></div>
+        <div class="stack-sm stack"><h1 id="ct-intro-title">Tech Thinkers, week 12</h1><p class="muted">Five questions about how software engineers think. Closes tonight at 9 pm.</p></div>
+        <ul class="rules">
+          <li><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-list-checks"/></svg><span>5 questions, one answer each</span></li>
+          <li><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-clock"/></svg><span>10 minutes once you start</span></li>
+          <li><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-lock"/></svg><span>One attempt. Answers lock when you submit</span></li>
+          <li><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-trophy"/></svg><span>Results and ranks on Sunday at 10 am</span></li>
+        </ul>
+      </section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner"><a class="btn btn-secondary" href="contests.html">Not now</a><a class="btn btn-primary" href="contest.html?state=question">Start the contest<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></a></div></footer>
+  </template>
+
+  <template data-state="question" data-label="Answering a question">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Question 3 of 5</span></p>
+      <span class="flow-timer num" aria-label="Time left 4 minutes 12 seconds">4:12</span>
+      <progress class="progress" max="5" value="2" aria-label="2 of 5 answered">2 of 5</progress>
+    </header>
+    <main class="flow-main" id="ct-root">
+      <nav class="ct-dots" aria-label="Questions"><a class="ct-dot answered" href="#" aria-label="Question 1, answered">1</a><a class="ct-dot answered" href="#" aria-label="Question 2, answered">2</a><a class="ct-dot current" href="#" aria-current="step" aria-label="Question 3">3</a><a class="ct-dot" href="#" aria-label="Question 4">4</a><a class="ct-dot" href="#" aria-label="Question 5">5</a></nav>
+      <section class="stack" aria-labelledby="ct-q">
+        <p class="badge badge-outline">Problem-solving</p>
+        <h1 class="question-text" id="ct-q" data-stress>A program adds up the marks in a list. It works for every class except one with no students, where it crashes. What is the most likely cause?</h1>
+        <div class="option-list" role="radiogroup" aria-labelledby="ct-q" data-proto-select="single">
+          <button class="option quiz-option" type="button" role="radio" aria-checked="false"><span class="option-letter">A</span><span>The list has too many items for the computer</span></button>
+          <button class="option quiz-option selected" type="button" role="radio" aria-checked="true"><span class="option-letter">B</span><span data-stress>It divides by the number of students to find an average, and that number is zero</span></button>
+          <button class="option quiz-option" type="button" role="radio" aria-checked="false"><span class="option-letter">C</span><span>The marks are stored as words instead of numbers</span></button>
+          <button class="option quiz-option" type="button" role="radio" aria-checked="false"><span class="option-letter">D</span><span>The class name is spelled wrong</span></button>
+        </div>
+      </section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner"><a class="btn btn-secondary" href="#"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg>Previous</a><a class="btn btn-primary" href="#">Next question<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></a></div></footer>
+  </template>
+
+  <template data-state="review-before-submit" data-label="Ready to submit">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Review</span></p>
+      <span class="flow-timer num" aria-label="Time left 4 minutes 12 seconds">4:12</span>
+      <progress class="progress" max="5" value="4" aria-label="4 of 5 answered">4 of 5</progress>
+    </header>
+    <main class="flow-main" id="ct-root">
+      <nav class="ct-dots" aria-label="Questions"><a class="ct-dot answered" href="#" aria-label="Question 1, answered">1</a><a class="ct-dot answered" href="#" aria-label="Question 2, answered">2</a><a class="ct-dot answered" href="#" aria-label="Question 3, answered">3</a><a class="ct-dot" href="#" aria-label="Question 4">4</a><a class="ct-dot answered" href="#" aria-label="Question 5, answered">5</a></nav>
+      <section class="stack" aria-labelledby="ct-ready-title">
+        <h1 id="ct-ready-title">Ready to submit?</h1>
+        <p class="muted">You've answered 4 of 5. You can still change any answer before you submit.</p>
+        <div class="alert alert-warn"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-info"/></svg><span>Question 4 has no answer yet. Unanswered questions count as wrong.</span></div>
+        <div class="card-flat list">
+          <a class="list-row" href="#"><span class="ct-dot answered">1</span><span class="grow">Which of these is an example of an algorithm?</span><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-right"/></svg></a>
+          <a class="list-row" href="#"><span class="ct-dot answered">2</span><span class="grow">The fastest way to find a name in a sorted list</span><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-right"/></svg></a>
+          <a class="list-row" href="#"><span class="ct-dot answered">3</span><span class="grow">Why the program crashes for an empty class</span><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-right"/></svg></a>
+          <a class="list-row" href="#"><span class="ct-dot current">4</span><span class="grow">Which number is the binary 1011?</span><span class="badge badge-accent">No answer</span></a>
+          <a class="list-row" href="#"><span class="ct-dot answered">5</span><span class="grow">What a software tester mainly does</span><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-right"/></svg></a>
+        </div>
+      </section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner"><a class="btn btn-secondary" href="#">Go to question 4</a><button class="btn btn-primary" id="ct-submit" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-send"/></svg>Submit answers</button></div></footer>
+  </template>
+
+  <template data-state="submitted" data-label="Submitted">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Submitted</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card stack contest-hero" aria-labelledby="ct-done-title">
+        <div class="illo illo-lg"><img src="../assets/illustrations/thumb-up-400.webp" alt=""></div>
+        <h1 id="ct-done-title">Answers submitted</h1>
+        <p class="muted">Nice work. Results and ranks unlock on Sunday at 10 am.</p>
+        <p class="countdown" data-until="2026-11-09T10:00:00+05:30">13:02:44</p>
+        <div><a class="btn btn-primary" href="contests.html">Back to contests</a></div>
+      </section>
+    </main>
+  </template>
+
+  <template data-state="review" data-label="Your answers">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Results</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main flow-main-wide" id="ct-root">
+      <section class="card-ink stack" aria-labelledby="ct-res-title">
+        <div class="cluster cluster-lg"><div class="illo illo-sm"><img src="../assets/illustrations/medal-200.webp" alt=""></div><div><p class="muted small">Your result</p><h1 class="card-title-lg" id="ct-res-title">4 out of 5</h1></div></div>
+        <div class="metric-row">
+          <div class="metric"><span class="metric-value">#14</span><span class="metric-label">Rank of 1,240</span></div>
+          <div class="metric"><span class="metric-value">3:12</span><span class="metric-label">Time taken</span></div>
+          <div class="metric"><span class="metric-value"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-flame"/></svg>3</span><span class="metric-label">Week streak</span></div>
+        </div>
+      </section>
+        <article class="card-flat stack-sm stack review-q">
+          <div class="card-head"><p class="small muted">Question 1</p><span class="badge fit-strong"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Correct</span></div>
+          <h2 class="card-title">Which of these is an example of an algorithm?</h2>
+          <p class="answer-row answer-right"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg><span><b>Your answer:</b> A recipe for making tea, step by step</span></p>
+          
+          <p class="small muted">An algorithm is a clear list of steps that always ends. A recipe is exactly that.</p>
+        </article>
+        <article class="card-flat stack-sm stack review-q">
+          <div class="card-head"><p class="small muted">Question 2</p><span class="badge fit-strong"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Correct</span></div>
+          <h2 class="card-title">You need to find one name in a sorted list of 1,000 names. What is the fastest approach?</h2>
+          <p class="answer-row answer-right"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg><span><b>Your answer:</b> Open the middle, then keep halving the half it must be in</span></p>
+          
+          <p class="small muted">This is binary search. It needs about 10 looks instead of up to 1,000.</p>
+        </article>
+        <article class="card-flat stack-sm stack review-q">
+          <div class="card-head"><p class="small muted">Question 3</p><span class="badge fit-strong"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Correct</span></div>
+          <h2 class="card-title">A program crashes only when a class has no students. Most likely cause?</h2>
+          <p class="answer-row answer-right"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg><span><b>Your answer:</b> It divides by the number of students, which is zero</span></p>
+          
+          <p class="small muted">Dividing by zero has no answer, so the program stops. Checking for an empty class first fixes it.</p>
+        </article>
+        <article class="card-flat stack-sm stack review-q">
+          <div class="card-head"><p class="small muted">Question 4</p><span class="badge badge-wrong"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg>Wrong</span></div>
+          <h2 class="card-title">Which number is the binary 1011?</h2>
+          <p class="answer-row answer-wrong"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg><span><b>Your answer:</b> 13</span></p>
+          <p class="answer-row answer-right"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg><span><b>Correct answer:</b> 11</span></p>
+          <p class="small muted">1011 means 8 + 0 + 2 + 1, which is 11.</p>
+        </article>
+        <article class="card-flat stack-sm stack review-q">
+          <div class="card-head"><p class="small muted">Question 5</p><span class="badge fit-strong"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Correct</span></div>
+          <h2 class="card-title">What does a software tester mainly do?</h2>
+          <p class="answer-row answer-right"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg><span><b>Your answer:</b> Finds and reports problems before users do</span></p>
+          
+          <p class="small muted">Testers try to break the software on purpose so real users don't hit the bugs.</p>
+        </article>
+
+    </main>
+  </template>
+
+  <template data-state="not-published" data-label="Results not out yet">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Results</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/calendar-400.webp" alt=""></div>
+          <h2 class="empty-title">Results aren't out yet</h2>
+          <p class="empty-text">They unlock on Sunday at 10 am, once everyone has played.</p>
+          <div class="cluster"><a class="btn btn-secondary" href="contests.html">Back to contests</a></div>
+        </div>
+      </section>
+    </main>
+  </template>
+
+  <template data-state="error" data-label="Could not load">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Something went wrong</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card-flat stack" role="alert">
+        <h1>We couldn't load the contest</h1>
+        <p class="muted">Your saved answers are safe. Check your connection and try again.</p>
+        <div><button class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Try again</button></div>
+      </section>
+    </main>
+  </template>
+
+  <template data-state="payment-required" data-label="Plan needed">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Locked</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/lock-400.webp" alt=""></div>
+          <h2 class="empty-title">Contests come with the full plan</h2>
+          <p class="empty-text">Ask your school about Crackeer, or get a personal plan to play every Saturday.</p>
+          <div class="cluster"><a class="btn btn-primary" href="paywall.html">See plans</a></div>
+        </div>
+      </section>
+    </main>
+  </template>
+
+  <template data-state="signed-out" data-label="Signed out">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="contests.html" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></a>
+      <p class="flow-title"><span id="ct-label">Tech Thinkers, week 12</span><br><span class="muted">Log in to play</span></p>
+      <span aria-hidden="true"></span>
+      
+    </header>
+    <main class="flow-main" id="ct-root">
+      <section class="card-flat">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/lock-400.webp" alt=""></div>
+          <h2 class="empty-title">Log in to play</h2>
+          <p class="empty-text">Your answers, rank and streak are saved to your account.</p>
+          <div class="cluster"><a class="btn btn-primary" href="auth.html">Log in</a></div>
+        </div>
+      </section>
+    </main>
+  </template>
+</body>
+</html>

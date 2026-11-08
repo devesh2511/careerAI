@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Roadmap · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/shell.js" defer></script>
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="app" data-screen="roadmap">
+  <div data-shell="app" data-active="roadmap" data-live="true"></div>
+  <main class="app-main" data-proto-root></main>
+
+  <template data-state="timeline" data-label="Roadmap">
+    <div class="page">
+      <header class="page-head">
+        <div><p class="small muted">Your roadmap for</p><h1 id="rm-career">Software Engineer</h1><p class="page-sub">What to study, which exams to take and when, from now until your first job.</p></div>
+        <div class="cluster"><button class="btn btn-secondary" type="button" data-proto-toggle="rm-select"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg>Change career</button><button class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-printer"/></svg>Export PDF</button></div>
+      </header>
+      <div class="card-flat rm-select-card" id="rm-select" hidden>
+        <label class="field-label" for="rm-select-input">Show the roadmap for</label>
+        <div class="select-wrap"><select class="select" id="rm-select-input"><option>Software Engineer (86%)</option><option>Data Scientist (81%)</option><option>Robotics Engineer (77%)</option><option>Architect (69%)</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <div id="rm-note" hidden></div>
+      <section class="card stack"><ol class="timeline" id="rm-timeline"><li class="tl-item done"><span class="tl-dot"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><p class="tl-title" data-stress>Class 9 and 10: build your maths base</p><p class="tl-meta">Now</p><div class="tl-body"><ul><li>Aim for 85% or more in maths and science</li><li>Try a free Python course in the holidays</li></ul></div></li><li class="tl-item current"><span class="tl-dot">2</span><p class="tl-title">Class 11 and 12: Science with PCM</p><p class="tl-meta">2027 to 2029</p><div class="tl-body"><ul><li>Pick computer science as your fifth subject if your school offers it</li><li>Start JEE Main preparation in Class 11</li></ul></div></li><li class="tl-item "><span class="tl-dot">3</span><p class="tl-title">Entrance exams</p><p class="tl-meta">January and April 2029</p><div class="tl-body"><ul><li>JEE Main, BITSAT and your state CET</li><li>CUET if you want a B.Sc in computer science</li></ul></div></li><li class="tl-item "><span class="tl-dot">4</span><p class="tl-title">B.Tech in Computer Science</p><p class="tl-meta">2029 to 2033</p><div class="tl-body"><ul><li>Do at least one internship before final year</li><li>Build two or three projects you can show</li></ul></div></li><li class="tl-item "><span class="tl-dot">5</span><p class="tl-title">First job: junior software engineer</p><p class="tl-meta">2033</p><div class="tl-body"><ul><li>Typical start: &#8377;6 to 12 LPA</li><li>Product companies, startups and IT services all hire freshers</li></ul></div></li></ol></section>
+    </div>
+  </template>
+
+  <template data-state="picker" data-label="Choosing a career">
+    <div class="page">
+      <header class="page-head">
+        <div><p class="small muted">Your roadmap for</p><h1 id="rm-career">Software Engineer</h1><p class="page-sub">What to study, which exams to take and when, from now until your first job.</p></div>
+        <div class="cluster"><button class="btn btn-secondary" type="button" data-proto-toggle="rm-select"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg>Change career</button><button class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-printer"/></svg>Export PDF</button></div>
+      </header>
+      <div class="card-flat rm-select-card" id="rm-select">
+        <label class="field-label" for="rm-select-input">Show the roadmap for</label>
+        <div class="select-wrap"><select class="select" id="rm-select-input"><option>Software Engineer (86%)</option><option>Data Scientist (81%)</option><option>Robotics Engineer (77%)</option><option>Architect (69%)</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <div id="rm-note" hidden></div>
+      <section class="card stack"><ol class="timeline" id="rm-timeline"><li class="tl-item done"><span class="tl-dot"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><p class="tl-title" data-stress>Class 9 and 10: build your maths base</p><p class="tl-meta">Now</p><div class="tl-body"><ul><li>Aim for 85% or more in maths and science</li><li>Try a free Python course in the holidays</li></ul></div></li><li class="tl-item current"><span class="tl-dot">2</span><p class="tl-title">Class 11 and 12: Science with PCM</p><p class="tl-meta">2027 to 2029</p><div class="tl-body"><ul><li>Pick computer science as your fifth subject if your school offers it</li><li>Start JEE Main preparation in Class 11</li></ul></div></li><li class="tl-item "><span class="tl-dot">3</span><p class="tl-title">Entrance exams</p><p class="tl-meta">January and April 2029</p><div class="tl-body"><ul><li>JEE Main, BITSAT and your state CET</li><li>CUET if you want a B.Sc in computer science</li></ul></div></li><li class="tl-item "><span class="tl-dot">4</span><p class="tl-title">B.Tech in Computer Science</p><p class="tl-meta">2029 to 2033</p><div class="tl-body"><ul><li>Do at least one internship before final year</li><li>Build two or three projects you can show</li></ul></div></li><li class="tl-item "><span class="tl-dot">5</span><p class="tl-title">First job: junior software engineer</p><p class="tl-meta">2033</p><div class="tl-body"><ul><li>Typical start: &#8377;6 to 12 LPA</li><li>Product companies, startups and IT services all hire freshers</li></ul></div></li></ol></section>
+    </div>
+  </template>
+
+  <template data-state="not-written" data-label="Roadmap not written yet">
+    <div class="page">
+      <header class="page-head">
+        <div><p class="small muted">Your roadmap for</p><h1 id="rm-career">Aerospace Engineer</h1><p class="page-sub">What to study, which exams to take and when, from now until your first job.</p></div>
+        <div class="cluster"><button class="btn btn-secondary" type="button" data-proto-toggle="rm-select"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-route"/></svg>Change career</button><button class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-printer"/></svg>Export PDF</button></div>
+      </header>
+      <div class="card-flat rm-select-card" id="rm-select" hidden>
+        <label class="field-label" for="rm-select-input">Show the roadmap for</label>
+        <div class="select-wrap"><select class="select" id="rm-select-input"><option>Software Engineer (86%)</option><option>Data Scientist (81%)</option><option>Robotics Engineer (77%)</option><option>Architect (69%)</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <section class="card-flat" id="rm-note">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/map-pin-400.webp" alt=""></div>
+          <h2 class="empty-title">We're still writing this roadmap</h2>
+          <p class="empty-text">Our team is putting together the steps for Aerospace Engineer. Pick another career for now, or ask AI Chat.</p>
+          <div class="cluster"><button class="btn btn-primary" type="button" data-proto-toggle="rm-select">Pick another career</button><a class="btn btn-secondary" href="chat.html">Ask AI Chat</a></div>
+        </div>
+      </section>
+
+    </div>
+  </template>
+
+  <template data-state="no-quiz" data-label="No quiz yet">
+    <div class="page">
+      <header class="page-head">
+        <div><p class="small muted">Your roadmap for</p><h1 id="rm-career">your top career</h1><p class="page-sub">What to study, which exams to take and when, from now until your first job.</p></div>
+        
+      </header>
+      <div class="card-flat rm-select-card" id="rm-select" hidden>
+        <label class="field-label" for="rm-select-input">Show the roadmap for</label>
+        <div class="select-wrap"><select class="select" id="rm-select-input"><option>Software Engineer (86%)</option><option>Data Scientist (81%)</option><option>Robotics Engineer (77%)</option><option>Architect (69%)</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <section class="card-flat" id="rm-note">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/rocket-400.webp" alt=""></div>
+          <h2 class="empty-title">Take the quiz to get your roadmap</h2>
+          <p class="empty-text">Your roadmap is built for your top career match. The quiz takes about 6 minutes.</p>
+          <div class="cluster"><a class="btn btn-primary" href="career-quiz.html">Start the career quiz</a></div>
+        </div>
+      </section>
+
+    </div>
+  </template>
+</body>
+</html>

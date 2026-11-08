@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Career quiz · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="careerquiz" data-screen="career-quiz">
+  <div class="flow" data-proto-root></div>
+
+  <template data-state="question" data-label="Answering, one picked">
+    <header class="flow-bar">
+      <button class="btn btn-icon" id="cq-back-btn" type="button" aria-label="Previous question"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></button>
+      <p class="flow-title" id="cq-num">Question 2 of 25</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="cq-bar" max="25" value="1">1 of 25 answered</progress>
+    </header>
+    <main class="flow-main">
+      <div class="stack" id="cq-question-wrap">
+        <span class="badge badge-outline" id="cq-area">Build an app</span>
+        <h1 class="question-text" id="cq-q" data-stress>You and your friends are making a new app. Which job would you take?</h1>
+        <p class="cq-hint field-hint" id="cq-hint" aria-live="polite">Pick up to 2.</p>
+        <div class="option-list" id="cq-opts" role="group" aria-labelledby="cq-q" data-proto-select="multi" data-max="2"><button class="option cq-opt" type="button" data-orig="0" aria-pressed="false"><span class="option-letter cq-letter" data-letter="A">A</span><span>Build the gadget the app controls</span></button><button class="option cq-opt selected" type="button" data-orig="1" aria-pressed="true"><span class="option-letter cq-letter" data-letter="B">B</span><span>Write the code that makes it work</span></button><button class="option cq-opt" type="button" data-orig="2" aria-pressed="false"><span class="option-letter cq-letter" data-letter="C">C</span><span>Design the screens and how it looks</span></button><button class="option cq-opt" type="button" data-orig="3" aria-pressed="false"><span class="option-letter cq-letter" data-letter="D">D</span><span>Help people who get stuck using it</span></button><button class="option cq-opt" type="button" data-orig="4" aria-pressed="false"><span class="option-letter cq-letter" data-letter="E">E</span><span>Plan how to get the first 10,000 people to use it</span></button><button class="option cq-opt" type="button" data-orig="5" aria-pressed="false"><span class="option-letter cq-letter" data-letter="F">F</span><span>Test every part and note down each problem</span></button></div>
+      </div>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <span class="small muted">Answers save as you go.</span>
+      <button class="btn btn-primary" id="cq-next-btn" type="button">Next<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="at-cap" data-label="Two picked (the limit)">
+    <header class="flow-bar">
+      <button class="btn btn-icon" id="cq-back-btn" type="button" aria-label="Previous question"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></button>
+      <p class="flow-title" id="cq-num">Question 2 of 25</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="cq-bar" max="25" value="1">1 of 25 answered</progress>
+    </header>
+    <main class="flow-main">
+      <div class="stack" id="cq-question-wrap">
+        <span class="badge badge-outline" id="cq-area">Build an app</span>
+        <h1 class="question-text" id="cq-q" data-stress>You and your friends are making a new app. Which job would you take?</h1>
+        <p class="cq-hint field-hint" id="cq-hint" aria-live="polite">You picked 2, the most for this question. Tap another to swap.</p>
+        <div class="option-list" id="cq-opts" role="group" aria-labelledby="cq-q" data-proto-select="multi" data-max="2"><button class="option cq-opt" type="button" data-orig="0" aria-pressed="false"><span class="option-letter cq-letter" data-letter="A">A</span><span>Build the gadget the app controls</span></button><button class="option cq-opt selected" type="button" data-orig="1" aria-pressed="true"><span class="option-letter cq-letter" data-letter="B">B</span><span>Write the code that makes it work</span></button><button class="option cq-opt selected" type="button" data-orig="2" aria-pressed="true"><span class="option-letter cq-letter" data-letter="C">C</span><span>Design the screens and how it looks</span></button><button class="option cq-opt" type="button" data-orig="3" aria-pressed="false"><span class="option-letter cq-letter" data-letter="D">D</span><span>Help people who get stuck using it</span></button><button class="option cq-opt" type="button" data-orig="4" aria-pressed="false"><span class="option-letter cq-letter" data-letter="E">E</span><span>Plan how to get the first 10,000 people to use it</span></button><button class="option cq-opt" type="button" data-orig="5" aria-pressed="false"><span class="option-letter cq-letter" data-letter="F">F</span><span>Test every part and note down each problem</span></button></div>
+      </div>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <span class="small muted">Answers save as you go.</span>
+      <button class="btn btn-primary" id="cq-next-btn" type="button">Next<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="nothing-selected" data-label="Next with nothing picked">
+    <header class="flow-bar">
+      <button class="btn btn-icon" id="cq-back-btn" type="button" aria-label="Previous question"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></button>
+      <p class="flow-title" id="cq-num">Question 2 of 25</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="cq-bar" max="25" value="1">1 of 25 answered</progress>
+    </header>
+    <main class="flow-main">
+      <div class="stack" id="cq-question-wrap">
+        <span class="badge badge-outline" id="cq-area">Build an app</span>
+        <h1 class="question-text" id="cq-q" data-stress>You and your friends are making a new app. Which job would you take?</h1>
+        <p class="cq-hint form-error" id="cq-hint" aria-live="polite"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg>Pick at least one answer to continue.</p>
+        <div class="option-list shake" id="cq-opts" role="group" aria-labelledby="cq-q" data-proto-select="multi" data-max="2"><button class="option cq-opt" type="button" data-orig="0" aria-pressed="false"><span class="option-letter cq-letter" data-letter="A">A</span><span>Build the gadget the app controls</span></button><button class="option cq-opt" type="button" data-orig="1" aria-pressed="false"><span class="option-letter cq-letter" data-letter="B">B</span><span>Write the code that makes it work</span></button><button class="option cq-opt" type="button" data-orig="2" aria-pressed="false"><span class="option-letter cq-letter" data-letter="C">C</span><span>Design the screens and how it looks</span></button><button class="option cq-opt" type="button" data-orig="3" aria-pressed="false"><span class="option-letter cq-letter" data-letter="D">D</span><span>Help people who get stuck using it</span></button><button class="option cq-opt" type="button" data-orig="4" aria-pressed="false"><span class="option-letter cq-letter" data-letter="E">E</span><span>Plan how to get the first 10,000 people to use it</span></button><button class="option cq-opt" type="button" data-orig="5" aria-pressed="false"><span class="option-letter cq-letter" data-letter="F">F</span><span>Test every part and note down each problem</span></button></div>
+      </div>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <span class="small muted">Answers save as you go.</span>
+      <button class="btn btn-primary" id="cq-next-btn" type="button">Next<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="last" data-label="Last question">
+    <header class="flow-bar">
+      <button class="btn btn-icon" id="cq-back-btn" type="button" aria-label="Previous question"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></button>
+      <p class="flow-title" id="cq-num">Question 25 of 25</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="cq-bar" max="25" value="24">24 of 25 answered</progress>
+    </header>
+    <main class="flow-main">
+      <div class="stack" id="cq-question-wrap">
+        <span class="badge badge-outline" id="cq-area">Broken machine</span>
+        <h1 class="question-text" id="cq-q" data-stress>The washing machine at home stops working. What would you want to do?</h1>
+        <p class="cq-hint field-hint" id="cq-hint" aria-live="polite">Pick up to 2.</p>
+        <div class="option-list" id="cq-opts" role="group" aria-labelledby="cq-q" data-proto-select="multi" data-max="2"><button class="option cq-opt" type="button" data-orig="0" aria-pressed="false"><span class="option-letter cq-letter" data-letter="A">A</span><span>Open it up and repair it</span></button><button class="option cq-opt selected" type="button" data-orig="1" aria-pressed="true"><span class="option-letter cq-letter" data-letter="B">B</span><span>Find out exactly why it stopped working</span></button><button class="option cq-opt" type="button" data-orig="2" aria-pressed="false"><span class="option-letter cq-letter" data-letter="C">C</span><span>Draw a better design for it</span></button><button class="option cq-opt" type="button" data-orig="3" aria-pressed="false"><span class="option-letter cq-letter" data-letter="D">D</span><span>Help the family manage until it is fixed</span></button><button class="option cq-opt" type="button" data-orig="4" aria-pressed="false"><span class="option-letter cq-letter" data-letter="E">E</span><span>Find the best price for a repair or a new one</span></button><button class="option cq-opt" type="button" data-orig="5" aria-pressed="false"><span class="option-letter cq-letter" data-letter="F">F</span><span>Find the warranty card and the old repair bills</span></button></div>
+      </div>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <span class="small muted">Answers save as you go.</span>
+      <button class="btn btn-primary" id="cq-next-btn" type="button">See my results<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Your career report · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="airesults" data-screen="career-results">
+  <header class="public-header">
+    <a class="logo" href="dashboard.html">Crackeer<span class="logo-dot">.</span></a>
+    <div class="cluster">
+      <button class="theme-toggle btn btn-icon" type="button" aria-label="Switch to dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sun"/></svg></span></button>
+      <a class="btn btn-secondary btn-sm" href="dashboard.html">Go to the app</a>
+    </div>
+  </header>
+  <main class="report" data-proto-root></main>
+
+  <template data-state="full" data-label="Full report">
+    <div class="air-print-head print-only">
+      <p class="logo">Crackeer<span class="logo-dot">.</span></p>
+      <p>Career report for Aarav Mehta, Class 10, CBSE. Generated on <span id="air-print-date">8 November 2026</span>.</p>
+    </div>
+
+    <section class="report-hero stack" aria-labelledby="air-hero-title">
+      <div class="cluster">
+        <p class="small muted">Your career report</p>
+        <span class="badge badge-accent" id="air-demo-badge" hidden>Sample result</span>
+      </div>
+      <h1 id="air-hero-title">You're <span class="hl" id="air-personality-type">a curious builder</span>.</h1>
+      <p class="report-lede" id="air-personality-desc">You like working out how things work, and you're happiest when the answer turns into something real you can show people. You'd rather test an idea than just read about it.</p>
+      <div class="alert alert-warn" id="air-retake" hidden>
+        <svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-info"/></svg>
+        <div class="stack-sm stack">
+          <p><span class="alert-title">This result is from the older quiz.</span> The new quiz takes about 6 minutes and gives sharper career matches.</p>
+          <div><a class="btn btn-secondary btn-sm" href="career-quiz.html">Retake the quiz</a></div>
+        </div>
+      </div>
+      <div class="cluster cluster-lg no-print">
+        <a class="btn btn-primary" href="dashboard.html">Open the full app</a>
+        <button class="btn btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-printer"/></svg>Save as PDF</button>
+        <a class="btn btn-ghost" href="career-quiz.html">Retake quiz</a>
+      </div>
+    </section>
+
+    <section class="grid-2" aria-label="Stream">
+      <div class="card stack">
+        <p class="small muted">Recommended stream for Class 11</p>
+        <h2 class="card-title-lg" id="air-stream-val">Science (PCM)</h2>
+        <p id="air-stream-reason">Physics, chemistry and maths keep the most of your top careers open, and maths is the subject you said you enjoy most.</p>
+        <div class="no-print"><a class="btn btn-secondary btn-sm" href="explore.html">Careers in this stream</a></div>
+      </div>
+      <div class="card-flat stack" id="air-streams-wrap">
+        <h2 class="card-title">How each stream fits you</h2>
+        <div class="stack-sm stack" id="air-streams">
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Science (PCM)</span><progress class="progress progress-ink" max="100" value="88">88</progress><span class="bar-row-value">88</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Science (PCB)</span><progress class="progress progress-ink" max="100" value="61">61</progress><span class="bar-row-value">61</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Commerce</span><progress class="progress progress-ink" max="100" value="47">47</progress><span class="bar-row-value">47</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Arts and humanities</span><progress class="progress progress-ink" max="100" value="39">39</progress><span class="bar-row-value">39</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card stack-lg stack" aria-labelledby="air-code-title">
+      <div class="stack-sm stack">
+        <h2 id="air-code-title">Your interest code</h2>
+        <p class="muted small" id="air-riasec-note">Built from your 25 answers. Your top three areas make your code; higher scores mean you enjoy that kind of work more.</p>
+      </div>
+      <div class="report-code">
+        <div class="riasec riasec-lg" id="air-riasec-code" aria-label="Interest code I R A">
+          <span class="riasec-tile" data-dim="I">I</span><span class="riasec-tile" data-dim="R">R</span><span class="riasec-tile" data-dim="A">A</span>
+        </div>
+        <dl class="code-key" id="air-code-key">
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="I">I</span><span class="air-code-key-name">Thinker</span></dt><dd class="air-code-key-mean">You like ideas, puzzles and finding out why things happen.</dd></div>
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="R">R</span><span class="air-code-key-name">Doer</span></dt><dd class="air-code-key-mean">You like hands-on work with tools, machines or code.</dd></div>
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="A">A</span><span class="air-code-key-name">Creator</span></dt><dd class="air-code-key-mean">You like making original things and sharing your own ideas.</dd></div>
+        </dl>
+      </div>
+      <div class="grid-2">
+        <div class="stack-sm stack" id="air-riasec-bars">
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="I"></span>Thinker</span><progress class="progress" data-dim="I" max="100" value="82">82</progress><span class="bar-row-value">82</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="R"></span>Doer</span><progress class="progress" data-dim="R" max="100" value="71">71</progress><span class="bar-row-value">71</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="A"></span>Creator</span><progress class="progress" data-dim="A" max="100" value="58">58</progress><span class="bar-row-value">58</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="E"></span>Leader</span><progress class="progress" data-dim="E" max="100" value="44">44</progress><span class="bar-row-value">44</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="S"></span>Helper</span><progress class="progress" data-dim="S" max="100" value="37">37</progress><span class="bar-row-value">37</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="C"></span>Organiser</span><progress class="progress" data-dim="C" max="100" value="34">34</progress><span class="bar-row-value">34</span></div>
+        </div>
+        <div class="stack-lg stack">
+          <div class="stack-sm stack" id="air-domains-wrap">
+            <h3>Worlds you're drawn to</h3>
+            <div class="chip-group" id="air-domains">
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg>Digital and technology</span>
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-settings"/></svg>Machines and engineering</span>
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Design</span>
+            </div>
+          </div>
+          <div class="stack-sm stack">
+            <h3>What you'll probably enjoy</h3>
+            <ul class="enjoy-list" id="air-enjoy">
+              <li>Breaking a big problem into smaller steps</li>
+              <li>Building and testing things until they work</li>
+              <li>Projects where you can show a finished result</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="air-careers-title">
+      <div class="stack-sm stack">
+        <h2 id="air-careers-title">Careers that fit you</h2>
+        <p class="muted" id="air-match-note">Ranked by how well each career matches your interests, the subjects you enjoy and your stream.</p>
+      </div>
+      <div class="grid-2" id="air-careers">
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Software Engineer</h3><span class="badge fit-strong air-fit-label">Strong fit, 86%</span></div>
+          <p class="card-sub air-career-field">Technology</p>
+          <p class="air-career-why">Matches your Thinker and Doer sides: you solve puzzles and then build the answer.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Data Scientist</h3><span class="badge fit-strong air-fit-label">Strong fit, 81%</span></div>
+          <p class="card-sub air-career-field">Technology and research</p>
+          <p class="air-career-why">You like finding patterns and explaining why things happen.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Robotics Engineer</h3><span class="badge fit-strong air-fit-label">Strong fit, 77%</span></div>
+          <p class="card-sub air-career-field">Engineering</p>
+          <p class="air-career-why">Hands-on building with machines, plus plenty of problem-solving.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Architect</h3><span class="badge fit-good air-fit-label">Good fit, 69%</span></div>
+          <p class="card-sub air-career-field">Design and construction</p>
+          <p class="air-career-why">Uses your Creator side, with maths and physics underneath.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name" data-stress>Biomedical Instrumentation Engineer</h3><span class="badge fit-good air-fit-label">Good fit, 64%</span></div>
+          <p class="card-sub air-career-field">Healthcare technology</p>
+          <p class="air-career-why">Builds the machines hospitals rely on, if you want engineering that helps people.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card-ink report-next no-print" aria-labelledby="air-next-title">
+      <div class="stack-sm stack">
+        <h2 class="card-title-lg" id="air-next-title">Ready to plan it out?</h2>
+        <p class="muted">The full app turns your top match into a step-by-step roadmap, plus weekly contests and an AI you can ask anything.</p>
+      </div>
+      <div class="cluster cluster-lg">
+        <a class="btn btn-primary" href="dashboard.html">Open the full app</a>
+        <a class="btn btn-ghost report-ghost" href="dashboard.html">Back to home</a>
+      </div>
+    </section>
+  </template>
+  <template data-state="old-result" data-label="Result from the older quiz">
+    <div class="air-print-head print-only">
+      <p class="logo">Crackeer<span class="logo-dot">.</span></p>
+      <p>Career report for Aarav Mehta, Class 10, CBSE. Generated on <span id="air-print-date">8 November 2026</span>.</p>
+    </div>
+
+    <section class="report-hero stack" aria-labelledby="air-hero-title">
+      <div class="cluster">
+        <p class="small muted">Your career report</p>
+        <span class="badge badge-accent" id="air-demo-badge" hidden>Sample result</span>
+      </div>
+      <h1 id="air-hero-title">You're <span class="hl" id="air-personality-type">a curious builder</span>.</h1>
+      <p class="report-lede" id="air-personality-desc">You like working out how things work, and you're happiest when the answer turns into something real you can show people. You'd rather test an idea than just read about it.</p>
+      <div class="alert alert-warn" id="air-retake">
+        <svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-info"/></svg>
+        <div class="stack-sm stack">
+          <p><span class="alert-title">This result is from the older quiz.</span> The new quiz takes about 6 minutes and gives sharper career matches.</p>
+          <div><a class="btn btn-secondary btn-sm" href="career-quiz.html">Retake the quiz</a></div>
+        </div>
+      </div>
+      <div class="cluster cluster-lg no-print">
+        <a class="btn btn-primary" href="dashboard.html">Open the full app</a>
+        <button class="btn btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-printer"/></svg>Save as PDF</button>
+        <a class="btn btn-ghost" href="career-quiz.html">Retake quiz</a>
+      </div>
+    </section>
+
+    <section class="grid-2" aria-label="Stream">
+      <div class="card stack">
+        <p class="small muted">Recommended stream for Class 11</p>
+        <h2 class="card-title-lg" id="air-stream-val">Science (PCM)</h2>
+        <p id="air-stream-reason">Physics, chemistry and maths keep the most of your top careers open, and maths is the subject you said you enjoy most.</p>
+        <div class="no-print"><a class="btn btn-secondary btn-sm" href="explore.html">Careers in this stream</a></div>
+      </div>
+      <div class="card-flat stack" id="air-streams-wrap">
+        <h2 class="card-title">How each stream fits you</h2>
+        <div class="stack-sm stack" id="air-streams">
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Science (PCM)</span><progress class="progress progress-ink" max="100" value="88">88</progress><span class="bar-row-value">88</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Science (PCB)</span><progress class="progress progress-ink" max="100" value="61">61</progress><span class="bar-row-value">61</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Commerce</span><progress class="progress progress-ink" max="100" value="47">47</progress><span class="bar-row-value">47</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Arts and humanities</span><progress class="progress progress-ink" max="100" value="39">39</progress><span class="bar-row-value">39</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card stack-lg stack" aria-labelledby="air-code-title">
+      <div class="stack-sm stack">
+        <h2 id="air-code-title">Your interest code</h2>
+        <p class="muted small" id="air-riasec-note">Built from your 25 answers. Your top three areas make your code; higher scores mean you enjoy that kind of work more.</p>
+      </div>
+      <div class="report-code">
+        <div class="riasec riasec-lg" id="air-riasec-code" aria-label="Interest code I R A">
+          <span class="riasec-tile" data-dim="I">I</span><span class="riasec-tile" data-dim="R">R</span><span class="riasec-tile" data-dim="A">A</span>
+        </div>
+        <dl class="code-key" id="air-code-key">
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="I">I</span><span class="air-code-key-name">Thinker</span></dt><dd class="air-code-key-mean">You like ideas, puzzles and finding out why things happen.</dd></div>
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="R">R</span><span class="air-code-key-name">Doer</span></dt><dd class="air-code-key-mean">You like hands-on work with tools, machines or code.</dd></div>
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="A">A</span><span class="air-code-key-name">Creator</span></dt><dd class="air-code-key-mean">You like making original things and sharing your own ideas.</dd></div>
+        </dl>
+      </div>
+      <div class="grid-2">
+        <div class="stack-sm stack" id="air-riasec-bars">
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="I"></span>Thinker</span><progress class="progress" data-dim="I" max="100" value="82">82</progress><span class="bar-row-value">82</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="R"></span>Doer</span><progress class="progress" data-dim="R" max="100" value="71">71</progress><span class="bar-row-value">71</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="A"></span>Creator</span><progress class="progress" data-dim="A" max="100" value="58">58</progress><span class="bar-row-value">58</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="E"></span>Leader</span><progress class="progress" data-dim="E" max="100" value="44">44</progress><span class="bar-row-value">44</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="S"></span>Helper</span><progress class="progress" data-dim="S" max="100" value="37">37</progress><span class="bar-row-value">37</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="C"></span>Organiser</span><progress class="progress" data-dim="C" max="100" value="34">34</progress><span class="bar-row-value">34</span></div>
+        </div>
+        <div class="stack-lg stack">
+          <div class="stack-sm stack" id="air-domains-wrap">
+            <h3>Worlds you're drawn to</h3>
+            <div class="chip-group" id="air-domains">
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg>Digital and technology</span>
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-settings"/></svg>Machines and engineering</span>
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Design</span>
+            </div>
+          </div>
+          <div class="stack-sm stack">
+            <h3>What you'll probably enjoy</h3>
+            <ul class="enjoy-list" id="air-enjoy">
+              <li>Breaking a big problem into smaller steps</li>
+              <li>Building and testing things until they work</li>
+              <li>Projects where you can show a finished result</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="air-careers-title">
+      <div class="stack-sm stack">
+        <h2 id="air-careers-title">Careers that fit you</h2>
+        <p class="muted" id="air-match-note">Ranked by how well each career matches your interests, the subjects you enjoy and your stream.</p>
+      </div>
+      <div class="grid-2" id="air-careers">
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Software Engineer</h3><span class="badge fit-strong air-fit-label">Strong fit, 86%</span></div>
+          <p class="card-sub air-career-field">Technology</p>
+          <p class="air-career-why">Matches your Thinker and Doer sides: you solve puzzles and then build the answer.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Data Scientist</h3><span class="badge fit-strong air-fit-label">Strong fit, 81%</span></div>
+          <p class="card-sub air-career-field">Technology and research</p>
+          <p class="air-career-why">You like finding patterns and explaining why things happen.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Robotics Engineer</h3><span class="badge fit-strong air-fit-label">Strong fit, 77%</span></div>
+          <p class="card-sub air-career-field">Engineering</p>
+          <p class="air-career-why">Hands-on building with machines, plus plenty of problem-solving.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Architect</h3><span class="badge fit-good air-fit-label">Good fit, 69%</span></div>
+          <p class="card-sub air-career-field">Design and construction</p>
+          <p class="air-career-why">Uses your Creator side, with maths and physics underneath.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name" data-stress>Biomedical Instrumentation Engineer</h3><span class="badge fit-good air-fit-label">Good fit, 64%</span></div>
+          <p class="card-sub air-career-field">Healthcare technology</p>
+          <p class="air-career-why">Builds the machines hospitals rely on, if you want engineering that helps people.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card-ink report-next no-print" aria-labelledby="air-next-title">
+      <div class="stack-sm stack">
+        <h2 class="card-title-lg" id="air-next-title">Ready to plan it out?</h2>
+        <p class="muted">The full app turns your top match into a step-by-step roadmap, plus weekly contests and an AI you can ask anything.</p>
+      </div>
+      <div class="cluster cluster-lg">
+        <a class="btn btn-primary" href="dashboard.html">Open the full app</a>
+        <a class="btn btn-ghost report-ghost" href="dashboard.html">Back to home</a>
+      </div>
+    </section>
+  </template>
+  <template data-state="demo" data-label="Sample result (demo)">
+    <div class="air-print-head print-only">
+      <p class="logo">Crackeer<span class="logo-dot">.</span></p>
+      <p>Career report for Aarav Mehta, Class 10, CBSE. Generated on <span id="air-print-date">8 November 2026</span>.</p>
+    </div>
+
+    <section class="report-hero stack" aria-labelledby="air-hero-title">
+      <div class="cluster">
+        <p class="small muted">Your career report</p>
+        <span class="badge badge-accent" id="air-demo-badge">Sample result</span>
+      </div>
+      <h1 id="air-hero-title">You're <span class="hl" id="air-personality-type">a curious builder</span>.</h1>
+      <p class="report-lede" id="air-personality-desc">You like working out how things work, and you're happiest when the answer turns into something real you can show people. You'd rather test an idea than just read about it.</p>
+      <div class="alert alert-warn" id="air-retake" hidden>
+        <svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-info"/></svg>
+        <div class="stack-sm stack">
+          <p><span class="alert-title">This result is from the older quiz.</span> The new quiz takes about 6 minutes and gives sharper career matches.</p>
+          <div><a class="btn btn-secondary btn-sm" href="career-quiz.html">Retake the quiz</a></div>
+        </div>
+      </div>
+      <div class="cluster cluster-lg no-print">
+        <a class="btn btn-primary" href="dashboard.html">Open the full app</a>
+        <button class="btn btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-printer"/></svg>Save as PDF</button>
+        <a class="btn btn-ghost" href="career-quiz.html">Retake quiz</a>
+      </div>
+    </section>
+
+    <section class="grid-2" aria-label="Stream">
+      <div class="card stack">
+        <p class="small muted">Recommended stream for Class 11</p>
+        <h2 class="card-title-lg" id="air-stream-val">Science (PCM)</h2>
+        <p id="air-stream-reason">Physics, chemistry and maths keep the most of your top careers open, and maths is the subject you said you enjoy most.</p>
+        <div class="no-print"><a class="btn btn-secondary btn-sm" href="explore.html">Careers in this stream</a></div>
+      </div>
+      <div class="card-flat stack" id="air-streams-wrap">
+        <h2 class="card-title">How each stream fits you</h2>
+        <div class="stack-sm stack" id="air-streams">
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Science (PCM)</span><progress class="progress progress-ink" max="100" value="88">88</progress><span class="bar-row-value">88</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Science (PCB)</span><progress class="progress progress-ink" max="100" value="61">61</progress><span class="bar-row-value">61</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Commerce</span><progress class="progress progress-ink" max="100" value="47">47</progress><span class="bar-row-value">47</span></div>
+          <div class="bar-row"><span class="bar-row-label air-stream-row-name">Arts and humanities</span><progress class="progress progress-ink" max="100" value="39">39</progress><span class="bar-row-value">39</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card stack-lg stack" aria-labelledby="air-code-title">
+      <div class="stack-sm stack">
+        <h2 id="air-code-title">Your interest code</h2>
+        <p class="muted small" id="air-riasec-note">Built from your 25 answers. Your top three areas make your code; higher scores mean you enjoy that kind of work more.</p>
+      </div>
+      <div class="report-code">
+        <div class="riasec riasec-lg" id="air-riasec-code" aria-label="Interest code I R A">
+          <span class="riasec-tile" data-dim="I">I</span><span class="riasec-tile" data-dim="R">R</span><span class="riasec-tile" data-dim="A">A</span>
+        </div>
+        <dl class="code-key" id="air-code-key">
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="I">I</span><span class="air-code-key-name">Thinker</span></dt><dd class="air-code-key-mean">You like ideas, puzzles and finding out why things happen.</dd></div>
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="R">R</span><span class="air-code-key-name">Doer</span></dt><dd class="air-code-key-mean">You like hands-on work with tools, machines or code.</dd></div>
+          <div><dt><span class="air-code-key-letter riasec-tile" data-dim="A">A</span><span class="air-code-key-name">Creator</span></dt><dd class="air-code-key-mean">You like making original things and sharing your own ideas.</dd></div>
+        </dl>
+      </div>
+      <div class="grid-2">
+        <div class="stack-sm stack" id="air-riasec-bars">
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="I"></span>Thinker</span><progress class="progress" data-dim="I" max="100" value="82">82</progress><span class="bar-row-value">82</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="R"></span>Doer</span><progress class="progress" data-dim="R" max="100" value="71">71</progress><span class="bar-row-value">71</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="A"></span>Creator</span><progress class="progress" data-dim="A" max="100" value="58">58</progress><span class="bar-row-value">58</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="E"></span>Leader</span><progress class="progress" data-dim="E" max="100" value="44">44</progress><span class="bar-row-value">44</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="S"></span>Helper</span><progress class="progress" data-dim="S" max="100" value="37">37</progress><span class="bar-row-value">37</span></div>
+          <div class="bar-row"><span class="bar-row-label air-riasec-name"><span class="dim-swatch" data-dim="C"></span>Organiser</span><progress class="progress" data-dim="C" max="100" value="34">34</progress><span class="bar-row-value">34</span></div>
+        </div>
+        <div class="stack-lg stack">
+          <div class="stack-sm stack" id="air-domains-wrap">
+            <h3>Worlds you're drawn to</h3>
+            <div class="chip-group" id="air-domains">
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sparkles"/></svg>Digital and technology</span>
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-settings"/></svg>Machines and engineering</span>
+              <span class="badge badge-outline"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Design</span>
+            </div>
+          </div>
+          <div class="stack-sm stack">
+            <h3>What you'll probably enjoy</h3>
+            <ul class="enjoy-list" id="air-enjoy">
+              <li>Breaking a big problem into smaller steps</li>
+              <li>Building and testing things until they work</li>
+              <li>Projects where you can show a finished result</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="air-careers-title">
+      <div class="stack-sm stack">
+        <h2 id="air-careers-title">Careers that fit you</h2>
+        <p class="muted" id="air-match-note">Ranked by how well each career matches your interests, the subjects you enjoy and your stream.</p>
+      </div>
+      <div class="grid-2" id="air-careers">
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Software Engineer</h3><span class="badge fit-strong air-fit-label">Strong fit, 86%</span></div>
+          <p class="card-sub air-career-field">Technology</p>
+          <p class="air-career-why">Matches your Thinker and Doer sides: you solve puzzles and then build the answer.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Data Scientist</h3><span class="badge fit-strong air-fit-label">Strong fit, 81%</span></div>
+          <p class="card-sub air-career-field">Technology and research</p>
+          <p class="air-career-why">You like finding patterns and explaining why things happen.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Robotics Engineer</h3><span class="badge fit-strong air-fit-label">Strong fit, 77%</span></div>
+          <p class="card-sub air-career-field">Engineering</p>
+          <p class="air-career-why">Hands-on building with machines, plus plenty of problem-solving.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name">Architect</h3><span class="badge fit-good air-fit-label">Good fit, 69%</span></div>
+          <p class="card-sub air-career-field">Design and construction</p>
+          <p class="air-career-why">Uses your Creator side, with maths and physics underneath.</p>
+        </article>
+        <article class="card stack-sm stack">
+          <div class="card-head"><h3 class="card-title air-career-name" data-stress>Biomedical Instrumentation Engineer</h3><span class="badge fit-good air-fit-label">Good fit, 64%</span></div>
+          <p class="card-sub air-career-field">Healthcare technology</p>
+          <p class="air-career-why">Builds the machines hospitals rely on, if you want engineering that helps people.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card-ink report-next no-print" aria-labelledby="air-next-title">
+      <div class="stack-sm stack">
+        <h2 class="card-title-lg" id="air-next-title">Ready to plan it out?</h2>
+        <p class="muted">The full app turns your top match into a step-by-step roadmap, plus weekly contests and an AI you can ask anything.</p>
+      </div>
+      <div class="cluster cluster-lg">
+        <a class="btn btn-primary" href="dashboard.html">Open the full app</a>
+        <a class="btn btn-ghost report-ghost" href="dashboard.html">Back to home</a>
+      </div>
+    </section>
+  </template>
+</body>
+</html>

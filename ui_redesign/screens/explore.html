@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Explore careers · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/shell.js" defer></script>
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="app" data-screen="explore">
+  <div data-shell="app" data-active="explorer" data-live="true"></div>
+  <main class="app-main" data-proto-root></main>
+
+  <template data-state="grid" data-label="All careers">
+    <div class="page">
+      <header class="page-head"><div><h1>Explore careers</h1><p class="page-sub">Browse every career, compare salaries and see how well each one fits you.</p></div></header>
+      <div class="ex-toolbar">
+        <div class="ex-search">
+          <svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-search"/></svg>
+          <label class="visually-hidden" for="ex-search">Search careers</label>
+          <input class="input" id="ex-search" type="search" placeholder="Search careers or subjects" autocomplete="off">
+          <button class="btn btn-icon btn-sm ex-search-clear" id="ex-search-clear" type="button" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button>
+        </div>
+        <button class="btn btn-secondary" id="ex-filter-btn" type="button" data-proto-body="ex-filters-open" aria-controls="ex-drawer"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sliders-horizontal"/></svg>Filters<span class="badge badge-accent" id="ex-filter-count" hidden>0</span></button>
+        <div class="select-wrap ex-sort-wrap"><label class="visually-hidden" for="ex-sort">Sort</label><select class="select" id="ex-sort"><option>Best fit first</option><option>Name, A to Z</option><option>Highest salary</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <div class="chip-group" id="ex-active" aria-label="Active filters"></div>
+      <p class="small muted" id="ex-sub" aria-live="polite">Showing all 312 careers</p>
+      <div class="grid-auto" id="explore-grid">
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title" data-stress>Software Engineer</h3><span class="badge fit-strong">Strong fit, 86%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;6&ndash;12 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Data Scientist</h3><span class="badge fit-strong">Strong fit, 81%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;7&ndash;14 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Robotics Engineer</h3><span class="badge fit-strong">Strong fit, 77%</span></div>
+            <p class="small muted">Engineering, PCM</p>
+            <p class="small ex-salary">&#8377;5&ndash;10 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Game Developer</h3><span class="badge fit-good">Good fit, 74%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;4&ndash;9 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Architect</h3><span class="badge fit-good">Good fit, 69%</span></div>
+            <p class="small muted">Design, PCM</p>
+            <p class="small ex-salary">&#8377;4&ndash;8 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Aerospace Engineer</h3><span class="badge fit-good">Good fit, 66%</span></div>
+            <p class="small muted">Engineering, PCM</p>
+            <p class="small ex-salary">&#8377;6&ndash;11 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Chartered Accountant</h3><span class="badge fit-low">Low fit, 48%</span></div>
+            <p class="small muted">Business, Commerce</p>
+            <p class="small ex-salary">&#8377;7&ndash;12 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Clinical Psychologist</h3><span class="badge fit-low">Low fit, 41%</span></div>
+            <p class="small muted">Healthcare, Any</p>
+            <p class="small ex-salary">&#8377;4&ndash;8 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Corporate Lawyer</h3><span class="badge fit-low">Low fit, 37%</span></div>
+            <p class="small muted">Law, Any</p>
+            <p class="small ex-salary">&#8377;6&ndash;15 LPA to start</p>
+          </a>
+      </div>
+    </div>
+  <div class="scrim ex-drawer-overlay" id="ex-drawer-overlay" data-proto-close></div>
+  <aside class="drawer ex-drawer" id="ex-drawer" role="dialog" aria-modal="true" aria-labelledby="ex-drawer-title">
+    <div class="sheet-handle ex-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="ex-drawer-title">Filters</h2><p class="small muted" id="ex-drawer-sub">6 careers match</p></div><button class="btn btn-icon btn-sm" id="ex-drawer-close" type="button" aria-label="Close filters" data-proto-close><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body" id="ex-drawer-body">
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Category</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="category" aria-pressed="false">Technology</button><button class="chip selected" type="button" data-k="category" aria-pressed="true">Engineering</button><button class="chip" type="button" data-k="category" aria-pressed="false">Design</button><button class="chip" type="button" data-k="category" aria-pressed="false">Healthcare</button><button class="chip" type="button" data-k="category" aria-pressed="false">Business</button><button class="chip" type="button" data-k="category" aria-pressed="false">Law</button><button class="chip" type="button" data-k="category" aria-pressed="false">Media</button><button class="chip" type="button" data-k="category" aria-pressed="false">Science</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Stream</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCM)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCB)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Commerce</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Arts and humanities</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Minimum fit</p><div class="chip-group ex-group-chips" data-proto-select="single"><button class="chip" type="button" data-k="fit" aria-pressed="false">Any</button><button class="chip" type="button" data-k="fit" aria-pressed="false">50% or more</button><button class="chip selected" type="button" data-k="fit" aria-pressed="true">70% or more</button><button class="chip" type="button" data-k="fit" aria-pressed="false">80% or more</button></div></div>
+    </div>
+    <div class="drawer-foot"><button class="btn btn-secondary" id="ex-drawer-clear" type="button">Clear all</button><button class="btn btn-primary" id="ex-drawer-apply" type="button" data-proto-close>Show 6 careers</button></div>
+  </aside>
+  </template>
+
+  <template data-state="drawer-open" data-label="Filters open" data-body-class="ex-filters-open">
+    <div class="page">
+      <header class="page-head"><div><h1>Explore careers</h1><p class="page-sub">Browse every career, compare salaries and see how well each one fits you.</p></div></header>
+      <div class="ex-toolbar">
+        <div class="ex-search">
+          <svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-search"/></svg>
+          <label class="visually-hidden" for="ex-search">Search careers</label>
+          <input class="input" id="ex-search" type="search" placeholder="Search careers or subjects" autocomplete="off">
+          <button class="btn btn-icon btn-sm ex-search-clear" id="ex-search-clear" type="button" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button>
+        </div>
+        <button class="btn btn-secondary" id="ex-filter-btn" type="button" data-proto-body="ex-filters-open" aria-controls="ex-drawer"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sliders-horizontal"/></svg>Filters<span class="badge badge-accent" id="ex-filter-count" hidden>0</span></button>
+        <div class="select-wrap ex-sort-wrap"><label class="visually-hidden" for="ex-sort">Sort</label><select class="select" id="ex-sort"><option>Best fit first</option><option>Name, A to Z</option><option>Highest salary</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <div class="chip-group" id="ex-active" aria-label="Active filters"></div>
+      <p class="small muted" id="ex-sub" aria-live="polite">Showing all 312 careers</p>
+      <div class="grid-auto" id="explore-grid">
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title" data-stress>Software Engineer</h3><span class="badge fit-strong">Strong fit, 86%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;6&ndash;12 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Data Scientist</h3><span class="badge fit-strong">Strong fit, 81%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;7&ndash;14 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Robotics Engineer</h3><span class="badge fit-strong">Strong fit, 77%</span></div>
+            <p class="small muted">Engineering, PCM</p>
+            <p class="small ex-salary">&#8377;5&ndash;10 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Game Developer</h3><span class="badge fit-good">Good fit, 74%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;4&ndash;9 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Architect</h3><span class="badge fit-good">Good fit, 69%</span></div>
+            <p class="small muted">Design, PCM</p>
+            <p class="small ex-salary">&#8377;4&ndash;8 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Aerospace Engineer</h3><span class="badge fit-good">Good fit, 66%</span></div>
+            <p class="small muted">Engineering, PCM</p>
+            <p class="small ex-salary">&#8377;6&ndash;11 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Chartered Accountant</h3><span class="badge fit-low">Low fit, 48%</span></div>
+            <p class="small muted">Business, Commerce</p>
+            <p class="small ex-salary">&#8377;7&ndash;12 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Clinical Psychologist</h3><span class="badge fit-low">Low fit, 41%</span></div>
+            <p class="small muted">Healthcare, Any</p>
+            <p class="small ex-salary">&#8377;4&ndash;8 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Corporate Lawyer</h3><span class="badge fit-low">Low fit, 37%</span></div>
+            <p class="small muted">Law, Any</p>
+            <p class="small ex-salary">&#8377;6&ndash;15 LPA to start</p>
+          </a>
+      </div>
+    </div>
+  <div class="scrim ex-drawer-overlay" id="ex-drawer-overlay" data-proto-close></div>
+  <aside class="drawer ex-drawer" id="ex-drawer" role="dialog" aria-modal="true" aria-labelledby="ex-drawer-title">
+    <div class="sheet-handle ex-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="ex-drawer-title">Filters</h2><p class="small muted" id="ex-drawer-sub">6 careers match</p></div><button class="btn btn-icon btn-sm" id="ex-drawer-close" type="button" aria-label="Close filters" data-proto-close><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body" id="ex-drawer-body">
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Category</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="category" aria-pressed="false">Technology</button><button class="chip selected" type="button" data-k="category" aria-pressed="true">Engineering</button><button class="chip" type="button" data-k="category" aria-pressed="false">Design</button><button class="chip" type="button" data-k="category" aria-pressed="false">Healthcare</button><button class="chip" type="button" data-k="category" aria-pressed="false">Business</button><button class="chip" type="button" data-k="category" aria-pressed="false">Law</button><button class="chip" type="button" data-k="category" aria-pressed="false">Media</button><button class="chip" type="button" data-k="category" aria-pressed="false">Science</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Stream</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCM)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCB)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Commerce</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Arts and humanities</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Minimum fit</p><div class="chip-group ex-group-chips" data-proto-select="single"><button class="chip" type="button" data-k="fit" aria-pressed="false">Any</button><button class="chip" type="button" data-k="fit" aria-pressed="false">50% or more</button><button class="chip selected" type="button" data-k="fit" aria-pressed="true">70% or more</button><button class="chip" type="button" data-k="fit" aria-pressed="false">80% or more</button></div></div>
+    </div>
+    <div class="drawer-foot"><button class="btn btn-secondary" id="ex-drawer-clear" type="button">Clear all</button><button class="btn btn-primary" id="ex-drawer-apply" type="button" data-proto-close>Show 6 careers</button></div>
+  </aside>
+  </template>
+
+  <template data-state="active-filters" data-label="Search and filters applied">
+    <div class="page">
+      <header class="page-head"><div><h1>Explore careers</h1><p class="page-sub">Browse every career, compare salaries and see how well each one fits you.</p></div></header>
+      <div class="ex-toolbar">
+        <div class="ex-search">
+          <svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-search"/></svg>
+          <label class="visually-hidden" for="ex-search">Search careers</label>
+          <input class="input" id="ex-search" type="search" placeholder="Search careers or subjects" value="engineer" autocomplete="off">
+          <button class="btn btn-icon btn-sm ex-search-clear" id="ex-search-clear" type="button" aria-label="Clear search"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button>
+        </div>
+        <button class="btn btn-secondary" id="ex-filter-btn" type="button" data-proto-body="ex-filters-open" aria-controls="ex-drawer"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sliders-horizontal"/></svg>Filters<span class="badge badge-accent" id="ex-filter-count">2</span></button>
+        <div class="select-wrap ex-sort-wrap"><label class="visually-hidden" for="ex-sort">Sort</label><select class="select" id="ex-sort"><option>Best fit first</option><option>Name, A to Z</option><option>Highest salary</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <div class="chip-group" id="ex-active" aria-label="Active filters"><button class="chip selected" type="button">Engineering<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg><span class="visually-hidden"> remove</span></button><button class="chip selected" type="button">70% or more<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg><span class="visually-hidden"> remove</span></button></div>
+      <p class="small muted" id="ex-sub" aria-live="polite">Showing 4 of 312 careers</p>
+      <div class="grid-auto" id="explore-grid">
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title" data-stress>Software Engineer</h3><span class="badge fit-strong">Strong fit, 86%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;6&ndash;12 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Data Scientist</h3><span class="badge fit-strong">Strong fit, 81%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;7&ndash;14 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Robotics Engineer</h3><span class="badge fit-strong">Strong fit, 77%</span></div>
+            <p class="small muted">Engineering, PCM</p>
+            <p class="small ex-salary">&#8377;5&ndash;10 LPA to start</p>
+          </a>
+          <a class="card-flat card-link explore-card stack-sm stack" href="career-detail.html">
+            <div class="card-head"><h3 class="card-title">Game Developer</h3><span class="badge fit-good">Good fit, 74%</span></div>
+            <p class="small muted">Technology, PCM</p>
+            <p class="small ex-salary">&#8377;4&ndash;9 LPA to start</p>
+          </a>
+      </div>
+    </div>
+  <div class="scrim ex-drawer-overlay" id="ex-drawer-overlay" data-proto-close></div>
+  <aside class="drawer ex-drawer" id="ex-drawer" role="dialog" aria-modal="true" aria-labelledby="ex-drawer-title">
+    <div class="sheet-handle ex-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="ex-drawer-title">Filters</h2><p class="small muted" id="ex-drawer-sub">6 careers match</p></div><button class="btn btn-icon btn-sm" id="ex-drawer-close" type="button" aria-label="Close filters" data-proto-close><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body" id="ex-drawer-body">
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Category</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="category" aria-pressed="false">Technology</button><button class="chip selected" type="button" data-k="category" aria-pressed="true">Engineering</button><button class="chip" type="button" data-k="category" aria-pressed="false">Design</button><button class="chip" type="button" data-k="category" aria-pressed="false">Healthcare</button><button class="chip" type="button" data-k="category" aria-pressed="false">Business</button><button class="chip" type="button" data-k="category" aria-pressed="false">Law</button><button class="chip" type="button" data-k="category" aria-pressed="false">Media</button><button class="chip" type="button" data-k="category" aria-pressed="false">Science</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Stream</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCM)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCB)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Commerce</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Arts and humanities</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Minimum fit</p><div class="chip-group ex-group-chips" data-proto-select="single"><button class="chip" type="button" data-k="fit" aria-pressed="false">Any</button><button class="chip" type="button" data-k="fit" aria-pressed="false">50% or more</button><button class="chip selected" type="button" data-k="fit" aria-pressed="true">70% or more</button><button class="chip" type="button" data-k="fit" aria-pressed="false">80% or more</button></div></div>
+    </div>
+    <div class="drawer-foot"><button class="btn btn-secondary" id="ex-drawer-clear" type="button">Clear all</button><button class="btn btn-primary" id="ex-drawer-apply" type="button" data-proto-close>Show 6 careers</button></div>
+  </aside>
+  </template>
+
+  <template data-state="no-results" data-label="No results">
+    <div class="page">
+      <header class="page-head"><div><h1>Explore careers</h1><p class="page-sub">Browse every career, compare salaries and see how well each one fits you.</p></div></header>
+      <div class="ex-toolbar">
+        <div class="ex-search">
+          <svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-search"/></svg>
+          <label class="visually-hidden" for="ex-search">Search careers</label>
+          <input class="input" id="ex-search" type="search" placeholder="Search careers or subjects" value="astronaut chef" autocomplete="off">
+          <button class="btn btn-icon btn-sm ex-search-clear" id="ex-search-clear" type="button" aria-label="Clear search"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button>
+        </div>
+        <button class="btn btn-secondary" id="ex-filter-btn" type="button" data-proto-body="ex-filters-open" aria-controls="ex-drawer"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-sliders-horizontal"/></svg>Filters<span class="badge badge-accent" id="ex-filter-count" hidden>0</span></button>
+        <div class="select-wrap ex-sort-wrap"><label class="visually-hidden" for="ex-sort">Sort</label><select class="select" id="ex-sort"><option>Best fit first</option><option>Name, A to Z</option><option>Highest salary</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div>
+      </div>
+      <div class="chip-group" id="ex-active" aria-label="Active filters"></div>
+      <p class="small muted" id="ex-sub" aria-live="polite">No careers found</p>
+      <div id="explore-grid">
+      <section class="card-flat ex-none">
+        <div class="empty">
+          <div class="illo illo-lg"><img src="../assets/illustrations/magnifier-400.webp" alt=""></div>
+          <h2 class="empty-title">No careers match &ldquo;astronaut chef&rdquo;</h2>
+          <p class="empty-text">Try a shorter word, a subject you like, or clear the filters.</p>
+          <div class="cluster"><button class="btn btn-secondary" type="button">Clear search and filters</button></div>
+        </div>
+      </section>
+      </div>
+    </div>
+  <div class="scrim ex-drawer-overlay" id="ex-drawer-overlay" data-proto-close></div>
+  <aside class="drawer ex-drawer" id="ex-drawer" role="dialog" aria-modal="true" aria-labelledby="ex-drawer-title">
+    <div class="sheet-handle ex-handle"></div>
+    <div class="drawer-head"><div><h2 class="drawer-title" id="ex-drawer-title">Filters</h2><p class="small muted" id="ex-drawer-sub">6 careers match</p></div><button class="btn btn-icon btn-sm" id="ex-drawer-close" type="button" aria-label="Close filters" data-proto-close><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></button></div>
+    <div class="drawer-body" id="ex-drawer-body">
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Category</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="category" aria-pressed="false">Technology</button><button class="chip selected" type="button" data-k="category" aria-pressed="true">Engineering</button><button class="chip" type="button" data-k="category" aria-pressed="false">Design</button><button class="chip" type="button" data-k="category" aria-pressed="false">Healthcare</button><button class="chip" type="button" data-k="category" aria-pressed="false">Business</button><button class="chip" type="button" data-k="category" aria-pressed="false">Law</button><button class="chip" type="button" data-k="category" aria-pressed="false">Media</button><button class="chip" type="button" data-k="category" aria-pressed="false">Science</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Stream</p><div class="chip-group ex-group-chips" data-proto-select="multi"><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCM)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Science (PCB)</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Commerce</button><button class="chip" type="button" data-k="stream" aria-pressed="false">Arts and humanities</button></div></div>
+      <div class="stack-sm stack"><p class="ex-group-title field-label">Minimum fit</p><div class="chip-group ex-group-chips" data-proto-select="single"><button class="chip" type="button" data-k="fit" aria-pressed="false">Any</button><button class="chip" type="button" data-k="fit" aria-pressed="false">50% or more</button><button class="chip selected" type="button" data-k="fit" aria-pressed="true">70% or more</button><button class="chip" type="button" data-k="fit" aria-pressed="false">80% or more</button></div></div>
+    </div>
+    <div class="drawer-foot"><button class="btn btn-secondary" id="ex-drawer-clear" type="button">Clear all</button><button class="btn btn-primary" id="ex-drawer-apply" type="button" data-proto-close>Show 6 careers</button></div>
+  </aside>
+  </template>
+</body>
+</html>

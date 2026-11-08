@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Weekly Aptitude Contest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Weekly contest</title>
   <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
   <link rel="icon" href="data:," />
   <!-- Resolve the theme before first paint: a deferred script would let a
@@ -18,31 +18,20 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="quiz">
-
-  <!-- ════════════════════════════════════════
-     WEEKLY APTITUDE CONTEST
-     Everything inside #ct-root is drawn by scripts/contest.js: the lobby,
-     the 5 questions, the submit review, the "results at 7 PM" wait and
-     ?review=N for a closed contest's answers.
-════════════════════════════════════════ -->
-  <div id="quiz" class="screen active">
-    <div class="ct-page">
-      <div class="quiz-wrap">
-        <div class="quiz-topbar">
-          <button class="btn btn-ghost btn-sm" onclick="goBack('contests')" aria-label="Back to contests">←</button>
-          <span class="quiz-num" id="ct-label">Weekly Aptitude Contest</span>
-          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
-            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
-            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
-          </button>
-        </div>
-        <div id="ct-root" aria-live="polite"></div>
-      </div>
-    </div>
+  <div class="flow" id="quiz">
+    <header class="flow-bar">
+      <button class="btn btn-icon" type="button" onclick="goBack('contests')" aria-label="Back to contests"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-x"/></svg></button>
+      <p class="flow-title" id="ct-label">Weekly contest</p>
+      <button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button>
+    </header>
+    <main class="flow-main stack-lg stack" id="ct-root" aria-live="polite"></main>
   </div>
 
   <script src="../scripts/riasec_engine.js"></script>

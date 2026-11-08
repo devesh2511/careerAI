@@ -1,0 +1,711 @@
+{
+ "GET /me": {
+  "status": 200,
+  "json": {
+   "student": {
+    "id": "stu-aarav",
+    "full_name": "Aarav Mehta",
+    "leaderboard_name": "Aarav M.",
+    "email": "aarav.m@gmail.com",
+    "school": null,
+    "current_career": "Robotics & Mechatronics Engineer",
+    "created_at": "2026-10-04T18:37:38.279Z"
+   }
+  }
+ },
+ "GET /me/access": {
+  "status": 200,
+  "json": {
+   "has_access": true,
+   "source": "individual",
+   "reason": null,
+   "school": null,
+   "ends_at": "2027-10-09T18:30:00.000Z",
+   "plan": "student_annual"
+  }
+ },
+ "GET /me/profile": {
+  "status": 200,
+  "json": {
+   "profile": {
+    "class": 10,
+    "board": "CBSE",
+    "medium": "English",
+    "city": "Pune",
+    "marks": {
+     "English": 80,
+     "Science": 90,
+     "Mathematics": 95,
+     "Social Studies": 80
+    },
+    "favourite_subjects": [
+     "Mathematics",
+     "Science",
+     "Computer"
+    ],
+    "hobbies": [
+     "Coding",
+     "Sports"
+    ],
+    "dream_job": null,
+    "career_preference": "Entrepreneur",
+    "study_location": "Yes, anywhere",
+    "completed_at": "2026-10-23T13:01:27.477Z"
+   }
+  }
+ },
+ "PUT /me/profile": {
+  "status": 200,
+  "json": {
+   "profile": {
+    "class": 10
+   }
+  }
+ },
+ "PUT /me": {
+  "status": 200,
+  "json": {
+   "student": {
+    "id": "stu-aarav",
+    "full_name": "Aarav Mehta",
+    "leaderboard_name": "Aarav M.",
+    "email": "aarav.m@gmail.com",
+    "school": null
+   }
+  }
+ },
+ "PUT /me/school": {
+  "status": 200,
+  "json": {
+   "student": {
+    "id": "stu-aarav",
+    "full_name": "Aarav Mehta",
+    "email": "aarav.m@gmail.com",
+    "school": null
+   },
+   "access": {
+    "has_access": true,
+    "source": "individual",
+    "reason": null,
+    "school": null,
+    "ends_at": "2027-10-09T18:30:00.000Z",
+    "plan": "student_annual"
+   }
+  }
+ },
+ "PUT /me/career": {
+  "status": 200,
+  "json": {
+   "ok": true
+  }
+ },
+ "POST /me/career-quiz": {
+  "status": 200,
+  "json": {
+   "ok": true
+  }
+ },
+ "GET /me/career-quiz/latest": {
+  "status": 200,
+  "json": {
+   "result": {
+    "id": 22,
+    "riasec_pct": {
+     "A": 13,
+     "C": 21,
+     "E": 12,
+     "I": 36,
+     "R": 35,
+     "S": 8
+    },
+    "riasec_code": "IRC",
+    "confidence": "low",
+    "top_career": "Robotics & Mechatronics Engineer",
+    "results": {
+     "riasec": {
+      "pct": {
+       "A": 13.19,
+       "C": 20.83,
+       "E": 12.5,
+       "I": 36.11,
+       "R": 34.72,
+       "S": 7.64
+      },
+      "code": "IRC",
+      "flat": false,
+      "close": [
+       [
+        "I",
+        "R"
+       ],
+       [
+        "C"
+       ],
+       [
+        "A",
+        "E",
+        "S"
+       ]
+      ],
+      "enjoy": [
+       "solving difficult problems",
+       "building and testing things",
+       "organising information clearly",
+       "understanding how things work",
+       "working with tools and machines"
+      ],
+      "ranked": [
+       {
+        "dim": "I",
+        "pct": 36,
+        "name": "Investigative",
+        "emoji": "🔬",
+        "plain": "Investigating & problem solving",
+        "meaning": "science, maths, research, questions, and solving problems"
+       },
+       {
+        "dim": "R",
+        "pct": 35,
+        "name": "Realistic",
+        "emoji": "🔧",
+        "plain": "Building & practical work",
+        "meaning": "building, fixing, machines, tools, nature, and practical work"
+       },
+       {
+        "dim": "C",
+        "pct": 21,
+        "name": "Conventional",
+        "emoji": "📋",
+        "plain": "Organising & accuracy",
+        "meaning": "numbers, organising information, planning, accuracy, and clear systems"
+       },
+       {
+        "dim": "A",
+        "pct": 13,
+        "name": "Artistic",
+        "emoji": "🎨",
+        "plain": "Creating & designing",
+        "meaning": "art, design, music, writing, stories, and creating new things"
+       },
+       {
+        "dim": "E",
+        "pct": 12,
+        "name": "Enterprising",
+        "emoji": "🚀",
+        "plain": "Leading & enterprise",
+        "meaning": "leading, convincing, organising, selling, and starting things"
+       },
+       {
+        "dim": "S",
+        "pct": 8,
+        "name": "Social",
+        "emoji": "🤝",
+        "plain": "Helping & working with people",
+        "meaning": "helping, teaching, listening, guiding, and working with people"
+       }
+      ],
+      "domains": [
+       {
+        "key": "digital",
+        "emoji": "💻",
+        "label": "Code, AI & the digital world",
+        "score": 100
+       },
+       {
+        "key": "money",
+        "emoji": "💼",
+        "label": "Business, money & markets",
+        "score": 75
+       }
+      ],
+      "confidence": "low",
+      "profileKey": "IR",
+      "consistency": "high",
+      "domainScores": {
+       "life": 0,
+       "built": 0,
+       "media": 0,
+       "money": 0.75,
+       "people": 0.25,
+       "planet": 0,
+       "digital": 1,
+       "machines": 0.25
+      },
+      "subjectScores": {
+       "arts": 0,
+       "maths": 1,
+       "social": 0,
+       "biology": 0,
+       "physics": 0,
+       "chemistry": 0,
+       "computers": 1,
+       "economics": 0.4,
+       "languages": 0.6
+      },
+      "qualifiedCount": 16,
+      "consideredCount": 75
+     },
+     "streams": [
+      {
+       "key": "PCM",
+       "label": "Science with Maths (PCM)",
+       "score": 80,
+       "token": "PCM",
+       "reason": "All 12 of your best-fit careers start here, and you are strong in Maths and Computers / IT.",
+       "careerCount": 12,
+       "careersScore": 100,
+       "subjectsScore": 50,
+       "strongSubjects": [
+        "Maths",
+        "Computers / IT"
+       ]
+      },
+      {
+       "key": "Commerce",
+       "label": "Commerce",
+       "score": 31,
+       "token": "Commerce",
+       "reason": "1 of your 12 best-fit careers start here, and you are strong in Maths and English & other languages.",
+       "careerCount": 1,
+       "careersScore": 8,
+       "subjectsScore": 65,
+       "strongSubjects": [
+        "Maths",
+        "English & other languages"
+       ]
+      },
+      {
+       "key": "Humanities",
+       "label": "Humanities / Arts",
+       "score": 11,
+       "token": "Arts",
+       "reason": "None of your 12 best-fit careers start here, and you are strong in English & other languages.",
+       "careerCount": 0,
+       "careersScore": 0,
+       "subjectsScore": 27,
+       "strongSubjects": [
+        "English & other languages"
+       ]
+      },
+      {
+       "key": "PCB",
+       "label": "Science with Biology (PCB)",
+       "score": 0,
+       "token": "PCB",
+       "reason": "None of your 12 best-fit careers start here, and its core subjects are not among your strongest.",
+       "careerCount": 0,
+       "careersScore": 0,
+       "subjectsScore": 0,
+       "strongSubjects": []
+      }
+     ],
+     "top_careers": [
+      {
+       "why": "Building machines that sense the world and act on their own.",
+       "rank": 1,
+       "emoji": "🤖",
+       "field": "Engineering",
+       "title": "Robotics & Mechatronics Engineer",
+       "salary": "₹6–15 LPA starting",
+       "stream": "PCM",
+       "fit_label": "Excellent fit",
+       "match_pct": 90
+      },
+      {
+       "why": "Thinking like a hacker to find the weak spots before the real ones do.",
+       "rank": 2,
+       "emoji": "🔐",
+       "field": "Technology",
+       "title": "Cybersecurity Specialist / Ethical Hacker",
+       "salary": "₹5–11 LPA starting",
+       "stream": "PCM+CS",
+       "fit_label": "Excellent fit",
+       "match_pct": 89
+      },
+      {
+       "why": "Keeping the apps millions of people use fast, safe and always running.",
+       "rank": 3,
+       "emoji": "☁️",
+       "field": "Technology",
+       "title": "Cloud Computing & DevOps Engineer",
+       "salary": "₹5–10 LPA starting",
+       "stream": "PCM+CS",
+       "fit_label": "Excellent fit",
+       "match_pct": 89
+      },
+      {
+       "why": "Designing flying machines that map farms, deliver goods and help in disasters.",
+       "rank": 4,
+       "emoji": "🛸",
+       "field": "Aerospace + Robotics",
+       "title": "Drone Technology Specialist",
+       "salary": "₹4–8 LPA starting",
+       "stream": "PCM",
+       "fit_label": "Excellent fit",
+       "match_pct": 86
+      },
+      {
+       "why": "Breaking a problem into logical steps and building something that works.",
+       "rank": 5,
+       "emoji": "💻",
+       "field": "Technology",
+       "title": "Computer Science Engineer (Software & Systems)",
+       "salary": "₹5–9 LPA starting",
+       "stream": "PCM+CS",
+       "fit_label": "Strong fit",
+       "match_pct": 84
+      }
+     ],
+     "stream_reason": "Your strongest areas are investigating & problem solving and building & practical work. All 12 of your best-fit careers start here, and you are strong in Maths and Computers / IT.",
+     "engine_version": "riasec-2",
+     "personality_desc": "You enjoy working out why something happens, then testing your answer for real. Pure theory interests you less than a result you can check.",
+     "personality_type": "The Applied Investigator",
+     "stream_recommendation": "PCM"
+    },
+    "engine_version": "riasec-2",
+    "created_at": "2026-10-18T18:41:19.935Z"
+   }
+  }
+ },
+ "GET /me/career-quiz/runs": {
+  "status": 200,
+  "json": {
+   "results": []
+  }
+ },
+ "GET /roadmaps": {
+  "status": 200,
+  "json": {
+   "roadmaps": [
+    {
+     "career": "Robotics & Mechatronics Engineer",
+     "emoji": "🤖"
+    },
+    {
+     "career": "Cybersecurity Specialist / Ethical Hacker",
+     "emoji": "🔐"
+    },
+    {
+     "career": "Computer Science Engineer (Software & Systems)",
+     "emoji": "💻"
+    }
+   ]
+  }
+ },
+ "GET /roadmap": {
+  "status": 200,
+  "json": {
+   "roadmap": {
+    "career": "Robotics & Mechatronics Engineer",
+    "emoji": "🤖",
+    "updated_at": "2026-10-18T19:35:36.300Z",
+    "steps": [
+     {
+      "title": "Build your foundation",
+      "period": "Now · Class 10",
+      "actions": [
+       "Score well in Maths & Physics — motion and electricity chapters matter most",
+       "Learn Arduino for free with Tinkercad Circuits (online simulator)",
+       "Build a line-following or obstacle-avoiding robot car",
+       "Use your school's Atal Tinkering Lab or try World Robot Olympiad India"
+      ]
+     },
+     {
+      "title": "Choose PCM · Start JEE prep",
+      "period": "Class 11–12",
+      "actions": [
+       "Score 75%+ in PCM boards (needed for NITs & IIITs)",
+       "Begin JEE Main preparation from Class 11",
+       "Learn C++ or Python for Arduino and Raspberry Pi",
+       "Build a small robotic arm or a sensor-based project"
+      ]
+     },
+     {
+      "title": "Crack engineering entrances",
+      "period": "Class 12 · Entrance Exams",
+      "actions": [
+       "JEE Main for NITs & IIITs · JEE Advanced for the IITs",
+       "Also apply: BITSAT, VITEEE, MHT-CET / your state CET, COMEDK",
+       "Pick Mechatronics or Robotics & Automation where offered",
+       "Mechanical, Electrical or ECE branches also lead into robotics"
+      ]
+     },
+     {
+      "title": "IITs · NITs · BITS · MIT Manipal · VIT",
+      "period": "College · B.Tech Mechatronics / Robotics (4 years)",
+      "actions": [
+       "Join your college team for DD Robocon or IIT Bombay's e-Yantra",
+       "Learn ROS, MATLAB/Simulink and SolidWorks",
+       "Intern at a robotics or factory-automation company",
+       "Specialise: industrial automation, drones, self-driving or medical robots"
+      ]
+     },
+     {
+      "title": "Robotics Engineer — ₹6–15 LPA starting",
+      "period": "First Job",
+      "actions": [
+       "Hired by automation firms, warehouse-robot startups and defence labs",
+       "Top recruiters: ABB, Siemens, Bosch, GreyOrange, Addverb, DRDO",
+       "Top graduates in autonomy and AI-robotics can earn ₹20–30 LPA",
+       "Senior Robotics Engineer at ₹15–30 LPA in 4–5 years"
+      ]
+     }
+    ]
+   }
+  }
+ },
+ "GET /career-news": {
+  "status": 200,
+  "json": {
+   "career": "Robotics & Mechatronics Engineer",
+   "updated_at": "2026-11-08T06:00:00.000Z",
+   "sources": [
+    "Career Weekly",
+    "Exam Desk"
+   ],
+   "categories": [
+    {
+     "key": "news",
+     "label": "News",
+     "items": [
+      {
+       "cat": "news",
+       "title": "Schools add robotics labs under the Atal Tinkering Lab scheme",
+       "url": "https://example.com/news/atl-labs",
+       "source": "Career Weekly",
+       "provider": "gnews",
+       "published_at": "2026-11-06T09:00:00.000Z",
+       "image": null
+      },
+      {
+       "cat": "news",
+       "title": "What a mechatronics engineer actually does all day, in their own words",
+       "url": "https://example.com/news/day-in-the-life",
+       "source": "Campus Notes",
+       "provider": "gnews",
+       "published_at": "2026-11-04T09:00:00.000Z",
+       "image": null
+      }
+     ]
+    },
+    {
+     "key": "jobs",
+     "label": "Jobs & internships",
+     "items": [
+      {
+       "cat": "jobs",
+       "title": "Summer robotics internship for Class 10 to 12 students, Pune",
+       "url": "https://example.com/jobs/robotics-intern",
+       "source": "Young Builders Lab",
+       "provider": "adzuna",
+       "published_at": "2026-11-05T09:00:00.000Z",
+       "image": null
+      }
+     ]
+    },
+    {
+     "key": "exams",
+     "label": "Exams",
+     "items": [
+      {
+       "cat": "exams",
+       "title": "JEE Main 2027: registration dates and syllabus changes explained",
+       "url": "https://example.com/exams/jee-main-2027",
+       "source": "Exam Desk",
+       "provider": "gnews",
+       "published_at": "2026-11-01T09:00:00.000Z",
+       "image": null
+      }
+     ]
+    },
+    {
+     "key": "scholarships",
+     "label": "Scholarships",
+     "items": []
+    }
+   ]
+  }
+ },
+ "GET /contest/state": {
+  "status": 200,
+  "json": {
+   "server_time": "2026-11-08T08:11:12.942Z",
+   "contest": null,
+   "attempt": {
+    "status": "not_started",
+    "started_at": null,
+    "submitted_at": null,
+    "answered_count": 0,
+    "auto_submitted": false
+   },
+   "latest_published": {
+    "id": 18,
+    "number": 18,
+    "opens_at": "2026-10-10T01:30:00.000Z",
+    "closes_at": "2026-10-11T13:30:00.000Z",
+    "status": "closed",
+    "question_count": 5,
+    "points_per_question": 10
+   },
+   "published_count": 1,
+   "career": "Robotics & Mechatronics Engineer",
+   "careers": [
+    "Robotics & Mechatronics Engineer",
+    "Cybersecurity Specialist / Ethical Hacker",
+    "Cloud Computing & DevOps Engineer",
+    "Drone Technology Specialist",
+    "Computer Science Engineer (Software & Systems)"
+   ]
+  }
+ },
+ "GET /leaderboard": {
+  "status": 200,
+  "json": {
+   "scope": "global",
+   "period": "week",
+   "contest": {
+    "id": 18,
+    "number": 18,
+    "opens_at": "2026-10-10T01:30:00.000Z",
+    "closes_at": "2026-10-11T13:30:00.000Z",
+    "status": "closed",
+    "question_count": 5,
+    "points_per_question": 10
+   },
+   "total_participants": 3,
+   "me": {
+    "rank": 1,
+    "name": "Aarav M.",
+    "career": "Robotics & Mechatronics Engineer",
+    "career_emoji": "🎯",
+    "score": 50,
+    "correct": 5,
+    "total_questions": 5,
+    "time_taken_s": 38,
+    "is_me": true
+   },
+   "rows": [
+    {
+     "rank": 1,
+     "name": "Aarav M.",
+     "career": "Robotics & Mechatronics Engineer",
+     "career_emoji": "🎯",
+     "score": 50,
+     "correct": 5,
+     "total_questions": 5,
+     "time_taken_s": 38,
+     "is_me": true
+    },
+    {
+     "rank": 2,
+     "name": "Harsh S.",
+     "career": "Aerospace Engineer",
+     "career_emoji": "🎯",
+     "score": 50,
+     "correct": 5,
+     "total_questions": 5,
+     "time_taken_s": 180,
+     "is_me": false
+    },
+    {
+     "rank": 3,
+     "name": "Rama S.",
+     "career": "Photographer / Videographer",
+     "career_emoji": "🎯",
+     "score": 40,
+     "correct": 4,
+     "total_questions": 5,
+     "time_taken_s": 70,
+     "is_me": false
+    }
+   ],
+   "contests_count": 1
+  }
+ },
+ "GET /me/contest-history": {
+  "status": 200,
+  "json": {
+   "career": "Robotics & Mechatronics Engineer",
+   "rows": [
+    {
+     "contest": {
+      "id": 18,
+      "number": 18,
+      "opens_at": "2026-10-10T01:30:00.000Z",
+      "closes_at": "2026-10-11T13:30:00.000Z",
+      "status": "closed",
+      "question_count": 5,
+      "points_per_question": 10
+     },
+     "attempted": true,
+     "score": 50,
+     "correct": 5,
+     "total_questions": 5,
+     "time_taken_s": 38,
+     "global": {
+      "rank": 1,
+      "total": 3
+     },
+     "career": {
+      "rank": 1,
+      "total": 1
+     }
+    }
+   ]
+  }
+ },
+ "POST /chat/messages": {
+  "status": 200,
+  "sse": [
+   {
+    "event": "sources",
+    "data": {
+     "items": [
+      {
+       "title": "JEE Main information bulletin",
+       "url": "https://example.com/jee-main"
+      }
+     ]
+    }
+   },
+   {
+    "event": "delta",
+    "data": {
+     "text": "For a B.Tech in robotics, the main entrance exams are **JEE Main** for NITs and **JEE Advanced** for the IITs. "
+    }
+   },
+   {
+    "event": "delta",
+    "data": {
+     "text": "BITSAT and MHT-CET are good options too, since you're in Pune.\n\n"
+    }
+   },
+   {
+    "event": "delta",
+    "data": {
+     "text": "Start with a strong maths base this year."
+    }
+   },
+   {
+    "event": "done",
+    "data": {}
+   }
+  ]
+ },
+ "GET /admin/me": {
+  "status": 200,
+  "json": {
+   "admin": {
+    "id": "adm-1",
+    "full_name": "Priya Admin",
+    "email": "admin@example.com"
+   }
+  }
+ },
+ "POST /auth/logout": {
+  "status": 200,
+  "json": {
+   "ok": true
+  }
+ }
+}

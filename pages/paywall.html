@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Unlock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Unlock Crackeer</title>
   <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
   <link rel="icon" href="data:," />
   <!-- Resolve the theme before first paint: a deferred script would let a
@@ -18,33 +18,21 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="paywall">
-
-  <!-- ════════════════════════════════════════
-     PAYWALL
-     Where every paid page sends a student without access. Everything
-     inside #pw-root is drawn by pw* functions in scripts/script.js: why
-     they aren't covered, a School ID box, the plans and how to pay
-     (outside the website; an admin records the payment ID).
-     ?next=onboarding sends a brand-new student to onboarding once they have access.
-════════════════════════════════════════ -->
   <div id="paywall" class="screen active">
-    <div class="pw-page">
-      <div class="pw-top">
-        <div class="auth-logo" style="margin:0;">Crack<span>eer</span></div>
-        <div class="pw-top-actions">
-          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
-            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
-            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="logout()">Log out</button>
-        </div>
-      </div>
-      <div class="pw-wrap" id="pw-root" aria-live="polite"></div>
-    </div>
+  <header class="public-header">
+    <a class="logo" href="../index.html">Crackeer<span class="logo-dot">.</span></a>
+    <div class="cluster"><button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button><button class="btn btn-secondary btn-sm" type="button" onclick="logout()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-log-out"/></svg>Log out</button></div>
+  </header>
+  <main class="public-main">
+    <div class="pw-wrap stack-lg stack" id="pw-root"></div>
+  </main>
   </div>
 
   <script src="../scripts/riasec_engine.js"></script>

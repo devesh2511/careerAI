@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Building your report · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="ailoading" data-screen="ai-loading">
+  <div class="flow" data-proto-root></div>
+
+  <template data-state="in-progress" data-label="Working">
+    <main class="flow-main al-main">
+      <section class="card al-card stack-lg stack" aria-live="polite" aria-labelledby="al-title">
+        <div class="illo illo-lg"><img src="../assets/illustrations/rocket-400.webp" alt=""></div>
+        <div class="stack-sm stack"><h1 id="al-title">Building your report</h1><p class="muted">This takes a few seconds.</p></div>
+        <ol class="al-steps"><li class="al-step done" id="al-step1"><span class="al-step-icon"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="grow">Scoring your 25 answers</span><span class="visually-hidden">Done</span></li><li class="al-step loading" id="al-step2"><span class="al-step-icon"><span class="spinner spinner-sm" aria-hidden="true"></span></span><span class="grow">Matching you with 300+ careers</span><span class="visually-hidden">In progress</span></li><li class="al-step pending" id="al-step3"><span class="al-step-icon"><span class="al-pending" aria-hidden="true"></span></span><span class="grow">Saving your report</span><span class="visually-hidden">Waiting</span></li></ol>
+        
+      </section>
+    </main>
+  </template>
+
+  <template data-state="done" data-label="Finished">
+    <main class="flow-main al-main">
+      <section class="card al-card stack-lg stack" aria-live="polite" aria-labelledby="al-title">
+        <div class="illo illo-lg"><img src="../assets/illustrations/rocket-400.webp" alt=""></div>
+        <div class="stack-sm stack"><h1 id="al-title">Your report is ready</h1><p class="muted">Software Engineer came out on top. Let's look at why.</p></div>
+        <ol class="al-steps"><li class="al-step done" id="al-step1"><span class="al-step-icon"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="grow">Scoring your 25 answers</span><span class="visually-hidden">Done</span></li><li class="al-step done" id="al-step2"><span class="al-step-icon"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="grow">Matching you with 300+ careers</span><span class="visually-hidden">Done</span></li><li class="al-step done" id="al-step3"><span class="al-step-icon"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="grow">Saving your report</span><span class="visually-hidden">Done</span></li></ol>
+        <a class="btn btn-primary" href="career-results.html">See my results</a>
+      </section>
+    </main>
+  </template>
+
+  <template data-state="error" data-label="Could not save">
+    <main class="flow-main al-main">
+      <section class="card al-card stack-lg stack" aria-live="polite" aria-labelledby="al-title">
+        <div class="illo illo-lg"><img src="../assets/illustrations/rocket-400.webp" alt=""></div>
+        <div class="stack-sm stack"><h1 id="al-title">We couldn't save your report</h1><p class="muted">Your answers are safe on this device.</p></div>
+        <ol class="al-steps"><li class="al-step done" id="al-step1"><span class="al-step-icon"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="grow">Scoring your 25 answers</span><span class="visually-hidden">Done</span></li><li class="al-step done" id="al-step2"><span class="al-step-icon"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="grow">Matching you with 300+ careers</span><span class="visually-hidden">Done</span></li><li class="al-step pending failed" id="al-step3"><span class="al-step-icon"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-x"/></svg></span><span class="grow">Saving your report</span><span class="visually-hidden">Failed</span></li></ol>
+        <div class="alert alert-error" role="alert"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><span>The connection dropped while saving. Check your internet and try again.</span></div><button class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Try again</button>
+      </section>
+    </main>
+  </template>
+</body>
+</html>

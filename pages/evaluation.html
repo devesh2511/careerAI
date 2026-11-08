@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Profile Evaluation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Your profile</title>
   <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
   <link rel="icon" href="data:," />
   <!-- Resolve the theme before first paint: a deferred script would let a
@@ -18,71 +18,33 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="evaluation">
-
-  <!-- ════════════════════════════════════════
-     PROFILE EVALUATION SCREEN
-════════════════════════════════════════ -->
-  <div id="evaluation" class="screen active">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-      <div class="eval-wrap">
-        <div class="eval-spinner" id="eval-spinner"></div>
-        <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;" id="eval-title">Analysing your profile…</h2>
-        <p style="font-size:0.875rem;color:var(--muted);" id="eval-sub">Our AI is reading your interests and marks to
-          personalise your quiz.</p>
-
-        <div class="eval-steps-list">
-          <div class="eval-step done" id="es1">
-            <div class="eval-step-icon">✅</div>
-            <span>Reading academic marks &amp; subject preferences</span>
-          </div>
-          <div class="eval-step loading" id="es2">
-            <div class="eval-step-icon">🔄</div>
-            <span>Mapping hobbies to career families…</span>
-          </div>
-          <div class="eval-step pending" id="es3">
-            <div class="eval-step-icon">⏳</div>
-            <span>Identifying interest signals &amp; contradictions</span>
-          </div>
-          <div class="eval-step pending" id="es4">
-            <div class="eval-step-icon">⏳</div>
-            <span>Generating personalised quiz question set</span>
-          </div>
+  <div class="flow">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="onboarding.html#/step/4" aria-label="Back to onboarding"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg></a>
+      <p class="flow-title">Before the quiz</p>
+      <button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button>
+    </header>
+    <main class="flow-main">
+      <div class="stack-sm stack"><h1 id="eval-title">Here's what you told us</h1><p class="muted" id="eval-sub">Check it looks right, then start the quiz. Your answers here and in the quiz decide your matches.</p></div>
+      <section class="card stack-lg stack" aria-labelledby="ev-card-title">
+        <div class="section-head"><h2 class="card-title" id="ev-card-title">Your profile at a glance</h2><a class="btn btn-ghost btn-sm" href="onboarding.html"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-pencil"/></svg>Edit</a></div>
+        <div class="stack-lg stack" id="eval-body" aria-live="polite">
+          <div class="skeleton-card" aria-hidden="true"><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div></div>
         </div>
-
-        <div class="eval-signals" id="eval-signals">
-          <div style="font-size:0.8125rem;font-weight:700;color:var(--accent2);margin-bottom:14px;">✦ Signals detected in
-            your profile</div>
-          <div class="signal-item">
-            <div class="signal-dot" style="background:var(--accent2);"></div><span
-              style="font-size:0.8125rem;color:var(--muted);">Strong interest in <strong style="color:var(--text);">visual
-                &amp; creative problem-solving</strong> (Drawing + Maths combination)</span>
-          </div>
-          <div class="signal-item">
-            <div class="signal-dot" style="background:var(--accent);"></div><span
-              style="font-size:0.8125rem;color:var(--muted);">High marks in <strong style="color:var(--text);">Mathematics
-                &amp; Computer Science</strong></span>
-          </div>
-          <div class="signal-item">
-            <div class="signal-dot" style="background:#38bdf8;"></div><span
-              style="font-size:0.8125rem;color:var(--muted);">Hobbies suggest <strong style="color:var(--text);">technology +
-                design</strong> career family</span>
-          </div>
-          <div class="signal-item">
-            <div class="signal-dot" style="background:#f59e0b;"></div><span
-              style="font-size:0.8125rem;color:var(--muted);">Stream hypothesis: <strong style="color:var(--text);">PCM +
-                CS</strong> or <strong style="color:var(--text);">PCM</strong></span>
-          </div>
-          <div style="margin-top:20px;">
-            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="cqStart()">Start My
-              Career Quiz (25 Questions) →</button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </section>
+      <section class="card-ink quiz-start" aria-labelledby="ev-start-title">
+        <div class="illo"><img src="/assets/illustrations/rocket-200.webp" alt=""></div>
+        <div class="stack-sm stack"><h2 class="card-title-lg" id="ev-start-title">Ready for the quiz?</h2><p class="muted">25 questions, about 6 minutes. Pick what sounds like you, not what sounds impressive.</p></div>
+        <button class="btn btn-primary" type="button" onclick="cqStart()">Start the career quiz</button>
+      </section>
+    </main>
   </div>
 
   <script src="../scripts/riasec_engine.js"></script>

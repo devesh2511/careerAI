@@ -1,0 +1,7 @@
+i want to redesign the whole ui ux of this website.
+make sure all the features are as it is.
+this is just to make website more better, currently it looks like vibe-coded.
+all things that user is able to do currently, he should be able to do all things after the redesign.
+connect to plugin: /frontend-design:frontend-design and /ui-ux-pro-max
+
+save the prototype of how the new screens will look like in careerAI\ui_redesign

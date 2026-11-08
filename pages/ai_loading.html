@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Analysing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Building your report</title>
   <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
   <link rel="icon" href="data:," />
   <!-- Resolve the theme before first paint: a deferred script would let a
@@ -18,37 +18,30 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="ailoading">
-
-  <!-- ════════════════════════════════════════
-     AI LOADING SCREEN
-════════════════════════════════════════ -->
-  <div id="ailoading" class="screen active">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-      <div class="al-wrap">
-        <div class="al-spinner"></div>
-        <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;">Analysing your answers…</h2>
-        <p style="font-size:0.875rem;color:var(--muted);">Our AI is matching your profile to 75+ career paths. Takes about
-          5 seconds.</p>
-        <div class="al-steps">
-          <div class="al-step loading" id="al-step1">
-            <div class="al-step-icon">🔄</div>
-            <span>Reading your 25 responses</span>
-          </div>
-          <div class="al-step pending" id="al-step2">
-            <div class="al-step-icon">⏳</div>
-            <span>Matching to 75+ career profiles</span>
-          </div>
-          <div class="al-step pending" id="al-step3">
-            <div class="al-step-icon">⏳</div>
-            <span>Generating your personalised report</span>
-          </div>
+  <div class="flow">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title">Career quiz</p>
+      <button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button>
+    </header>
+    <main class="flow-main al-main">
+      <section class="card al-card stack-lg stack" aria-live="polite" aria-labelledby="al-title">
+        <div class="illo illo-lg"><img src="/assets/illustrations/rocket-400.webp" alt=""></div>
+        <div class="stack-sm stack"><h1 id="al-title">Building your report</h1><p class="muted" id="al-sub">This takes a few seconds.</p></div>
+        <ol class="al-steps"><li class="al-step pending" id="al-step1"><span class="al-step-icon"><span class="al-pending" aria-hidden="true"></span></span><span class="grow">Scoring your 25 answers</span><span class="visually-hidden">Waiting</span></li><li class="al-step pending" id="al-step2"><span class="al-step-icon"><span class="al-pending" aria-hidden="true"></span></span><span class="grow">Matching you with careers</span><span class="visually-hidden">Waiting</span></li><li class="al-step pending" id="al-step3"><span class="al-step-icon"><span class="al-pending" aria-hidden="true"></span></span><span class="grow">Saving your report</span><span class="visually-hidden">Waiting</span></li></ol>
+        <div class="stack" id="al-error" hidden>
+          <div class="alert alert-error" role="alert">The connection dropped while saving. Check your internet and try again.</div>
+          <div class="cluster"><button class="btn btn-primary" type="button" onclick="alRetry()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-refresh-cw"/></svg>Try again</button><button class="btn btn-ghost" type="button" onclick="show('airesults')">See my results anyway</button></div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 
   <script src="../scripts/riasec_engine.js"></script>

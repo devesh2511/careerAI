@@ -1,0 +1,525 @@
+[
+  {
+    "id": "foundations",
+    "file": "screens/foundations.html",
+    "title": "Foundations",
+    "group": "Foundations",
+    "shell": "none",
+    "pass": 1,
+    "states": [
+      "board"
+    ],
+    "hooks": []
+  },
+  {
+    "id": "landing",
+    "file": "screens/landing.html",
+    "title": "Landing",
+    "group": "Public",
+    "shell": "public",
+    "pass": 2,
+    "states": [
+      "default"
+    ],
+    "hooks": []
+  },
+  {
+    "id": "auth",
+    "file": "screens/auth.html",
+    "title": "Log in and sign up",
+    "group": "Public",
+    "shell": "public",
+    "pass": 2,
+    "states": [
+      "login",
+      "login-error",
+      "register",
+      "register-errors",
+      "forgot",
+      "reset",
+      "success"
+    ],
+    "hooks": [
+      "auth-tabs",
+      "login-email@login,login-error,success",
+      "login-password@login,login-error,success",
+      "login-btn@login,login-error,success",
+      "login-ok@login,login-error,success",
+      "login-alert@login,login-error,success",
+      "reg-full_name@register,register-errors",
+      "reg-school_code@register,register-errors",
+      "reg-email@register,register-errors",
+      "reg-password@register,register-errors",
+      "reg-confirm@register,register-errors",
+      "reg-confirm-error@register,register-errors",
+      "reg-btn@register,register-errors",
+      "reg-alert@register,register-errors",
+      "reg-full_name-error@register,register-errors",
+      "reg-email-error@register,register-errors",
+      "reg-password-error@register,register-errors",
+      "auth-forgot@forgot",
+      "forgot-email@forgot",
+      "forgot-btn@forgot",
+      "auth-reset@reset",
+      "reset-code@reset",
+      "reset-new_password@reset",
+      "reset-confirm@reset",
+      "reset-btn@reset",
+      "reset-resend-btn@reset",
+      "reset-alert@reset",
+      "reset-to@reset"
+    ]
+  },
+  {
+    "id": "paywall",
+    "file": "screens/paywall.html",
+    "title": "Paywall",
+    "group": "Public",
+    "shell": "public",
+    "pass": 2,
+    "states": [
+      "checking",
+      "no-school",
+      "not-on-roster",
+      "not-subscribed",
+      "all-set",
+      "error"
+    ],
+    "hooks": [
+      "pw-root",
+      "pw-code@no-school",
+      "pw-code-btn@no-school",
+      "pw-code-error@no-school",
+      "pw-school-slot@not-on-roster,not-subscribed"
+    ]
+  },
+  {
+    "id": "onboarding",
+    "file": "screens/onboarding.html",
+    "title": "Onboarding",
+    "group": "Step flows",
+    "shell": "flow",
+    "pass": 2,
+    "states": [
+      "step-1",
+      "step-2",
+      "step-3",
+      "step-4",
+      "error",
+      "saving"
+    ],
+    "hooks": [
+      "onboarding",
+      "ob-count",
+      "ob-bar",
+      "ob-title",
+      "ob-sub",
+      "ob-dots",
+      "ob-back",
+      "ob-next",
+      "ob-error",
+      "ob-step-1@step-1",
+      "ob-step-2@step-2,error",
+      "ob-step-3@step-3",
+      "ob-step-4@step-4,saving",
+      "ob-class@step-1",
+      "ob-board@step-1",
+      "ob-medium@step-1",
+      "ob-city@step-1",
+      "ob-subjects@step-3",
+      "ob-hobbies@step-3",
+      "ob-dream@step-3",
+      "ob-pref@step-4,saving",
+      "ob-loc@step-4,saving"
+    ]
+  },
+  {
+    "id": "evaluation",
+    "file": "screens/evaluation.html",
+    "title": "Profile before the quiz",
+    "group": "Step flows",
+    "shell": "flow",
+    "pass": 2,
+    "states": [
+      "summary"
+    ],
+    "hooks": [
+      "eval-title",
+      "eval-sub"
+    ]
+  },
+  {
+    "id": "career-quiz",
+    "file": "screens/career-quiz.html",
+    "title": "Career quiz",
+    "group": "Step flows",
+    "shell": "flow",
+    "pass": 2,
+    "states": [
+      "question",
+      "at-cap",
+      "nothing-selected",
+      "last"
+    ],
+    "hooks": [
+      "cq-num",
+      "cq-area",
+      "cq-bar",
+      "cq-back-btn",
+      "cq-q",
+      "cq-opts",
+      "cq-hint",
+      "cq-next-btn",
+      "cq-question-wrap"
+    ]
+  },
+  {
+    "id": "ai-loading",
+    "file": "screens/ai-loading.html",
+    "title": "Building your report",
+    "group": "Step flows",
+    "shell": "flow",
+    "pass": 2,
+    "states": [
+      "in-progress",
+      "done",
+      "error"
+    ],
+    "hooks": [
+      "al-step1",
+      "al-step2",
+      "al-step3"
+    ]
+  },
+  {
+    "id": "career-results",
+    "file": "screens/career-results.html",
+    "title": "Career results report",
+    "group": "Step flows",
+    "shell": "report",
+    "pass": 1,
+    "states": [
+      "full",
+      "old-result",
+      "demo"
+    ],
+    "hooks": [
+      "air-personality-type",
+      "air-personality-desc",
+      "air-stream-val",
+      "air-stream-reason",
+      "air-streams-wrap",
+      "air-streams",
+      "air-riasec-note",
+      "air-riasec-code",
+      "air-code-key",
+      "air-riasec-bars",
+      "air-domains-wrap",
+      "air-domains",
+      "air-enjoy",
+      "air-match-note",
+      "air-careers",
+      "air-retake",
+      "air-demo-badge",
+      "air-print-date"
+    ]
+  },
+  {
+    "id": "contest",
+    "file": "screens/contest.html",
+    "title": "Weekly contest",
+    "group": "Step flows",
+    "shell": "flow",
+    "pass": 2,
+    "states": [
+      "loading",
+      "none-scheduled",
+      "upcoming",
+      "intro",
+      "question",
+      "review-before-submit",
+      "submitted",
+      "review",
+      "not-published",
+      "error",
+      "payment-required",
+      "signed-out"
+    ],
+    "hooks": [
+      "ct-root",
+      "ct-label",
+      "ct-submit@review-before-submit"
+    ]
+  },
+  {
+    "id": "shell-demo",
+    "file": "screens/shell-demo.html",
+    "title": "App shell",
+    "group": "App",
+    "shell": "app",
+    "pass": 1,
+    "states": [
+      "home",
+      "more-open",
+      "contests-live"
+    ],
+    "hooks": [
+      "user-class!dom"
+    ]
+  },
+  {
+    "id": "dashboard",
+    "file": "screens/dashboard.html",
+    "title": "Dashboard",
+    "group": "App",
+    "shell": "app",
+    "pass": 1,
+    "states": [
+      "before-quiz",
+      "with-results"
+    ],
+    "hooks": [
+      "db-title",
+      "db-sub",
+      "db-cta-btn",
+      "db-main",
+      "db-stats",
+      "user-class!dom"
+    ]
+  },
+  {
+    "id": "contests",
+    "file": "screens/contests.html",
+    "title": "Contests",
+    "group": "App",
+    "shell": "app",
+    "pass": 1,
+    "states": [
+      "live",
+      "upcoming",
+      "done",
+      "no-career",
+      "no-results",
+      "payment-required",
+      "signed-out"
+    ],
+    "hooks": [
+      "lb-root",
+      "pg-evolution-rows",
+      "pg-ai-note@live,done",
+      "user-class!dom"
+    ]
+  },
+  {
+    "id": "career-matches",
+    "file": "screens/career-matches.html",
+    "title": "Career Matches",
+    "group": "App",
+    "shell": "app",
+    "pass": 2,
+    "states": [
+      "list",
+      "filtered",
+      "loading",
+      "no-quiz",
+      "none-above-min"
+    ],
+    "hooks": [
+      "career-list",
+      "results-stream-val",
+      "results-stream-badge",
+      "user-class!dom"
+    ]
+  },
+  {
+    "id": "explore",
+    "file": "screens/explore.html",
+    "title": "Explore careers",
+    "group": "App",
+    "shell": "app",
+    "pass": 2,
+    "states": [
+      "grid",
+      "drawer-open",
+      "active-filters",
+      "no-results"
+    ],
+    "hooks": [
+      "ex-search",
+      "ex-search-clear",
+      "ex-filter-btn",
+      "ex-filter-count",
+      "ex-sort",
+      "ex-active",
+      "ex-sub",
+      "explore-grid",
+      "ex-drawer",
+      "ex-drawer-overlay",
+      "ex-drawer-title",
+      "ex-drawer-sub",
+      "ex-drawer-close",
+      "ex-drawer-body",
+      "ex-drawer-clear",
+      "ex-drawer-apply"
+    ]
+  },
+  {
+    "id": "career-detail",
+    "file": "screens/career-detail.html",
+    "title": "Career detail",
+    "group": "App",
+    "shell": "app",
+    "pass": 2,
+    "states": [
+      "full",
+      "no-roadmap"
+    ],
+    "hooks": [
+      "cd-back",
+      "cd-body",
+      "cd-rm-note",
+      "cd-timeline@full"
+    ]
+  },
+  {
+    "id": "roadmap",
+    "file": "screens/roadmap.html",
+    "title": "Roadmap",
+    "group": "App",
+    "shell": "app",
+    "pass": 2,
+    "states": [
+      "timeline",
+      "picker",
+      "not-written",
+      "no-quiz"
+    ],
+    "hooks": [
+      "rm-career",
+      "rm-select",
+      "rm-note",
+      "rm-timeline@timeline,picker"
+    ]
+  },
+  {
+    "id": "career-space",
+    "file": "screens/career-space.html",
+    "title": "Career Space",
+    "group": "App",
+    "shell": "app",
+    "pass": 2,
+    "states": [
+      "feed",
+      "tab-switched",
+      "error",
+      "empty"
+    ],
+    "hooks": [
+      "sp-careers",
+      "sp-tabs",
+      "sp-feed",
+      "sp-note",
+      "sp-foot"
+    ]
+  },
+  {
+    "id": "settings",
+    "file": "screens/settings.html",
+    "title": "Settings",
+    "group": "App",
+    "shell": "app",
+    "pass": 2,
+    "states": [
+      "view",
+      "edit-name",
+      "edit-school",
+      "edit-class",
+      "remove-school-warning"
+    ],
+    "hooks": [
+      "st-name",
+      "st-school",
+      "st-email",
+      "st-class",
+      "st-plan",
+      "st-plan-badge",
+      "st-name-edit",
+      "st-name-input",
+      "st-name-btn",
+      "st-name-error",
+      "st-school-edit",
+      "st-code",
+      "st-code-error",
+      "st-class-edit",
+      "st-class-input",
+      "st-city-input",
+      "st-class-btn",
+      "st-class-error"
+    ]
+  },
+  {
+    "id": "chat",
+    "file": "screens/chat.html",
+    "title": "AI Chat",
+    "group": "Chat",
+    "shell": "app",
+    "pass": 2,
+    "states": [
+      "welcome",
+      "conversation",
+      "streaming",
+      "error",
+      "memory-open"
+    ],
+    "hooks": [
+      "chat-new",
+      "chat-mem-btn",
+      "chat-scroll",
+      "chat-messages",
+      "chat-input",
+      "chat-send",
+      "chat-mem",
+      "chat-mem-body",
+      "chat-mem-sub",
+      "chat-welcome",
+      "chat-hello-name@welcome",
+      "chat-insight@welcome",
+      "chat-sugs@welcome",
+      "user-class!dom"
+    ],
+    "viewports": [
+      [
+        320,
+        800
+      ],
+      [
+        360,
+        800
+      ],
+      [
+        390,
+        800
+      ],
+      [
+        768,
+        800
+      ],
+      [
+        1024,
+        800
+      ],
+      [
+        1280,
+        800
+      ],
+      [
+        1440,
+        800
+      ],
+      [
+        320,
+        568
+      ]
+    ]
+  }
+]

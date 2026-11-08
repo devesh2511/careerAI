@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Settings · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/shell.js" defer></script>
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="app" data-screen="settings">
+  <div data-shell="app" data-active="settings" data-live="true"></div>
+  <main class="app-main" data-proto-root></main>
+
+  <template data-state="view" data-label="Settings">
+    <div class="page">
+      <header class="page-head"><div><h1>Settings</h1><p class="page-sub">Your profile, school and plan.</p></div></header>
+      <section class="card-flat settings-card" aria-labelledby="st-profile-title">
+        <div class="cluster cluster-lg settings-hero"><span class="avatar avatar-lg">A</span><div><h2 class="card-title" id="st-profile-title">Profile</h2><p class="small muted">This is what shows on leaderboards.</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Name</p><p class="setting-value" id="st-name" data-stress>Aarav Mehta</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-name-edit" hidden novalidate>
+            <div class="field"><label class="field-label" for="st-name-input">Full name</label><input class="input" id="st-name-input" type="text" value="Aarav Mehta" autocomplete="name" aria-describedby="st-name-error"><p class="form-error" id="st-name-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save name</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Email</p><p class="setting-value" id="st-email">aarav.m@gmail.com</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">School</p><p class="setting-value" id="st-school">Vidya Valley School, VVS-PUNE</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-school-edit" hidden novalidate>
+            <div class="field"><label class="field-label" for="st-code">School ID</label><input class="input" id="st-code" type="text" value="VVS-PUNE" aria-describedby="st-code-error" autocapitalize="characters"><p class="field-hint">Ask your school if you don't have one.</p><p class="form-error" id="st-code-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            
+            <div class="cluster"><button class="btn btn-primary btn-sm" type="submit">Save School ID</button><button class="btn btn-danger btn-sm" type="button">Remove</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Class and city</p><p class="setting-value" id="st-class">Class 10, Pune</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-class-edit" hidden novalidate>
+            <div class="grid-2">
+              <div class="field"><label class="field-label" for="st-class-input">Class</label><div class="select-wrap"><select class="select" id="st-class-input"><option>Class 9</option><option selected>Class 10</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+              <div class="field"><label class="field-label" for="st-city-input">City</label><input class="input" id="st-city-input" type="text" value="Pune" autocomplete="address-level2" aria-describedby="st-city-input-error"><p class="form-error" id="st-city-input-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            </div>
+            <p class="form-error" id="st-class-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg>Enter your city.</p>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit">Cancel</button></div>
+          </form>
+        </div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-plan-title">
+        <h2 class="card-title" id="st-plan-title">Plan</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Your plan</p><p class="setting-value" id="st-plan">Paid by Vidya Valley School until 31 March 2027</p></div><span class="badge fit-strong" id="st-plan-badge"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Active</span></div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-quiz-title">
+        <h2 class="card-title" id="st-quiz-title">Quiz and interests</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Career quiz</p><p class="small muted">Last taken on 2 November. Retaking replaces your matches.</p></div><a class="btn btn-secondary btn-sm" href="career-quiz.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Retake quiz</a></div>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Subjects, hobbies and preferences</p><p class="small muted">Maths, Science, Computer. Coding, Gaming.</p></div><a class="btn btn-secondary btn-sm" href="onboarding.html?state=step-3"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit interests</a></div>
+      </section>
+      <div><a class="btn btn-danger" href="auth.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-log-out"/></svg>Log out</a></div>
+    </div>
+  </template>
+
+  <template data-state="edit-name" data-label="Editing name">
+    <div class="page">
+      <header class="page-head"><div><h1>Settings</h1><p class="page-sub">Your profile, school and plan.</p></div></header>
+      <section class="card-flat settings-card" aria-labelledby="st-profile-title">
+        <div class="cluster cluster-lg settings-hero"><span class="avatar avatar-lg">A</span><div><h2 class="card-title" id="st-profile-title">Profile</h2><p class="small muted">This is what shows on leaderboards.</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Name</p><p class="setting-value" id="st-name" data-stress>Aarav Mehta</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-name-edit" novalidate>
+            <div class="field"><label class="field-label" for="st-name-input">Full name</label><input class="input" id="st-name-input" type="text" value="Aarav Mehta" autocomplete="name" aria-describedby="st-name-error"><p class="form-error" id="st-name-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save name</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Email</p><p class="setting-value" id="st-email">aarav.m@gmail.com</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">School</p><p class="setting-value" id="st-school">Vidya Valley School, VVS-PUNE</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-school-edit" hidden novalidate>
+            <div class="field"><label class="field-label" for="st-code">School ID</label><input class="input" id="st-code" type="text" value="VVS-PUNE" aria-describedby="st-code-error" autocapitalize="characters"><p class="field-hint">Ask your school if you don't have one.</p><p class="form-error" id="st-code-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            
+            <div class="cluster"><button class="btn btn-primary btn-sm" type="submit">Save School ID</button><button class="btn btn-danger btn-sm" type="button">Remove</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Class and city</p><p class="setting-value" id="st-class">Class 10, Pune</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-class-edit" hidden novalidate>
+            <div class="grid-2">
+              <div class="field"><label class="field-label" for="st-class-input">Class</label><div class="select-wrap"><select class="select" id="st-class-input"><option>Class 9</option><option selected>Class 10</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+              <div class="field"><label class="field-label" for="st-city-input">City</label><input class="input" id="st-city-input" type="text" value="Pune" autocomplete="address-level2" aria-describedby="st-city-input-error"><p class="form-error" id="st-city-input-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            </div>
+            <p class="form-error" id="st-class-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg>Enter your city.</p>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit">Cancel</button></div>
+          </form>
+        </div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-plan-title">
+        <h2 class="card-title" id="st-plan-title">Plan</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Your plan</p><p class="setting-value" id="st-plan">Paid by Vidya Valley School until 31 March 2027</p></div><span class="badge fit-strong" id="st-plan-badge"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Active</span></div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-quiz-title">
+        <h2 class="card-title" id="st-quiz-title">Quiz and interests</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Career quiz</p><p class="small muted">Last taken on 2 November. Retaking replaces your matches.</p></div><a class="btn btn-secondary btn-sm" href="career-quiz.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Retake quiz</a></div>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Subjects, hobbies and preferences</p><p class="small muted">Maths, Science, Computer. Coding, Gaming.</p></div><a class="btn btn-secondary btn-sm" href="onboarding.html?state=step-3"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit interests</a></div>
+      </section>
+      <div><a class="btn btn-danger" href="auth.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-log-out"/></svg>Log out</a></div>
+    </div>
+  </template>
+
+  <template data-state="edit-school" data-label="Editing School ID">
+    <div class="page">
+      <header class="page-head"><div><h1>Settings</h1><p class="page-sub">Your profile, school and plan.</p></div></header>
+      <section class="card-flat settings-card" aria-labelledby="st-profile-title">
+        <div class="cluster cluster-lg settings-hero"><span class="avatar avatar-lg">A</span><div><h2 class="card-title" id="st-profile-title">Profile</h2><p class="small muted">This is what shows on leaderboards.</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Name</p><p class="setting-value" id="st-name" data-stress>Aarav Mehta</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-name-edit" hidden novalidate>
+            <div class="field"><label class="field-label" for="st-name-input">Full name</label><input class="input" id="st-name-input" type="text" value="Aarav Mehta" autocomplete="name" aria-describedby="st-name-error"><p class="form-error" id="st-name-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save name</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Email</p><p class="setting-value" id="st-email">aarav.m@gmail.com</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">School</p><p class="setting-value" id="st-school">Vidya Valley School, VVS-PUNE</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-school-edit" novalidate>
+            <div class="field"><label class="field-label" for="st-code">School ID</label><input class="input" id="st-code" type="text" value="VVS-PUNE" aria-describedby="st-code-error" autocapitalize="characters"><p class="field-hint">Ask your school if you don't have one.</p><p class="form-error" id="st-code-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            
+            <div class="cluster"><button class="btn btn-primary btn-sm" type="submit">Save School ID</button><button class="btn btn-danger btn-sm" type="button">Remove</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Class and city</p><p class="setting-value" id="st-class">Class 10, Pune</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-class-edit" hidden novalidate>
+            <div class="grid-2">
+              <div class="field"><label class="field-label" for="st-class-input">Class</label><div class="select-wrap"><select class="select" id="st-class-input"><option>Class 9</option><option selected>Class 10</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+              <div class="field"><label class="field-label" for="st-city-input">City</label><input class="input" id="st-city-input" type="text" value="Pune" autocomplete="address-level2" aria-describedby="st-city-input-error"><p class="form-error" id="st-city-input-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            </div>
+            <p class="form-error" id="st-class-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg>Enter your city.</p>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit">Cancel</button></div>
+          </form>
+        </div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-plan-title">
+        <h2 class="card-title" id="st-plan-title">Plan</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Your plan</p><p class="setting-value" id="st-plan">Paid by Vidya Valley School until 31 March 2027</p></div><span class="badge fit-strong" id="st-plan-badge"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Active</span></div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-quiz-title">
+        <h2 class="card-title" id="st-quiz-title">Quiz and interests</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Career quiz</p><p class="small muted">Last taken on 2 November. Retaking replaces your matches.</p></div><a class="btn btn-secondary btn-sm" href="career-quiz.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Retake quiz</a></div>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Subjects, hobbies and preferences</p><p class="small muted">Maths, Science, Computer. Coding, Gaming.</p></div><a class="btn btn-secondary btn-sm" href="onboarding.html?state=step-3"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit interests</a></div>
+      </section>
+      <div><a class="btn btn-danger" href="auth.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-log-out"/></svg>Log out</a></div>
+    </div>
+  </template>
+
+  <template data-state="edit-class" data-label="Editing class and city">
+    <div class="page">
+      <header class="page-head"><div><h1>Settings</h1><p class="page-sub">Your profile, school and plan.</p></div></header>
+      <section class="card-flat settings-card" aria-labelledby="st-profile-title">
+        <div class="cluster cluster-lg settings-hero"><span class="avatar avatar-lg">A</span><div><h2 class="card-title" id="st-profile-title">Profile</h2><p class="small muted">This is what shows on leaderboards.</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Name</p><p class="setting-value" id="st-name" data-stress>Aarav Mehta</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-name-edit" hidden novalidate>
+            <div class="field"><label class="field-label" for="st-name-input">Full name</label><input class="input" id="st-name-input" type="text" value="Aarav Mehta" autocomplete="name" aria-describedby="st-name-error"><p class="form-error" id="st-name-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save name</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Email</p><p class="setting-value" id="st-email">aarav.m@gmail.com</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">School</p><p class="setting-value" id="st-school">Vidya Valley School, VVS-PUNE</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-school-edit" hidden novalidate>
+            <div class="field"><label class="field-label" for="st-code">School ID</label><input class="input" id="st-code" type="text" value="VVS-PUNE" aria-describedby="st-code-error" autocapitalize="characters"><p class="field-hint">Ask your school if you don't have one.</p><p class="form-error" id="st-code-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            
+            <div class="cluster"><button class="btn btn-primary btn-sm" type="submit">Save School ID</button><button class="btn btn-danger btn-sm" type="button">Remove</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Class and city</p><p class="setting-value" id="st-class">Class 10, Pune</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-class-edit" novalidate>
+            <div class="grid-2">
+              <div class="field"><label class="field-label" for="st-class-input">Class</label><div class="select-wrap"><select class="select" id="st-class-input"><option>Class 9</option><option selected>Class 10</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+              <div class="field"><label class="field-label" for="st-city-input">City</label><input class="input" id="st-city-input" type="text" value="Pune" autocomplete="address-level2" aria-describedby="st-city-input-error"><p class="form-error" id="st-city-input-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            </div>
+            <p class="form-error" id="st-class-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg>Enter your city.</p>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit">Cancel</button></div>
+          </form>
+        </div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-plan-title">
+        <h2 class="card-title" id="st-plan-title">Plan</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Your plan</p><p class="setting-value" id="st-plan">Paid by Vidya Valley School until 31 March 2027</p></div><span class="badge fit-strong" id="st-plan-badge"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Active</span></div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-quiz-title">
+        <h2 class="card-title" id="st-quiz-title">Quiz and interests</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Career quiz</p><p class="small muted">Last taken on 2 November. Retaking replaces your matches.</p></div><a class="btn btn-secondary btn-sm" href="career-quiz.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Retake quiz</a></div>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Subjects, hobbies and preferences</p><p class="small muted">Maths, Science, Computer. Coding, Gaming.</p></div><a class="btn btn-secondary btn-sm" href="onboarding.html?state=step-3"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit interests</a></div>
+      </section>
+      <div><a class="btn btn-danger" href="auth.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-log-out"/></svg>Log out</a></div>
+    </div>
+  </template>
+
+  <template data-state="remove-school-warning" data-label="Removing the School ID">
+    <div class="page">
+      <header class="page-head"><div><h1>Settings</h1><p class="page-sub">Your profile, school and plan.</p></div></header>
+      <section class="card-flat settings-card" aria-labelledby="st-profile-title">
+        <div class="cluster cluster-lg settings-hero"><span class="avatar avatar-lg">A</span><div><h2 class="card-title" id="st-profile-title">Profile</h2><p class="small muted">This is what shows on leaderboards.</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Name</p><p class="setting-value" id="st-name" data-stress>Aarav Mehta</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-name-edit" hidden novalidate>
+            <div class="field"><label class="field-label" for="st-name-input">Full name</label><input class="input" id="st-name-input" type="text" value="Aarav Mehta" autocomplete="name" aria-describedby="st-name-error"><p class="form-error" id="st-name-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save name</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-name-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Email</p><p class="setting-value" id="st-email">aarav.m@gmail.com</p></div></div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">School</p><p class="setting-value" id="st-school">Vidya Valley School, VVS-PUNE</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-school-edit" novalidate>
+            <div class="field"><label class="field-label" for="st-code">School ID</label><input class="input" id="st-code" type="text" value="VVS-PUNE" aria-describedby="st-code-error" autocapitalize="characters"><p class="field-hint">Ask your school if you don't have one.</p><p class="form-error" id="st-code-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            <div class="alert alert-warn" role="alert"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-info"/></svg><div class="stack-sm stack"><span><span class="alert-title">Remove your School ID?</span> The app locks until you add one again or get your own plan.</span><div class="cluster"><button class="btn btn-danger btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-trash-2"/></svg>Remove School ID</button><button class="btn btn-ghost btn-sm" type="button">Keep it</button></div></div></div>
+            <div class="cluster"><button class="btn btn-primary btn-sm" type="submit">Save School ID</button><button class="btn btn-danger btn-sm" type="button">Remove</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-school-edit">Cancel</button></div>
+          </form>
+        </div>
+        <div class="setting">
+          <div class="setting-main"><p class="setting-label">Class and city</p><p class="setting-value" id="st-class">Class 10, Pune</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</button>
+          <form class="setting-edit" id="st-class-edit" hidden novalidate>
+            <div class="grid-2">
+              <div class="field"><label class="field-label" for="st-class-input">Class</label><div class="select-wrap"><select class="select" id="st-class-input"><option>Class 9</option><option selected>Class 10</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+              <div class="field"><label class="field-label" for="st-city-input">City</label><input class="input" id="st-city-input" type="text" value="Pune" autocomplete="address-level2" aria-describedby="st-city-input-error"><p class="form-error" id="st-city-input-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div>
+            </div>
+            <p class="form-error" id="st-class-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg>Enter your city.</p>
+            <div class="cluster"><button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button><button class="btn btn-ghost btn-sm" type="button" data-proto-toggle="st-class-edit">Cancel</button></div>
+          </form>
+        </div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-plan-title">
+        <h2 class="card-title" id="st-plan-title">Plan</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-label">Your plan</p><p class="setting-value" id="st-plan">Paid by Vidya Valley School until 31 March 2027</p></div><span class="badge fit-strong" id="st-plan-badge"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg>Active</span></div>
+      </section>
+      <section class="card-flat settings-card" aria-labelledby="st-quiz-title">
+        <h2 class="card-title" id="st-quiz-title">Quiz and interests</h2>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Career quiz</p><p class="small muted">Last taken on 2 November. Retaking replaces your matches.</p></div><a class="btn btn-secondary btn-sm" href="career-quiz.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"/></svg>Retake quiz</a></div>
+        <div class="setting"><div class="setting-main"><p class="setting-value">Subjects, hobbies and preferences</p><p class="small muted">Maths, Science, Computer. Coding, Gaming.</p></div><a class="btn btn-secondary btn-sm" href="onboarding.html?state=step-3"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit interests</a></div>
+      </section>
+      <div><a class="btn btn-danger" href="auth.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-log-out"/></svg>Log out</a></div>
+    </div>
+  </template>
+</body>
+</html>

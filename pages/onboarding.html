@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Onboarding</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Tell us about you</title>
   <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
   <link rel="icon" href="data:," />
   <!-- Resolve the theme before first paint: a deferred script would let a
@@ -18,139 +18,49 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="onboarding">
-
-  <!-- ════════════════════════════════════════
-     ONBOARDING SCREEN
-════════════════════════════════════════ -->
-  <div id="onboarding" class="screen active">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-      <div class="onboard-wrap">
-        <div class="onboard-header">
-          <div class="onboard-step-count" id="ob-count">Step 1 of 4</div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-fill" id="ob-bar" style="width:25%"></div>
-          </div>
-          <div style="margin-top:16px;">
-            <div class="onboard-title" id="ob-title">Tell us about yourself</div>
-            <div class="onboard-sub" id="ob-sub">Basic academic details so we can personalise everything.</div>
-          </div>
+  <div class="flow">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title" id="ob-count">Step 1 of 4</p>
+      <button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button>
+      <progress class="progress" id="ob-bar" max="4" value="1">Step 1 of 4</progress>
+    </header>
+    <main class="flow-main" id="onboarding">
+      <ol class="ob-steps" id="ob-dots" aria-label="Steps"><li class="dot active" aria-current="step"><span class="dot-mark">1</span><span class="dot-label">About you</span></li><li class="dot"><span class="dot-mark">2</span><span class="dot-label">Marks</span></li><li class="dot"><span class="dot-mark">3</span><span class="dot-label">Interests</span></li><li class="dot"><span class="dot-mark">4</span><span class="dot-label">Preferences</span></li></ol>
+      <div class="stack-sm stack"><h1 id="ob-title">About you</h1><p class="muted" id="ob-sub">So we can match careers to your board, medium and city.</p></div>
+      <div class="alert alert-error form-alert" id="ob-error" role="alert"></div>
+      <section class="stack-lg stack" id="ob-step-1">
+        <div class="grid-2">
+          <div class="field"><label class="field-label" for="ob-class">Current class</label><div class="select-wrap"><select class="select" id="ob-class"><option value="9">Class 9</option><option value="10" selected>Class 10</option></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+          <div class="field"><label class="field-label" for="ob-board">School board</label><div class="select-wrap"><select class="select" id="ob-board"><option selected>CBSE</option><option>ICSE</option><option>State Board</option></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+          <div class="field"><label class="field-label" for="ob-medium">Medium of instruction</label><div class="select-wrap"><select class="select" id="ob-medium"><option selected>English</option><option>Hindi</option><option>Regional Language</option></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div></div>
+          <div class="field"><label class="field-label" for="ob-city">City</label><input class="input" id="ob-city" maxlength="80" autocomplete="address-level2" placeholder="e.g. Mumbai, Delhi, Bengaluru" /></div>
         </div>
-        <div class="onboard-card">
-          <!-- Step 1 -->
-          <div id="ob-step-1">
-            <div class="form-group">
-              <label class="form-label">Current Class</label>
-              <select class="form-input" id="ob-class">
-                <option value="9">Class 9</option>
-                <option value="10" selected>Class 10</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">School Board</label>
-              <select class="form-input" id="ob-board">
-                <option selected>CBSE</option>
-                <option>ICSE</option>
-                <option>State Board</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Medium of Instruction</label>
-              <select class="form-input" id="ob-medium">
-                <option selected>English</option>
-                <option>Hindi</option>
-                <option>Regional Language</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">City</label>
-              <input class="form-input" id="ob-city" maxlength="80" placeholder="e.g. Mumbai, Delhi, Bangalore" />
-            </div>
-          </div>
-          <!-- Step 2 -->
-          <div id="ob-step-2" style="display:none;">
-            <p style="font-size:0.8125rem;color:var(--muted);margin-bottom:20px;">This step is optional but improves
-              accuracy. Enter your last exam marks (%).</p>
-            <div class="form-group"><label class="form-label">Mathematics</label><input class="form-input" data-subject="Mathematics"
-                placeholder="e.g. 87" type="number" min="0" max="100" /></div>
-            <div class="form-group"><label class="form-label">Science</label><input class="form-input" data-subject="Science"
-                placeholder="e.g. 79" type="number" min="0" max="100" /></div>
-            <div class="form-group"><label class="form-label">English</label><input class="form-input" data-subject="English"
-                placeholder="e.g. 82" type="number" min="0" max="100" /></div>
-            <div class="form-group"><label class="form-label">Social Studies</label><input class="form-input" data-subject="Social Studies"
-                placeholder="e.g. 74" type="number" min="0" max="100" /></div>
-          </div>
-          <!-- Step 3 -->
-          <div id="ob-step-3" style="display:none;">
-            <div class="form-group">
-              <label class="form-label">Favourite Subjects (pick all you like)</label>
-              <div class="chip-grid" id="ob-subjects" style="margin-top:8px;">
-                <div class="chip" onclick="this.classList.toggle('selected')">Mathematics</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Science</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Computer</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">English</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Art &amp; Design</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Social Studies</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Economics</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Music</div>
-              </div>
-            </div>
-            <div class="form-group" style="margin-top:20px;">
-              <label class="form-label">Hobbies &amp; Interests</label>
-              <div class="chip-grid" id="ob-hobbies" style="margin-top:8px;">
-                <div class="chip" onclick="this.classList.toggle('selected')">Drawing / Design</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Coding</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Sports</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Music</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Reading</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Gaming</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Debating</div>
-                <div class="chip" onclick="this.classList.toggle('selected')">Cooking</div>
-              </div>
-            </div>
-            <div class="form-group" style="margin-top:20px;">
-              <label class="form-label">Dream Job / Role Model (optional)</label>
-              <input class="form-input" id="ob-dream" maxlength="80" placeholder="e.g. I want to design apps like Instagram" />
-            </div>
-          </div>
-          <!-- Step 4 -->
-          <div id="ob-step-4" style="display:none;">
-            <div class="form-group">
-              <label class="form-label">Career Preference</label>
-              <div class="chip-grid" id="ob-pref" style="margin-top:8px;">
-                <div class="chip selected" onclick="chipOne(this,'pref')">Private Sector</div>
-                <div class="chip" onclick="chipOne(this,'pref')">Government Job</div>
-                <div class="chip" onclick="chipOne(this,'pref')">Entrepreneur</div>
-              </div>
-            </div>
-            <div class="form-group" style="margin-top:20px;">
-              <label class="form-label">Open to studying outside your city?</label>
-              <div class="chip-grid" id="ob-loc" style="margin-top:8px;">
-                <div class="chip selected" onclick="chipOne(this,'loc')">Yes, anywhere</div>
-                <div class="chip" onclick="chipOne(this,'loc')">Same state only</div>
-                <div class="chip" onclick="chipOne(this,'loc')">Prefer home city</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-error" id="ob-error" role="alert"></div>
-          <div class="onboard-nav">
-            <button class="btn btn-ghost btn-sm" id="ob-back" onclick="obStep(-1)" style="visibility:hidden;">←
-              Back</button>
-            <div class="step-dots" id="ob-dots">
-              <div class="dot active"></div>
-              <div class="dot"></div>
-              <div class="dot"></div>
-              <div class="dot"></div>
-            </div>
-            <button class="btn btn-primary btn-sm" id="ob-next" onclick="obStep(1)">Next →</button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </section>
+      <section class="stack-lg stack" id="ob-step-2" hidden>
+        <div class="grid-2 marks-grid"><div class="field mark-field"><label class="field-label" for="ob-mark-mathematics">Mathematics</label><div class="mark-input"><input class="input" id="ob-mark-mathematics" data-subject="Mathematics" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-science">Science</label><div class="mark-input"><input class="input" id="ob-mark-science" data-subject="Science" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-english">English</label><div class="mark-input"><input class="input" id="ob-mark-english" data-subject="English" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-social-studies">Social Studies</label><div class="mark-input"><input class="input" id="ob-mark-social-studies" data-subject="Social Studies" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80"><span class="muted">%</span></div></div></div>
+      </section>
+      <section class="stack-lg stack" id="ob-step-3" hidden>
+        <div class="field"><span class="field-label" id="ob-subjects-label">Favourite subjects</span><p class="field-hint">Pick all you like.</p><div class="chip-group chip-grid" id="ob-subjects" role="group" aria-labelledby="ob-subjects-label"><button class="chip" type="button" onclick="this.classList.toggle('selected')">Mathematics</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Science</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Computer</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">English</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Art &amp; Design</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Social Studies</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Economics</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Music</button></div></div>
+        <div class="field"><span class="field-label" id="ob-hobbies-label">Hobbies and interests</span><div class="chip-group chip-grid" id="ob-hobbies" role="group" aria-labelledby="ob-hobbies-label"><button class="chip" type="button" onclick="this.classList.toggle('selected')">Drawing / Design</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Coding</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Sports</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Music</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Reading</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Gaming</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Debating</button><button class="chip" type="button" onclick="this.classList.toggle('selected')">Cooking</button></div></div>
+        <div class="field"><label class="field-label" for="ob-dream">Dream job or role model <span class="optional">(optional)</span></label><input class="input" id="ob-dream" maxlength="80" placeholder="e.g. I want to design apps like Instagram" /></div>
+      </section>
+      <section class="stack-lg stack" id="ob-step-4" hidden>
+        <div class="field"><span class="field-label" id="ob-pref-label">Where would you like to work?</span><div class="chip-group chip-grid" id="ob-pref" role="group" aria-labelledby="ob-pref-label"><button class="chip selected" type="button" onclick="chipOne(this,'pref')">Private Sector</button><button class="chip" type="button" onclick="chipOne(this,'pref')">Government Job</button><button class="chip" type="button" onclick="chipOne(this,'pref')">Entrepreneur</button></div></div>
+        <div class="field"><span class="field-label" id="ob-loc-label">Open to studying outside your city?</span><div class="chip-group chip-grid" id="ob-loc" role="group" aria-labelledby="ob-loc-label"><button class="chip selected" type="button" onclick="chipOne(this,'loc')">Yes, anywhere</button><button class="chip" type="button" onclick="chipOne(this,'loc')">Same state only</button><button class="chip" type="button" onclick="chipOne(this,'loc')">Prefer home city</button></div></div>
+      </section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <button class="btn btn-secondary" id="ob-back" type="button" onclick="obStep(-1)" disabled><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Back</button>
+      <button class="btn btn-primary" id="ob-next" type="button">Next<svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
   </div>
 
   <script src="../scripts/riasec_engine.js"></script>

@@ -90,13 +90,24 @@
     // a retry instead of leaving the student on a blank screen.
     function accessFailed(err) {
       document.body.innerHTML =
-        '<div style="max-width:420px;margin:20vh auto;padding:0 20px;text-align:center;">' +
-        '<div style="font-size:2.5rem;margin-bottom:16px;">⚠️</div>' +
-        '<p style="margin-bottom:24px;">' + esc(err.message) + '</p>' +
-        '<button class="btn btn-primary" onclick="location.reload()">Try again</button>' +
-        '</div>';
+        '<main class="access-failed"><section class="card empty" role="alert">' + illo('lock', 'lg') +
+        '<h1 class="empty-title">We couldn\'t check your access</h1>' +
+        '<p class="empty-text">Check your internet connection and try again.' + (err && err.message ? ' (' + esc(err.message) + ')' : '') + '</p>' +
+        '<div class="cluster"><button class="btn btn-primary" onclick="location.reload()">' + icon('refresh-cw') + 'Try again</button></div>' +
+        '</section></main>';
       document.body.style.visibility = '';
     }
+
+    // -- Markup helpers shared by every builder (design system: /css/*.css) --
+    const SPRITE = '/assets/icons/sprite.svg';
+    function icon(name, cls) { return '<svg class="' + (cls || 'icon') + '" aria-hidden="true"><use href="' + SPRITE + '#i-' + name + '"/></svg>'; }
+    function illo(name, size) {
+      return '<div class="illo' + (size ? ' illo-' + size : '') + '"><img src="/assets/illustrations/' + name + '-' + (size === 'lg' ? 400 : 200) + '.webp" alt=""></div>';
+    }
+    // Data from the API and the quiz engine carries emoji; the design never shows them.
+    function stripEmoji(s) { return String(s == null ? '' : s).replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').replace(/\s+/g, ' ').trim(); }
+    function fitClass(pct) { return pct >= 75 ? 'fit-strong' : pct >= 55 ? 'fit-good' : 'fit-low'; }
+    function fitLabel(pct) { const p = Math.round(pct || 0); return (p >= 75 ? 'Strong fit' : p >= 55 ? 'Good fit' : 'Low fit') + ', ' + p + '%'; }
 
     // -- Career catalogue --
     // The careers the quiz matches against, the explorer lists and roadmaps
@@ -135,8 +146,8 @@
       document.documentElement.setAttribute('data-theme', t);
       document.querySelectorAll('.theme-toggle').forEach(b => {
         b.setAttribute('aria-pressed', String(t === 'dark'));
-        b.setAttribute('title', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
-        b.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        b.setAttribute('title', 'Dark theme');
+        if (!b.classList.contains('more-link')) b.setAttribute('aria-label', 'Dark theme');
       });
     }
 
@@ -189,8 +200,11 @@
     }
 
     // ── Mobile sidebar drawer (phone breakpoint only) ──
-    function toggleSidebar() { document.body.classList.toggle('nav-open'); }
-    function closeSidebar() { document.body.classList.remove('nav-open'); }
+    function syncMoreButton() {
+      document.querySelectorAll('.tab-more').forEach(b => b.setAttribute('aria-expanded', String(document.body.classList.contains('nav-open'))));
+    }
+    function toggleSidebar() { document.body.classList.toggle('nav-open'); syncMoreButton(); }
+    function closeSidebar() { document.body.classList.remove('nav-open'); syncMoreButton(); }
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && document.body.classList.contains('nav-open')) closeSidebar();
     });
@@ -198,7 +212,7 @@
     // On phones the drawer is a bottom sheet: drag it down to dismiss.
     // Only from the top of its scroll, so scrolling the sheet still works.
     (function () {
-      const sheet = document.querySelector('.sidebar');
+      const sheet = document.querySelector('.more-sheet') || document.querySelector('.sidebar');
       if (!sheet) return;
       let y0 = null, dy = 0;
       sheet.addEventListener('touchstart', e => {
@@ -292,14 +306,20 @@
       appSetHash(appHash(r.page, r.arg, r.params));  // tidy an old or hand-typed address
       const changed = r.page !== appView;
       appView = r.page;
-      document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+      document.querySelectorAll('.page').forEach(p => { p.hidden = true; p.classList.remove('active'); });
       const pg = document.getElementById(r.page);
-      if (pg) { pg.style.display = 'block'; pg.classList.add('active'); }
+      if (pg) { pg.hidden = false; pg.classList.add('active'); }
       // Career detail has no sidebar entry of its own: light up where it was opened from.
       if (r.page === 'careerdetail') cdFrom = CD_BACK[r.params.from] ? r.params.from : null;
       const navPage = r.page === 'careerdetail' ? (cdFrom || 'results') : r.page;
-      document.querySelectorAll('.nav-item, .user-profile').forEach(n => n.classList.toggle('active', n.dataset.page === navPage));
-      document.body.classList.remove('nav-open'); // collapse the mobile drawer
+      document.querySelectorAll('.nav-item, .user-profile, .tab, .more-link').forEach(n => {
+        if (!n.dataset.page) return;
+        const on = n.dataset.page === navPage;
+        n.classList.toggle('active', on);
+        if (on) n.setAttribute('aria-current', 'page'); else n.removeAttribute('aria-current');
+      });
+      document.querySelectorAll('.tab-more').forEach(b => b.classList.toggle('active', ['results', 'explorer', 'space', 'settings'].includes(navPage)));
+      closeSidebar(); // collapse the More sheet
       // The explorer's filter drawer sits on <body>, outside the page divs.
       if (document.body.classList.contains('ex-filters-open')) exCloseFilters();
       if (changed) window.scrollTo(0, 0);
@@ -523,10 +543,8 @@
         } catch (e) { }
       }
       document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (i === 1) === (which === 'register')));
-      ['login', 'register', 'forgot', 'reset'].forEach(k => {
-        document.getElementById('auth-' + k).style.display = k === which ? 'block' : 'none';
-      });
-      document.getElementById('auth-tabs').style.display = which === 'forgot' || which === 'reset' ? 'none' : '';
+      ['login', 'register', 'forgot', 'reset'].forEach(k => { document.getElementById('auth-' + k).hidden = k !== which; });
+      document.getElementById('auth-tabs').hidden = which === 'forgot' || which === 'reset';
       document.getElementById('login-ok').textContent = '';
       // A password left showing shouldn't still be showing when its form returns.
       document.querySelectorAll('.password-toggle').forEach(b => togglePassword(b, true));
@@ -657,61 +675,46 @@
 
     function pwRender() {
       const root = document.getElementById('pw-root');
-      root.innerHTML = '<div class="card pw-center"><div class="al-spinner"></div><p>Checking your access…</p></div>';
+      root.innerHTML = '<div class="card-flat pw-center" role="status"><div class="spinner"></div><p>Checking your access…</p></div>';
       Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
-        root.innerHTML = a.has_access ? pwAllSet(a) : pwHero(m.student, a) + pwReason(m.student, a) + pwPlans(m.student);
+        root.innerHTML = a.has_access ? pwAllSet(a) : pwReason(m.student, a) + pwPlans(m.student);
       }, err => {
         if (err.status === 401) { redirect('auth'); return; }
-        root.innerHTML = '<div class="card pw-center"><p>' + esc(err.message) + '</p>' +
-          '<button class="btn btn-primary" onclick="pwRender()">Try again</button></div>';
+        root.innerHTML = '<section class="card-flat pw-center stack" role="alert"><h1 class="auth-title">We couldn\'t check your access</h1>' +
+          '<p class="muted">' + esc(err.message) + '</p>' +
+          '<div><button class="btn btn-primary" onclick="pwRender()">' + icon('refresh-cw') + 'Try again</button></div></section>';
       });
     }
 
-    function pwHero(st, a) {
-      const first = esc(st.full_name.split(' ')[0]);
-      return '<div class="pw-hero"><div class="pw-emoji">🔓</div>' +
-        '<h1>Unlock Crackeer, ' + first + '</h1>' +
-        '<p>' + (a.reason === 'no_school'
-          ? 'Get in free through your school, or get your own plan.'
-          : 'You\'re not covered by your school yet. Here\'s why, and what you can do.') + '</p></div>';
-    }
-
     function pwSchoolForm(label) {
-      return '<form class="pw-school-form" onsubmit="pwSetSchool(event)">' +
-        '<input class="form-input" id="pw-code" maxlength="20" placeholder="School ID, e.g. DPS-RKP" ' +
-        'autocapitalize="characters" aria-label="School ID" />' +
+      return '<section class="card stack" aria-labelledby="pw-school-title">' +
+        '<div class="stack-xs stack"><h2 class="card-title" id="pw-school-title">Is your school on Crackeer?</h2>' +
+        '<p class="card-sub">If your school has a Crackeer plan, enter the School ID they gave you and you\'re in for free.</p></div>' +
+        '<form class="pw-school-form" novalidate onsubmit="pwSetSchool(event)">' +
+        '<label class="visually-hidden" for="pw-code">School ID</label>' +
+        '<input class="input" id="pw-code" maxlength="20" placeholder="School ID, e.g. DPS-RKP" autocapitalize="characters" aria-describedby="pw-code-error" />' +
         '<button class="btn btn-secondary" id="pw-code-btn" type="submit">' + label + '</button></form>' +
-        '<div class="form-error" id="pw-code-error"></div>';
+        '<div class="form-error" id="pw-code-error" aria-live="polite"></div></section>';
     }
 
     function pwReason(st, a) {
       const school = a.school ? esc(a.school.name) : '';
-      let icon, title, body, extra = '';
+      const actions = '<div class="cluster"><button class="btn btn-secondary btn-sm" onclick="pwRender()">Check again</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="pwShowSchoolForm()">Wrong school?</button></div>';
+      const reason = (art, title, body, extra) =>
+        '<section class="pw-reason" aria-labelledby="pw-title">' + illo(art) +
+        '<div class="stack-sm stack"><h1 class="auth-title" id="pw-title">' + title + '</h1><p class="muted">' + body + '</p>' + (extra || '') + '</div></section>';
       if (a.reason === 'not_on_roster') {
-        icon = '📋';
-        title = 'Your email isn\'t on ' + school + '\'s list yet';
-        body = school + ' pays for its students, but <b>' + esc(st.email) + '</b> isn\'t on the list they sent us. ' +
-          'Ask your school coordinator to add it. You\'ll get in free as soon as they do.';
-        extra = '<div class="pw-school-form"><button class="btn btn-secondary" onclick="pwRender()">Check again</button>' +
-          '<button class="btn btn-ghost" onclick="pwShowSchoolForm()">Wrong school?</button></div>' +
+        return reason('lock', 'You\'re not on your school\'s list yet',
+          school + ' pays for its students, but <b>' + esc(st.email) + '</b> isn\'t on the list they sent us. Ask your school coordinator to add it, or get your own plan below.', actions) +
           '<div id="pw-school-slot"></div>';
-      } else if (a.reason === 'school_not_subscribed') {
-        icon = '⏳';
-        title = school + '\'s Crackeer plan isn\'t active';
-        body = 'Your school hasn\'t paid for this year yet, or its plan has run out. Ask your school about it, ' +
-          'or get your own plan below.';
-        extra = '<div class="pw-school-form"><button class="btn btn-secondary" onclick="pwRender()">Check again</button>' +
-          '<button class="btn btn-ghost" onclick="pwShowSchoolForm()">Wrong school?</button></div>' +
-          '<div id="pw-school-slot"></div>';
-      } else {
-        icon = '🏫';
-        title = 'Is your school on Crackeer?';
-        body = 'If your school has a Crackeer plan, enter the School ID they gave you and you\'ll get in free.';
-        extra = pwSchoolForm('Check');
       }
-      return '<div class="card pw-reason"><div class="pw-reason-icon">' + icon + '</div><div style="flex:1;">' +
-        '<h3>' + title + '</h3><p>' + body + '</p>' + extra + '</div></div>' +
-        '<div class="pw-or">or get your own plan</div>';
+      if (a.reason === 'school_not_subscribed') {
+        return reason('calendar', 'Your school\'s plan isn\'t active',
+          school + ' hasn\'t paid for this year yet, or its plan has run out. Ask your school about it, or get your own plan below.', actions) +
+          '<div id="pw-school-slot"></div>';
+      }
+      return reason('lock', 'Unlock Crackeer, ' + esc(st.full_name.split(' ')[0]), 'Get in free through your school, or get your own plan.') + pwSchoolForm('Check');
     }
 
     function pwShowSchoolForm() {
@@ -724,6 +727,7 @@
       const btn = document.getElementById('pw-code-btn');
       const out = document.getElementById('pw-code-error');
       out.textContent = '';
+      document.getElementById('pw-code').classList.remove('is-invalid');
       setBusy(btn, true);
       CareerAPI.me.setSchool(val('pw-code')).then(r => {
         if (r.access.has_access) { document.getElementById('pw-root').innerHTML = pwAllSet(r.access); return; }
@@ -731,48 +735,44 @@
       }, err => {
         setBusy(btn, false);
         out.textContent = err.message;
+        document.getElementById('pw-code').classList.add('is-invalid');
       });
     }
 
     function pwPlans(st) {
       const P = CareerAPI.plans, a = P.student_annual, m = P.student_monthly;
       const saving = Math.round((1 - a.amount_paise / (m.amount_paise * 12)) * 100);
-      const card = (p, price, per, note, badge) =>
-        '<div class="card pw-plan">' +
-        (badge ? '<span class="badge badge-green">' + badge + '</span>' : '') +
-        '<div class="pw-plan-name">' + p.label + '</div>' +
-        '<div class="pw-price">' + price + ' <small>' + per + '</small></div>' +
-        '<div class="pw-plan-note">' + note + '</div></div>';
       const contact = PW_PAYMENT_CONTACT ? '<b>' + esc(PW_PAYMENT_CONTACT) + '</b>' : 'the Crackeer team';
-      return '<div class="pw-plans">' +
-        card(a, rupees(a.amount_paise), '/ year', 'That\'s ' + rupees(a.amount_paise / 12) + ' a month', 'Save ' + saving + '%') +
-        card(m, rupees(m.amount_paise), '/ month', 'Pay month by month') + '</div>' +
-        '<ul class="pw-includes"><li>Career quiz and full results</li><li>Weekly aptitude contest</li>' +
-        '<li>Global and career leaderboards</li><li>Career explorer and roadmaps</li>' +
-        '<li>AI career chat</li><li>Progress tracking</li></ul>' +
-        '<div class="card pw-reason pw-how"><div class="pw-reason-icon">💳</div><div style="flex:1;">' +
-        '<h3>How to pay</h3>' +
-        '<ol class="pw-steps">' +
-        '<li>Contact ' + contact + ' for payment details, and pay for the plan you want (UPI or bank transfer).</li>' +
-        '<li>Send us your <b>payment ID</b> (UPI reference or UTR) and the email you registered with: <b>' + esc(st.email) + '</b>.</li>' +
-        '<li>We activate your plan once the payment is confirmed. Then press <b>Check again</b>.</li>' +
-        '</ol>' +
-        '<div class="pw-school-form"><button class="btn btn-primary" onclick="pwRender()">Check again</button></div>' +
-        '<div class="pw-fineprint">Your plan runs from the day it\'s activated. Payments are non-refundable.</div>' +
-        '</div></div>';
+      const step = (n, title, meta) => '<li class="tl-item"><span class="tl-dot">' + n + '</span><p class="tl-title">' + title + '</p><p class="tl-meta">' + meta + '</p></li>';
+      return '<div class="pw-or"><span>or get your own plan</span></div>' +
+        '<div class="grid-2">' +
+        '<div class="card-flat pw-plan stack-sm stack"><p class="card-title">' + esc(m.label) + '</p>' +
+        '<p><span class="pw-price num">' + rupees(m.amount_paise) + '</span> <span class="muted">a month</span></p><p class="card-sub">Pay month by month. Stop any time.</p></div>' +
+        '<div class="card pw-plan stack-sm stack"><div class="cluster cluster-between"><p class="card-title">' + esc(a.label) + '</p><span class="badge fit-strong">Save ' + saving + '%</span></div>' +
+        '<p><span class="pw-price num">' + rupees(a.amount_paise) + '</span> <span class="muted">a year</span></p><p class="card-sub">Works out to ' + rupees(a.amount_paise / 12) + ' a month.</p></div>' +
+        '</div>' +
+        '<div class="card-sunk stack-sm stack"><p class="list-title">Every plan includes</p><ul class="pw-includes">' +
+        ['Career quiz and your full report', 'A roadmap for every career', 'AI Chat that knows your results', 'Weekly contests and leaderboards', 'Career Space news, internships and jobs']
+          .map(t => '<li>' + icon('check') + t + '</li>').join('') + '</ul></div>' +
+        '<section class="stack-sm stack" aria-labelledby="pw-pay-title"><h2 class="card-title" id="pw-pay-title">How to pay</h2><ol class="timeline">' +
+        step(1, 'Pay for the plan you want', 'Contact ' + contact + ' for payment details. UPI and bank transfer both work.') +
+        step(2, 'Send us your payment ID', 'The UPI reference or UTR, plus the email you registered with: <b>' + esc(st.email) + '</b>.') +
+        step(3, 'We switch your plan on', 'Once the payment is confirmed, press Check again.') +
+        '</ol><div><button class="btn btn-primary" onclick="pwRender()">Check again</button></div>' +
+        '<p class="small muted">Your plan runs from the day it\'s switched on. Payments are non-refundable.</p></section>';
     }
 
     function pwContinue() {
-      return '<button class="btn btn-primary btn-lg" onclick="show(\'' + pwNext + '\')">' +
-        (pwNext === 'onboarding' ? 'Set up my profile →' : 'Go to my dashboard →') + '</button>';
+      return '<button class="btn btn-primary" onclick="show(\'' + pwNext + '\')">' +
+        (pwNext === 'onboarding' ? 'Set up my profile' : 'Go to my dashboard') + '</button>';
     }
 
     function pwAllSet(a) {
       const how = a.source === 'school'
-        ? esc(a.school.name) + ' covers you until <b>' + longDate(a.ends_at) + '</b>.'
+        ? esc(a.school.name) + ' covers your plan until <b>' + longDate(a.ends_at) + '</b>.'
         : 'Your plan is active until <b>' + longDate(a.ends_at) + '</b>.';
-      return '<div class="card pw-center"><div class="pw-emoji">✅</div><h2>You have full access</h2>' +
-        '<p>' + how + '</p>' + pwContinue() + '</div>';
+      return '<section class="card pw-center stack" aria-labelledby="pw-ok-title">' + illo('thumb-up', 'lg') +
+        '<h1 class="auth-title" id="pw-ok-title">You\'re all set</h1><p class="muted">' + how + '</p>' + pwContinue() + '</section>';
     }
 
     // ── Settings: account, School ID and membership (app.html#/settings) ──
@@ -782,17 +782,16 @@
       Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
         const st = m.student;
         stStudent = st;
-        document.getElementById('st-name').textContent = st.full_name + ' · shown on leaderboards as ' + st.leaderboard_name;
+        document.getElementById('st-name').textContent = st.full_name + ' (shown on leaderboards as ' + st.leaderboard_name + ')';
         document.getElementById('st-name-edit').innerHTML = '';
         document.getElementById('st-email').textContent = st.email;
         document.getElementById('st-school').textContent = st.school
-          ? st.school.name + ' · ' + st.school.school_code
-          : 'Not added · your school gives you this';
+          ? st.school.name + ', ' + st.school.school_code
+          : 'Not added. Your school gives you this.';
         document.getElementById('st-school-edit').innerHTML = '';
         document.getElementById('st-plan').innerHTML = a.source === 'school'
           ? 'Covered by ' + esc(a.school.name) + ' until ' + longDate(a.ends_at)
-          : esc((CareerAPI.plans[a.plan] || { label: '' }).label) + ' plan · active until ' + longDate(a.ends_at) +
-          ' · non-refundable';
+          : esc((CareerAPI.plans[a.plan] || { label: '' }).label) + ' plan, active until ' + longDate(a.ends_at) + '. Non-refundable.';
         document.getElementById('st-plan-badge').textContent = a.source === 'school' ? 'School plan' : 'Individual';
       }, err => { if (err.status === 401) redirect('auth'); });
     }
@@ -800,13 +799,24 @@
     function stEditSchool() {
       const box = document.getElementById('st-school-edit');
       if (box.innerHTML) { box.innerHTML = ''; return; }
-      box.innerHTML = '<form class="st-edit" onsubmit="stSaveSchool(event)">' +
-        '<input class="form-input" id="st-code" maxlength="20" placeholder="e.g. DPS-RKP" aria-label="School ID" />' +
-        '<button class="btn btn-primary btn-sm" id="st-code-btn" type="submit">Save</button>' +
-        '<button class="btn btn-ghost btn-sm" type="button" onclick="stSaveSchool(null)">Remove</button></form>' +
-        '<div class="form-hint">Changing your school can change whether you\'re covered.</div>' +
-        '<div class="form-error" id="st-code-error"></div>';
+      box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveSchool(event)">' +
+        '<div class="field"><label class="field-label" for="st-code">School ID</label>' +
+        '<input class="input" id="st-code" maxlength="20" placeholder="e.g. DPS-RKP" autocapitalize="characters" aria-describedby="st-code-error" />' +
+        '<p class="field-hint">Changing your school can change whether you\'re covered.</p><div class="form-error" id="st-code-error"></div></div>' +
+        '<div id="st-school-warn"></div>' +
+        '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-code-btn" type="submit">Save School ID</button>' +
+        (stStudent && stStudent.school ? '<button class="btn btn-danger btn-sm" type="button" onclick="stConfirmRemoveSchool()">Remove</button>' : '') +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditSchool()">Cancel</button></div></form>';
       document.getElementById('st-code').focus();
+    }
+
+    // Removing the School ID can lock the app, so it asks first.
+    function stConfirmRemoveSchool() {
+      document.getElementById('st-school-warn').innerHTML =
+        '<div class="alert alert-warn" role="alert">' + icon('info') + '<div class="stack-sm stack"><span><span class="alert-title">Remove your School ID?</span> ' +
+        'The app locks until you add one again or get your own plan.</span><div class="cluster">' +
+        '<button class="btn btn-danger btn-sm" type="button" onclick="stSaveSchool(null)">' + icon('trash-2') + 'Remove School ID</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById(\'st-school-warn\').innerHTML = \'\'">Keep it</button></div></div></div>';
     }
 
     function stSaveSchool(e) {
@@ -827,12 +837,12 @@
     function stEditName() {
       const box = document.getElementById('st-name-edit');
       if (box.innerHTML) { box.innerHTML = ''; return; }
-      box.innerHTML = '<form class="st-edit" onsubmit="stSaveName(event)">' +
-        '<input class="form-input" id="st-name-input" maxlength="80" aria-label="Full name" />' +
-        '<button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save</button>' +
-        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditName()">Cancel</button></form>' +
-        '<div class="form-hint">Other students see your first name and last initial.</div>' +
-        '<div class="form-error" id="st-name-error"></div>';
+      box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveName(event)">' +
+        '<div class="field"><label class="field-label" for="st-name-input">Full name</label>' +
+        '<input class="input" id="st-name-input" maxlength="80" autocomplete="name" aria-describedby="st-name-error" />' +
+        '<p class="field-hint">Other students see your first name and last initial.</p><div class="form-error" id="st-name-error"></div></div>' +
+        '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save name</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditName()">Cancel</button></div></form>';
       const inp = document.getElementById('st-name-input');
       inp.value = stStudent ? stStudent.full_name : '';
       inp.focus();
@@ -853,7 +863,7 @@
 
     // "Class 10 · CBSE · Mumbai", or '' before onboarding.
     function profileSummary(p) {
-      return p ? ['Class ' + p.class, p.board, p.city].filter(Boolean).join(' · ') : '';
+      return p ? ['Class ' + p.class, p.board, p.city].filter(Boolean).join(', ') : '';
     }
 
     function stSyncProfile() {
@@ -869,15 +879,16 @@
       if (box.innerHTML) { box.innerHTML = ''; return; }
       const p = stProfile || {};
       const opt = (v, label, cur) => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>';
-      box.innerHTML = '<form class="st-edit" onsubmit="stSaveClass(event)">' +
-        '<select class="form-input" id="st-class-input" aria-label="Class">' +
-        opt('10', 'Class 10', String(p.class || 10)) + opt('9', 'Class 9', String(p.class || 10)) + '</select>' +
-        '<select class="form-input" id="st-board-input" aria-label="Board">' + opt('', 'Board…', p.board || '') +
-        ST_BOARDS.map(b => opt(b, b, p.board || '')).join('') + '</select>' +
-        '<input class="form-input" id="st-city-input" maxlength="80" placeholder="City" aria-label="City" />' +
-        '<button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button>' +
-        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditClass()">Cancel</button></form>' +
-        '<div class="form-error" id="st-class-error"></div>';
+      const chev = icon('chevron-down');
+      box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveClass(event)"><div class="grid-3">' +
+        '<div class="field"><label class="field-label" for="st-class-input">Class</label><div class="select-wrap"><select class="select" id="st-class-input">' +
+        opt('10', 'Class 10', String(p.class || 10)) + opt('9', 'Class 9', String(p.class || 10)) + '</select>' + chev + '</div></div>' +
+        '<div class="field"><label class="field-label" for="st-board-input">Board</label><div class="select-wrap"><select class="select" id="st-board-input">' +
+        opt('', 'Choose a board', p.board || '') + ST_BOARDS.map(b => opt(b, b, p.board || '')).join('') + '</select>' + chev + '</div></div>' +
+        '<div class="field"><label class="field-label" for="st-city-input">City</label><input class="input" id="st-city-input" maxlength="80" autocomplete="address-level2" /></div></div>' +
+        '<div class="form-error" id="st-class-error"></div>' +
+        '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditClass()">Cancel</button></div></form>';
       document.getElementById('st-city-input').value = p.city || '';
       document.getElementById('st-class-input').focus();
     }
@@ -917,20 +928,26 @@
 
     // ── Onboarding steps ──
     let obCurrent = 1;
-    const obTitles = ['Tell us about yourself', 'Your subject marks', 'Your interests & hobbies', 'Your aspirations'];
-    const obSubs = ['Basic academic details so we can personalise everything.', 'Optional but improves accuracy. Enter your last exam scores.', 'What do you love? This is the most important step.', 'Help us understand your goals and circumstances.'];
+    const obTitles = ['About you', 'Your recent marks', 'What you enjoy', 'What you want from work'];
+    const obSubs = ['So we can match careers to your board, medium and city.',
+      'Optional. Percentages from your last exam help us suggest a stream. Skip any you don\'t know.',
+      'Pick everything that sounds like you.', 'Last step. There are no wrong answers.'];
     function obShow(n) {
-      document.getElementById('ob-step-' + obCurrent).style.display = 'none';
+      document.getElementById('ob-step-' + obCurrent).hidden = true;
       obCurrent = Math.max(1, Math.min(4, n));
-      document.getElementById('ob-step-' + obCurrent).style.display = 'block';
+      document.getElementById('ob-step-' + obCurrent).hidden = false;
       document.getElementById('ob-count').textContent = 'Step ' + obCurrent + ' of 4';
       document.getElementById('ob-title').textContent = obTitles[obCurrent - 1];
       document.getElementById('ob-sub').textContent = obSubs[obCurrent - 1];
-      document.getElementById('ob-bar').style.width = (obCurrent * 25) + '%';
-      document.getElementById('ob-back').style.visibility = obCurrent > 1 ? 'visible' : 'hidden';
+      document.getElementById('ob-bar').value = obCurrent;
+      document.getElementById('ob-back').disabled = obCurrent <= 1;
       const dots = document.querySelectorAll('.dot');
-      dots.forEach((d, i) => { d.className = 'dot' + (i < obCurrent - 1 ? ' done' : i === obCurrent - 1 ? ' active' : ''); });
-      document.getElementById('ob-next').textContent = obCurrent === 4 ? 'Finish ✓' : 'Next →';
+      dots.forEach((d, i) => {
+        d.className = 'dot' + (i < obCurrent - 1 ? ' done' : i === obCurrent - 1 ? ' active' : '');
+        d.querySelector('.dot-mark').innerHTML = i < obCurrent - 1 ? icon('check') : String(i + 1);
+        if (i === obCurrent - 1) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current');
+      });
+      document.getElementById('ob-next').innerHTML = obCurrent === 4 ? 'Finish' : 'Next' + icon('arrow-right');
       stepSync(obCurrent > 1, '#/step/' + obCurrent);
     }
     // Selected chip labels in a chip grid.
@@ -992,7 +1009,8 @@
       if (step === 2) {
         const bad = [...document.querySelectorAll('#ob-step-2 [data-subject]')].find(inp =>
           inp.value.trim() !== '' && !(Number(inp.value) >= 0 && Number(inp.value) <= 100));
-        if (bad) { errEl.textContent = 'Marks must be between 0 and 100.'; bad.focus(); return; }
+        document.querySelectorAll('#ob-step-2 [data-subject]').forEach(inp => inp.classList.toggle('is-invalid', inp === bad));
+        if (bad) { errEl.textContent = 'Marks must be between 0 and 100. Check ' + bad.dataset.subject + '.'; bad.focus(); return; }
       }
       errEl.textContent = '';
       setBusy(btn, true);
@@ -1029,34 +1047,42 @@
       el.classList.add('selected');
     }
 
-    // ── Profile Evaluation animation ──
+    // ── Profile at a glance (evaluation.html) ──
+    // Shows what onboarding saved, so the student can check it before the quiz.
     function startEval() {
-      const steps = ['es1', 'es2', 'es3', 'es4'];
-      let i = 0;
-      const interval = setInterval(() => {
-        if (i > 0) { const prev = document.getElementById(steps[i - 1]); prev.className = 'eval-step done'; prev.querySelector('.eval-step-icon').textContent = '✅'; }
-        if (i < steps.length) { const cur = document.getElementById(steps[i]); cur.className = 'eval-step loading'; cur.querySelector('.eval-step-icon').textContent = '🔄'; }
-        i++;
-        if (i >= steps.length) {
-          clearInterval(interval);
-          setTimeout(() => {
-            document.getElementById(steps[steps.length - 1]).className = 'eval-step done';
-            document.getElementById(steps[steps.length - 1]).querySelector('.eval-step-icon').textContent = '✅';
-            document.getElementById('eval-spinner').style.display = 'none';
-            document.getElementById('eval-title').textContent = 'Profile evaluated! ✅';
-            document.getElementById('eval-sub').textContent = 'We found 4 clear signals. Review them below.';
-            document.getElementById('eval-signals').style.display = 'block';
-          }, 600);
-        }
-      }, 1000);
+      const box = document.getElementById('eval-body');
+      CareerAPI.me.profile().then(r => {
+        const p = r.profile;
+        if (!p) { redirect('onboarding'); return; }
+        const marks = p.marks ? Object.entries(p.marks).sort((a, b) => b[1] - a[1]) : [];
+        const badges = list => (list && list.length) ? '<div class="cluster">' + list.map(x => '<span class="badge badge-outline">' + esc(x) + '</span>').join('') + '</div>' : '<p class="muted">None picked</p>';
+        const row = (k, v) => v ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
+        const prefs = [p.career_preference, p.study_location ? 'Open to studying outside your city: ' + p.study_location : ''].filter(Boolean).join('. ');
+        box.innerHTML =
+          '<dl class="kv">' + row('Class', 'Class ' + p.class) + row('Board', p.board) + row('Medium', p.medium) + row('City', p.city) +
+          (marks.length ? row('Best marks', marks[0][0] + ', ' + marks[0][1] + '%') : '') + '</dl><hr class="divider">' +
+          '<div class="stack-sm stack"><p class="field-label">Subjects you like</p>' + badges(p.favourite_subjects) + '</div>' +
+          '<div class="stack-sm stack"><p class="field-label">Hobbies</p>' + badges(p.hobbies) + '</div>' +
+          (p.dream_job ? '<div class="stack-sm stack"><p class="field-label">Dream job</p><p>' + esc(p.dream_job) + '</p></div>' : '') +
+          (prefs ? '<div class="stack-sm stack"><p class="field-label">Preferences</p><p>' + esc(prefs) + '</p></div>' : '');
+      }, err => {
+        if (err.status === 401) { redirect('auth'); return; }
+        box.innerHTML = '<div class="alert alert-error" role="alert">' + esc(err.message) + '</div>';
+      });
     }
 
     // ── Weekly aptitude contest (quiz.html) lives in scripts/contest.js ──
 
     // ── Filter chips ──
     function filterChip(el) {
-      el.closest('.results-filter').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
+      const bar = el.closest('.results-filter');
+      bar.querySelectorAll('.filter-chip').forEach(c => {
+        const on = c === el;
+        c.classList.toggle('active', on);
+        c.setAttribute('aria-checked', String(on));
+      });
+      rsFilter = el.dataset.cat || '';
+      syncResults(true);
     }
 
     // ── Chat ──
@@ -1219,8 +1245,8 @@
     // Errors and notes go under the reply and its sources, above the time.
     function addChatError(bubble, message, quiet) {
       const box = document.createElement('div');
-      box.className = quiet ? 'msg-note' : 'msg-error';
-      box.textContent = quiet ? message : '⚠ ' + message;
+      box.className = quiet ? 'msg-note' : 'msg-error alert alert-error';
+      box.textContent = message;
       bubble.parentNode.insertBefore(box, bubble.parentNode.querySelector('.msg-time'));
     }
     // Follow a streaming reply only while the student is already at the
@@ -1343,7 +1369,7 @@
       const btn = document.createElement('button');
       btn.className = 'btn btn-ghost btn-sm msg-save';
       btn.setAttribute('aria-label', 'Save this chat as PDF');
-      btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Save this chat</span>';
+      btn.innerHTML = icon('download') + '<span>Save this chat as PDF</span>';
       btn.onclick = () => chatSavePdf(btn);
       if (chatSaving) chatSaveBusy(btn, true);
       row.appendChild(btn);
@@ -1602,22 +1628,22 @@
       const add = (key, icon, label, ask, terms, extra) =>
         facts.push(Object.assign({ key, icon, label, ask, terms: terms.filter(Boolean) }, extra));
       // chip: the shorter wording a welcome prompt shows; it still sends ask
-      careers.forEach((c, i) => add('career:' + c.title, c.emoji || '💼', c.title,
+      careers.forEach((c, i) => add('career:' + c.title, '', c.title,
         i === 0 ? 'Why is ' + c.title + ' my top match?' : 'Is ' + c.title + ' a good option for me?',
         [c.title], { badge: c.match_pct != null ? Math.round(c.match_pct) + '%' : '', rank: i + 1,
           chip: 'Why ' + c.title.split(' / ')[0] + '?' }));
       if (p) {
-        add('class', '🎒', 'Class ' + p.class + (p.board ? ' · ' + p.board : ''),
+        add('class', '', 'Class ' + p.class + (p.board ? ' · ' + p.board : ''),
           p.class >= 10 ? 'Which stream should I pick after Class 10?' : 'What should I focus on in Class 9?',
           ['Class ' + p.class, p.board], { chip: p.class >= 10 ? 'Which stream after Class 10?' : 'What to focus on in Class 9?' });
         const a = /^[aeiou]/i.test(p.dream_job || '') ? 'an ' : 'a ';
-        if (p.dream_job) add('dream', '✨', 'Dream: ' + p.dream_job, 'How do I become ' + a + p.dream_job + '?', [p.dream_job],
+        if (p.dream_job) add('dream', '', 'Dream: ' + p.dream_job, 'How do I become ' + a + p.dream_job + '?', [p.dream_job],
           { chip: 'How to become ' + a + p.dream_job });
         (p.favourite_subjects || []).forEach(s =>
-          add('subj:' + s, '📚', 'Loves ' + s, 'Which careers use ' + s + '?', [s], { chip: 'Careers that use ' + s }));
+          add('subj:' + s, '', 'Loves ' + s, 'Which careers use ' + s + '?', [s], { chip: 'Careers that use ' + s }));
         (p.hobbies || []).forEach(h =>
-          add('hob:' + h, '🎯', h, 'Can ' + h + ' become a career for me?', [h]));
-        if (p.city) add('city', '📍', p.city, 'What are good colleges near ' + p.city + '?', [p.city],
+          add('hob:' + h, '', h, 'Can ' + h + ' become a career for me?', [h]));
+        if (p.city) add('city', '', p.city, 'What are good colleges near ' + p.city + '?', [p.city],
           { chip: 'Best colleges near ' + p.city });
       }
       return facts;
@@ -1627,10 +1653,10 @@
     // with the facts in it highlighted, and four prompts of one shape. The
     // prompts are the facts' own questions, topped up from the defaults.
     const CHAT_SUGS = [
-      ['🎓', 'Which colleges are best for me?'],
-      ['🧭', 'Which stream should I choose?'],
-      ['🗓️', 'What should I start doing this year?'],
-      ['🧬', 'What careers fit my personality?']
+      ['', 'Which colleges are best for me?'],
+      ['', 'Which stream should I choose?'],
+      ['', 'What should I start doing this year?'],
+      ['', 'What careers fit my personality?']
     ];
     function chatRenderWelcome(p, careers) {
       const line = document.getElementById('chat-insight'), sugs = document.getElementById('chat-sugs');
@@ -1662,7 +1688,7 @@
         // Each highlight underlines itself in turn, as if being read out
         line.querySelectorAll('.chat-hl').forEach((b, i) => { b.style.animationDelay = (0.45 + i * 0.18) + 's'; });
         const all = document.createElement('button');
-        all.className = 'chat-insight-more';
+        all.className = 'btn btn-ghost btn-sm chat-insight-more';
         all.textContent = 'See all I know';
         all.onclick = () => chatMemOpen(true);
         line.appendChild(all);
@@ -1682,8 +1708,8 @@
         b.style.animationDelay = (0.3 + i * 0.07) + 's';
         b.onclick = () => sendSug(b);
         const ic = document.createElement('span');
-        ic.className = 'chat-sug-icon';
-        ic.textContent = icon;
+        ic.className = 'icon-tile chat-sug-icon';
+        ic.innerHTML = window.icon(['route', 'graduation-cap', 'map-pin', 'sparkles'][i] || 'sparkles');
         const t = document.createElement('span');
         t.className = 'chat-sug-text';
         t.textContent = chip || ask;
@@ -1738,18 +1764,18 @@
       } else {
         const rows = el('div', 'chat-mem-rows');
         [
-          ['🎒', 'Class', 'Class ' + p.class, 'class'],
-          ['🏫', 'Board', p.board, 'class'],
-          ['🗣️', 'Medium', p.medium],
-          ['📍', 'City', p.city, 'city'],
-          ['✨', 'Dream job', p.dream_job, 'dream'],
-          ['💼', 'Prefers', p.career_preference],
-          ['🧳', 'Study away?', p.study_location]
+          ['', 'Class', 'Class ' + p.class, 'class'],
+          ['', 'Board', p.board, 'class'],
+          ['', 'Medium', p.medium],
+          ['', 'City', p.city, 'city'],
+          ['', 'Dream job', p.dream_job, 'dream'],
+          ['', 'Prefers', p.career_preference],
+          ['', 'Study away?', p.study_location]
         ].forEach(([icon, k, v, fact]) => {
           if (!v) return;
           const row = el('div', 'chat-mem-row');
           if (fact) row.dataset.fact = fact;
-          row.append(el('span', 'chat-mem-row-icon', icon), el('span', 'chat-mem-row-key', k), el('span', 'chat-mem-row-val', v));
+          row.append(el('span', 'chat-mem-row-key', k), el('span', 'chat-mem-row-val', v));
           rows.appendChild(row);
         });
         you.appendChild(rows);
@@ -1775,7 +1801,7 @@
           track.appendChild(fill);
           const info = el('div', 'chat-mem-career-info');
           info.append(name, track);
-          row.append(el('span', 'chat-mem-career-icon', c.emoji || '💼'), info);
+          row.append(info);
           matches.appendChild(row);
         });
       }
@@ -1832,12 +1858,12 @@
       box.className = 'msg-mentions';
       const label = document.createElement('span');
       label.className = 'msg-mentions-label';
-      label.textContent = '🧠 Mentions your';
+      label.textContent = 'Mentions your';
       box.appendChild(label);
       facts.slice(0, 5).forEach(f => {
         const b = document.createElement('button');
-        b.className = 'msg-mention';
-        b.textContent = f.icon + ' ' + f.label.replace(/^(Dream|Loves):? /, '');
+        b.className = 'pill msg-mention';
+        b.textContent = stripEmoji(f.label.replace(/^(Dream|Loves):? /, ''));
         b.onclick = () => chatMemShow(f.key);
         box.appendChild(b);
       });
@@ -1860,9 +1886,10 @@
       const div = document.createElement('div');
       div.className = 'msg' + (type === 'user' ? ' user' : '');
       const avatar = document.createElement('div');
-      avatar.className = 'msg-avatar ' + (type === 'ai' ? 'msg-ai-avatar' : 'msg-user-avatar');
+      avatar.className = 'msg-avatar ' + (type === 'ai' ? 'msg-avatar-ai msg-ai-avatar' : 'avatar msg-user-avatar');
       const me = document.querySelector('.user-avatar');
-      avatar.textContent = type === 'ai' ? '✦' : ((me && me.textContent.trim()) || '?');
+      if (type === 'ai') avatar.innerHTML = icon('sparkles');
+      else avatar.textContent = (me && me.textContent.trim()) || '?';
       avatar.setAttribute('aria-hidden', 'true');
       const body = document.createElement('div');
       body.className = 'msg-body';
@@ -1879,10 +1906,6 @@
     }
 
     // ── Toggle ──
-    function toggleBtn(el) {
-      el.classList.toggle('on');
-      el.classList.toggle('off');
-    }
 
     // ══════════════════════════════════════════════════════════════
     // CAREER INTEREST QUIZ  (RIASEC)
@@ -1967,31 +1990,35 @@
       document.getElementById('cq-num').textContent = 'Question ' + (cqIdx + 1) + ' of ' + total;
       // The area tag is a neutral topic label — it never names the RIASEC
       // dimension being measured (product rule 1).
-      document.getElementById('cq-area').textContent = q.area;
-      document.getElementById('cq-bar').style.width = ((cqIdx / total) * 100) + '%';
-      document.getElementById('cq-back-btn').style.visibility = cqIdx > 0 ? 'visible' : 'hidden';
+      document.getElementById('cq-area').textContent = stripEmoji(q.area);
+      const bar = document.getElementById('cq-bar');
+      bar.max = total; bar.value = cqIdx;
+      document.getElementById('cq-back-btn').disabled = cqIdx <= 0;
       document.getElementById('cq-q').textContent = q.q;
 
       // How many answers this question accepts (doc section 3).
-      document.getElementById('cq-hint').textContent = q.maxSelect > 1
-        ? 'Select up to ' + q.maxSelect + '  ·  ← to go back'
-        : 'Choose 1  ·  ← to go back';
+      const hint = document.getElementById('cq-hint');
+      hint.className = 'cq-hint field-hint';
+      hint.textContent = q.maxSelect > 1 ? 'Pick up to ' + q.maxSelect + '.' : 'Pick 1.';
+      optsEl0().classList.remove('shake');
 
-      const optsEl = document.getElementById('cq-opts');
+      const optsEl = optsEl0();
       optsEl.innerHTML = '';
 
       // Options are rendered in shuffled order; dataset.orig carries the
       // ORIGINAL index so scoring never depends on display position.
       order.forEach((origIdx, pos) => {
         const opt = q.opts[origIdx];
-        const d = document.createElement('div');
-        d.className = 'cq-opt';
+        const d = document.createElement('button');
+        d.type = 'button';
+        d.className = 'option cq-opt';
         d.dataset.orig = origIdx;
-        d.innerHTML = '<div class="cq-letter" data-letter="' + letters[pos] + '">' + letters[pos] +
-          '</div><span></span>';
+        d.setAttribute('aria-pressed', 'false');
+        d.innerHTML = '<span class="option-letter cq-letter" data-letter="' + letters[pos] + '">' + letters[pos] +
+          '</span><span class="option-text"></span>';
         // textContent, not innerHTML — option text contains quotes and
         // question marks and should never be parsed as markup.
-        d.querySelector('span').textContent = opt.text;
+        d.querySelector('.option-text').textContent = opt.text;
         d.onclick = () => cqToggle(d, q.maxSelect);
         optsEl.appendChild(d);
       });
@@ -2006,19 +2033,12 @@
       stepSync(cqIdx > 0, '#/q/' + (cqIdx + 1));
     }
 
+    function optsEl0() { return document.getElementById('cq-opts'); }
     function cqSelect(el, on) {
       const l = el.querySelector('.cq-letter');
-      if (on) {
-        el.classList.add('selected');
-        l.textContent = '✓';
-        l.style.background = 'var(--accent)';
-        l.style.color = '#fff';
-      } else {
-        el.classList.remove('selected');
-        l.textContent = l.dataset.letter;
-        l.style.background = '';
-        l.style.color = '';
-      }
+      el.classList.toggle('selected', on);
+      el.setAttribute('aria-pressed', String(on));
+      l.innerHTML = on ? icon('check') : l.dataset.letter;
     }
 
     // Toggle an option, enforcing the per-question cap. At the cap the
@@ -2043,9 +2063,11 @@
 
       // Require at least one selection
       if (!selected.length) {
-        const btn = document.getElementById('cq-next-btn');
-        btn.style.animation = 'none';
-        requestAnimationFrame(() => { btn.style.animation = 'shake .35s ease'; });
+        const opts = optsEl0(), hint = document.getElementById('cq-hint');
+        opts.classList.remove('shake');
+        requestAnimationFrame(() => opts.classList.add('shake'));
+        hint.className = 'cq-hint form-error';
+        hint.innerHTML = icon('circle-alert') + 'Pick at least one answer to continue.';
         return;
       }
 
@@ -2075,7 +2097,7 @@
     function cqSlide(dir) {
       const wrap = document.getElementById('cq-question-wrap');
       const outX = dir === 'next' ? '-24px' : '24px';
-      wrap.style.cssText = 'opacity:0;transform:translateX(' + outX + ');transition:opacity .16s,transform .16s;';
+      wrap.style.cssText = 'opacity:0;transform:translateX(' + outX + ');transition:opacity .16s,transform .16s;'; // motion only
       cqSliding = true;
       setTimeout(() => {
         wrap.style.transform = 'translateX(' + (dir === 'next' ? '24px' : '-24px') + ')';
@@ -2094,37 +2116,32 @@
       // Landed here directly, or came back after the run was scored: never
       // score (and save) the same answers twice.
       if (!cqAnswers.length) { redirect(s.appResults ? 'airesults' : 'careerquiz'); return; }
-      document.querySelectorAll('.al-step').forEach(el => {
-        el.className = 'al-step pending';
-        el.querySelector('.al-step-icon').textContent = '⏳';
-      });
-      document.getElementById('al-step1').className = 'al-step loading';
-      document.getElementById('al-step1').querySelector('.al-step-icon').textContent = '🔄';
+      document.querySelectorAll('.al-step').forEach(el => alStep(el.id, 'pending'));
+      alStep('al-step1', 'loading');
       await cqRunAI();
     }
 
     function cqDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    async function cqRunAI() {
-      const stepIds = ['al-step1', 'al-step2', 'al-step3'];
-      for (let i = 0; i < stepIds.length; i++) {
-        await cqDelay(1100);
-        const el = document.getElementById(stepIds[i]);
-        el.className = 'al-step done';
-        el.querySelector('.al-step-icon').textContent = '✅';
-        if (i + 1 < stepIds.length) {
-          const next = document.getElementById(stepIds[i + 1]);
-          next.className = 'al-step loading';
-          next.querySelector('.al-step-icon').textContent = '🔄';
-        }
-      }
-      await cqDelay(500);
+    // One AI-loading step: pending (waiting), loading (working), done.
+    function alStep(id, state) {
+      const el = document.getElementById(id);
+      el.className = 'al-step ' + state;
+      el.querySelector('.al-step-icon').innerHTML = state === 'done' ? icon('check')
+        : state === 'loading' ? '<span class="spinner spinner-sm" aria-hidden="true"></span>' : '<span class="al-pending" aria-hidden="true"></span>';
+      const sr = el.querySelector('.visually-hidden');
+      if (sr) sr.textContent = state === 'done' ? 'Done' : state === 'loading' ? 'In progress' : 'Waiting';
+    }
 
+    async function cqRunAI() {
+      const t0 = Date.now();
       // ── DEMO MODE ONLY ──────────────────────────────────────────
       // The RIASEC engine produces every result on device. No network call
       // is made and no API key is read.
       const scoring = rsScore(cqAnswers, RS_QUESTIONS);
+      alStep('al-step1', 'done'); alStep('al-step2', 'loading');
       const results = rsBuildResults(scoring, RIASEC_CAREERS);
+      alStep('al-step2', 'done'); alStep('al-step3', 'loading');
 
       // The scoring stays on device; only the finished run is saved to the
       // student's account, so it comes back on their next login.
@@ -2150,8 +2167,34 @@
         // so cqLoadSaved must not swap it for an older run from the server.
         localRunAt: top ? null : Date.now()
       });
-      await cqSaveRun();
+      await alSave(t0);
+    }
+
+    // Save the scored run, keep the steps on screen for at least 1.2 s in total,
+    // and offer a retry if the save fails. The run also waits in state.quizRun,
+    // so "See my results" is safe: the results page retries the save.
+    async function alSave(t0) {
+      const ok = await cqSaveRun();
+      const wait = 1200 - (Date.now() - (t0 || Date.now()));
+      if (wait > 0) await cqDelay(wait);
+      if (ok === false) {
+        alStep('al-step3', 'pending');
+        document.getElementById('al-step3').classList.add('failed');
+        document.getElementById('al-title').textContent = 'We couldn\'t save your report';
+        document.getElementById('al-sub').textContent = 'Your answers are safe on this device.';
+        document.getElementById('al-error').hidden = false;
+        return;
+      }
+      alStep('al-step3', 'done');
       redirect('airesults');
+    }
+    function alRetry() {
+      document.getElementById('al-error').hidden = true;
+      document.getElementById('al-step3').classList.remove('failed');
+      alStep('al-step3', 'loading');
+      document.getElementById('al-title').textContent = 'Building your report';
+      document.getElementById('al-sub').textContent = 'This takes a few seconds.';
+      alSave(Date.now());
     }
 
     // POST /me/career-quiz, which also sets the student's career (career
@@ -2160,7 +2203,7 @@
     function cqSaveRun() {
       const run = loadState().quizRun;
       if (!run || !isLoggedIn() || !CareerAPI.me.saveCareerQuiz) return Promise.resolve();
-      return CareerAPI.me.saveCareerQuiz(run).then(() => saveState({ quizRun: null }), () => { });
+      return CareerAPI.me.saveCareerQuiz(run).then(() => { saveState({ quizRun: null }); return true; }, () => false);
     }
 
     // The pages that show results fetch the student's latest saved run on
@@ -2189,17 +2232,6 @@
       });
     }
 
-    const CQ_STREAM_BADGE = {
-      'PCM+CS': 'badge-purple', 'PCM': 'badge-blue', 'PCB': 'badge-green',
-      'Commerce': 'badge-orange', 'Arts': 'badge-red', 'Any': 'badge-green'
-    };
-
-    // Streams in the career database are slash-separated ("PCB / PCM"), so
-    // colour the badge by the first token and fall back to purple.
-    function cqStreamBadge(stream) {
-      const first = String(stream || '').split('/')[0].trim();
-      return CQ_STREAM_BADGE[first] || 'badge-purple';
-    }
 
     // Rehydrated on every page load so the dashboard/results/progress
     // pages in app.html can read the last quiz run.
@@ -2250,14 +2282,9 @@
     // Shown over a result saved by the previous question set (riasec-1),
     // which can't be re-scored because the questions changed.
     function cqRetakeNotice() {
-      return '<div class="welcome-banner cq-retake no-print">' +
-        '<div class="welcome-text">' +
-        '<h2>🆕 The career quiz has been rebuilt</h2>' +
-        '<p>This result comes from the old questions. Take the new quiz for better-matched careers, ' +
-        'including new ones in AI, space, climate, biotech and more. It takes about 6 minutes.</p>' +
-        '</div>' +
-        '<button class="btn btn-primary" onclick="cqStart()">Retake the quiz →</button>' +
-        '</div>';
+      return '<svg class="icon" aria-hidden="true"><use href="' + SPRITE + '#i-info"/></svg><div class="stack-sm stack">' +
+        '<p><span class="alert-title">This result is from the older quiz.</span> The new quiz takes about 6 minutes and matches you with more careers, including new ones in AI, space, climate and biotech.</p>' +
+        '<div><button class="btn btn-secondary btn-sm" onclick="cqStart()">Retake the quiz</button></div></div>';
     }
 
     // ── Save the report as a PDF ───────────────────────────────────────────
@@ -2319,95 +2346,89 @@
 
     function cqRenderResults(data, isDemo) {
       appResults = data; // make available to dashboard, results, progress pages
-      document.getElementById('air-personality-type').textContent = data.personality_type;
-      document.getElementById('air-personality-desc').textContent = data.personality_desc;
-      document.getElementById('air-stream-val').textContent = data.stream_recommendation;
-      document.getElementById('air-stream-reason').textContent = data.stream_reason;
+      document.getElementById('air-personality-type').textContent = data.personality_type || 'Your career report';
+      document.getElementById('air-personality-desc').textContent = data.personality_desc || '';
+      document.getElementById('air-stream-val').textContent = cqStreamLabel(data);
+      document.getElementById('air-stream-reason').textContent = data.stream_reason || '';
       const demoBadge = document.getElementById('air-demo-badge');
-      if (demoBadge) demoBadge.style.display = isDemo ? 'inline-block' : 'none';
+      if (demoBadge) demoBadge.hidden = !isDemo;
 
       cqRenderRiasec(data.riasec);
       cqRenderDomains(data.riasec && data.riasec.domains);
       cqRenderStreams(data.streams);
 
       const notice = document.getElementById('air-retake');
-      if (notice) notice.innerHTML = rsIsCurrentResult(data) ? '' : cqRetakeNotice();
+      if (notice) {
+        const current = rsIsCurrentResult(data);
+        notice.hidden = current;
+        notice.innerHTML = current ? '' : cqRetakeNotice();
+      }
 
       const list = document.getElementById('air-careers');
       list.innerHTML = '';
       if (!(data.top_careers || []).length) {
-        list.innerHTML =
-          '<div style="font-size:0.875rem;color:var(--muted);">None of them is a strong match yet. ' +
-          '<button class="btn btn-ghost btn-sm no-print" onclick="navTo(\'explorer\')">Explore every career →</button></div>';
+        list.innerHTML = '<p class="muted">None of them is a strong match yet. ' +
+          '<button class="btn btn-ghost btn-sm no-print" onclick="navTo(\'explorer\')">Explore every career</button></p>';
         return;
       }
-      const pcts = PCT_COLORS;
-      (data.top_careers || []).forEach((c, i) => {
-        const color = pcts[i] || 'var(--accent)';
-        const div = document.createElement('div');
-        div.className = 'air-career-card';
-        div.style.animationDelay = (i * 0.1) + 's';
-        div.innerHTML =
-          '<div class="air-rank ' + (i === 0 ? 'air-rank-top' : '') + '">' + (i + 1) + '</div>' +
-          '<div class="air-career-icon">' + esc(c.emoji) + '</div>' +
-          '<div class="air-career-info">' +
-          '<div class="air-career-name"></div>' +
-          '<div class="air-career-field"></div>' +
-          '<div class="air-career-why"></div>' +
-          '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
-          '<span class="badge ' + cqStreamBadge(c.stream) + '"></span>' +
-          '<span class="badge" style="background:var(--well);color:var(--muted);border:1px solid var(--border);"></span>' +
-          '</div>' +
-          '</div>' +
-          '<div class="air-pct" style="color:' + color + ';">' + esc(c.match_pct) + '%' +
-          (c.fit_label ? '<div class="air-fit-label"></div>' : '') + '</div>';
-        div.querySelector('.air-career-name').textContent = c.title;
-        div.querySelector('.air-career-field').textContent = c.field;
-        div.querySelector('.air-career-why').textContent = c.why;
-        if (c.fit_label) div.querySelector('.air-fit-label').textContent = c.fit_label;
-        const badges = div.querySelectorAll('.badge');
-        badges[0].textContent = c.stream;
-        badges[1].textContent = '💰 ' + c.salary;
-        list.appendChild(div);
+      data.top_careers.forEach(c => {
+        const card = document.createElement('article');
+        card.className = 'card stack-sm stack air-career-card';
+        card.innerHTML =
+          '<div class="card-head"><h3 class="card-title air-career-name"></h3><span class="badge air-fit-label ' + fitClass(c.match_pct) + '"></span></div>' +
+          '<p class="card-sub air-career-field"></p><p class="air-career-why"></p>' +
+          '<div class="cluster"><span class="badge badge-outline air-career-stream"></span>' + (c.salary ? '<span class="small air-career-salary"></span>' : '') + '</div>';
+        card.querySelector('.air-career-name').textContent = c.title;
+        card.querySelector('.air-fit-label').textContent = fitLabel(c.match_pct);
+        card.querySelector('.air-career-field').textContent = c.field || '';
+        card.querySelector('.air-career-why').textContent = c.why || '';
+        card.querySelector('.air-career-stream').textContent = c.stream || 'Any stream';
+        if (c.salary) card.querySelector('.air-career-salary').textContent = c.salary;
+        list.appendChild(card);
       });
     }
 
+    // The recommended stream in words ("Science with Maths (PCM)"), not just its key.
+    function cqStreamLabel(data) {
+      const top = (data.streams || []).find(x => x.key === data.stream_recommendation || x.token === data.stream_recommendation);
+      return top ? top.label : (data.stream_recommendation || '');
+    }
+
     // ── The four streams, ranked (rsRankStreams) ──────────────────────────
-    // One row per stream: overall bar plus the reason in words. Hidden for a
-    // result saved before streams were ranked.
+    // One bar per stream plus the reason in words. Hidden for a result saved
+    // before streams were ranked.
     function cqRenderStreams(streams) {
       const wrap = document.getElementById('air-streams-wrap');
       const el = document.getElementById('air-streams');
       if (!wrap || !el) return;
       el.innerHTML = '';
-      wrap.style.display = streams && streams.length ? '' : 'none';
-      (streams || []).forEach((s, i) => {
+      wrap.hidden = !(streams && streams.length);
+      (streams || []).forEach(s => {
         const row = document.createElement('div');
-        row.className = 'air-stream-row' + (i === 0 ? ' air-stream-row-top' : '');
-        row.innerHTML =
-          '<div class="air-stream-row-head"><span class="air-stream-row-name"></span>' +
-          '<span class="air-stream-row-pct">' + s.score + '%</span></div>' +
-          '<div class="air-riasec-track"><div class="air-riasec-fill" style="width:' + s.score +
-          '%;background:' + (i === 0 ? 'var(--accent)' : 'var(--accent-line)') + ';"></div></div>' +
-          '<div class="air-stream-row-reason"></div>';
-        row.querySelector('.air-stream-row-name').textContent = (i + 1) + '. ' + s.label;
-        row.querySelector('.air-stream-row-reason').textContent = s.reason;
+        row.className = 'air-stream-row stack-xs stack';
+        row.innerHTML = '<div class="bar-row"><span class="bar-row-label air-stream-row-name"></span>' +
+          '<progress class="progress progress-ink" max="100" value="' + Number(s.score || 0) + '">' + Number(s.score || 0) + '</progress>' +
+          '<span class="bar-row-value">' + Number(s.score || 0) + '</span></div><p class="small muted air-stream-row-reason"></p>';
+        row.querySelector('.air-stream-row-name').textContent = s.label;
+        row.querySelector('.air-stream-row-reason').textContent = s.reason || '';
         el.appendChild(row);
       });
     }
 
     // ── The worlds the student picked (Part 2 of the quiz) ─────────────────
     // Hidden for a result saved before the domain questions existed.
+    const AIR_DOMAIN_ICON = { digital: 'sparkles', machines: 'settings', money: 'briefcase', people: 'user', life: 'star', planet: 'map-pin', built: 'school', media: 'newspaper' };
     function cqRenderDomains(domains) {
       const wrap = document.getElementById('air-domains-wrap');
       const el = document.getElementById('air-domains');
       if (!wrap || !el) return;
       el.innerHTML = '';
-      wrap.style.display = domains && domains.length ? '' : 'none';
+      wrap.hidden = !(domains && domains.length);
       (domains || []).forEach(d => {
         const chip = document.createElement('span');
-        chip.className = 'air-domain-chip';
-        chip.textContent = d.emoji + ' ' + d.label;
+        chip.className = 'badge badge-outline air-domain-chip';
+        chip.innerHTML = icon(AIR_DOMAIN_ICON[d.key] || 'sparkles');
+        chip.append(stripEmoji(d.label));
         el.appendChild(chip);
       });
     }
@@ -2423,69 +2444,44 @@
       const enjoyEl = document.getElementById('air-enjoy');
       if (!bars) return;
 
-      // Six dimensions, so these run one past the shared five-item ramp.
-      const fills = PCT_FILL.concat(['var(--fill-6)']);
-      const texts = PCT_COLORS.concat(['var(--ramp-6)']);
       bars.innerHTML = '';
-      r.ranked.forEach((d, i) => {
-        const strong = i < 3;
+      (r.ranked || []).forEach(d => {
         const row = document.createElement('div');
-        //row.className = 'air-riasec-row';
-        //row.innerHTML =
-        row.className = 'air-riasec-row' + (strong ? ' air-riasec-row-top' : '');
-        // The letter here is what decodes the chip above — the top three,
-        // in this order, are the code. Naming the areas twice was the
-        // earlier version of this and it just read as repetition.
-        row.innerHTML =
-          '<div class="air-riasec-letter"' + (strong ? ' style="color:' + texts[i] + ';"' : '') + '>' +
-          d.dim + '</div>' +
-          '<div class="air-riasec-label"><span class="air-riasec-emoji">' + d.emoji + '</span>' +
-          '<span class="air-riasec-name"></span></div>' +
-          '<div class="air-riasec-track"><div class="air-riasec-fill" style="width:' + d.pct +
-          '%;background:' + fills[i] + ';opacity:' + (strong ? 1 : 0.45) + ';"></div></div>' +
-          '<div class="air-riasec-pct" style="color:' + (strong ? texts[i] : 'var(--muted)') + ';">' +
-          d.pct + '%</div>';
-        row.querySelector('.air-riasec-name').textContent = d.plain;
+        row.className = 'bar-row air-riasec-row';
+        row.innerHTML = '<span class="bar-row-label"><span class="dim-swatch" data-dim="' + d.dim + '"></span><span class="air-riasec-name"></span></span>' +
+          '<progress class="progress" data-dim="' + d.dim + '" max="100" value="' + Number(d.pct || 0) + '">' + Number(d.pct || 0) + '</progress>' +
+          '<span class="bar-row-value">' + Number(d.pct || 0) + '</span>';
+        row.querySelector('.air-riasec-name').textContent = d.plain || d.name;
         bars.appendChild(row);
       });
 
-      //if (codeEl) codeEl.textContent = r.code;
-      // Each letter is a tile in the rank colour of its bar, so the eye
-      // links "A" to the top bar without the code being spelled out twice.
+      // The top three letters are the code; each tile carries its area's colour.
       const codeLetters = (r.code || '').split('')
-        .map(l => ({ letter: l, dim: r.ranked.find(d => d.dim === l) }))
+        .map(l => ({ letter: l, dim: (r.ranked || []).find(d => d.dim === l) }))
         .filter(x => x.dim);
-
       if (codeEl) {
         codeEl.textContent = '';
-        codeLetters.forEach((x, i) => {
+        codeEl.setAttribute('aria-label', 'Interest code ' + codeLetters.map(x => x.letter).join(' '));
+        codeLetters.forEach(x => {
           const tile = document.createElement('span');
-          tile.className = 'air-riasec-code-tile';
-          tile.style.color = texts[i];
-          tile.style.borderBottomColor = fills[i];
+          tile.className = 'riasec-tile air-riasec-code-tile';
+          tile.dataset.dim = x.letter;
           tile.textContent = x.letter;
           codeEl.appendChild(tile);
         });
       }
 
-      // The letters are only meaningful if the student is told what they
-      // stand for: formal area name plus the plain "you like…" line.
-      // These come from the engine's tables rather than the saved payload,
-      // so a result stored by an older build still renders the full text.
+      // What the letters stand for: formal area name plus the plain "you like…" line.
       const keyEl = document.getElementById('air-code-key');
       if (keyEl) {
         keyEl.innerHTML = '';
-        codeLetters.forEach((x, i) => {
+        codeLetters.forEach(x => {
           const name = (typeof RS_DIM_NAMES !== 'undefined' && RS_DIM_NAMES[x.letter]) || x.dim.name;
           const mean = (typeof RS_DIM_MEANING !== 'undefined' && RS_DIM_MEANING[x.letter]) || x.dim.meaning;
           if (!name || !mean) return;
           const row = document.createElement('div');
-          row.className = 'air-code-key-row';
-          row.innerHTML =
-            '<span class="air-code-key-letter" style="color:' + texts[i] +
-            ';border-bottom-color:' + fills[i] + ';"></span>' +
-            '<div class="air-code-key-text"><span class="air-code-key-name"></span>' +
-            ' — you like <span class="air-code-key-mean"></span></div>';
+          row.innerHTML = '<dt><span class="riasec-tile air-code-key-letter" data-dim="' + x.letter + '"></span><span class="air-code-key-name"></span></dt>' +
+            '<dd>You like <span class="air-code-key-mean"></span></dd>';
           row.querySelector('.air-code-key-letter').textContent = x.letter;
           row.querySelector('.air-code-key-name').textContent = name;
           row.querySelector('.air-code-key-mean').textContent = mean + '.';
@@ -2493,13 +2489,10 @@
         });
       }
 
-      // Flag genuinely close scores rather than implying a firm ranking
-      // (doc section 8).
+      // Flag genuinely close scores rather than implying a firm ranking (doc section 8).
       const note = document.getElementById('air-riasec-note');
       if (note) {
-        const tied = (r.close || []).find(g => g.length > 1 && g.indexOf(r.ranked[0].dim) !== -1);
-        // Flat and mixed profiles come first: they change how much the
-        // bars below should be trusted.
+        const tied = (r.close || []).find(g => g.length > 1 && r.ranked && g.indexOf(r.ranked[0].dim) !== -1);
         note.textContent = r.flat
           ? 'Your answers spread evenly across the areas, so no single one stands out yet.'
           : r.consistency === 'low'
@@ -2513,41 +2506,33 @@
         enjoyEl.innerHTML = '';
         (r.enjoy || []).forEach(t => {
           const li = document.createElement('li');
-          li.textContent = t;
+          li.textContent = t.charAt(0).toUpperCase() + t.slice(1);
           enjoyEl.appendChild(li);
         });
       }
 
       const matched = document.getElementById('air-match-note');
-      if (matched) {
-        matched.textContent = r.qualifiedCount + ' of ' + r.consideredCount +
-          ' careers scored above the minimum match level.';
+      if (matched && r.consideredCount) {
+        matched.textContent = r.qualifiedCount + ' of ' + r.consideredCount + ' careers scored above the minimum match level. Ranked by how well each fits your interests, subjects and stream.';
       }
     }
 
     // ══════════════════════════════════════════════════════════════
     // SYNC QUIZ RESULTS → DASHBOARD / RESULTS / STREAM / PROGRESS
     // ══════════════════════════════════════════════════════════════
-    // Ranked-series colours, resolved per theme in style.css. PCT_COLORS is
-    // text (contrast-safe on --surface), PCT_FILL is the same series as a bar
-    // fill, ICON_BG the matching tile tint. The old literals were the dark
-    // palette and fell to roughly 1.5:1 once light became the default theme.
-    const PCT_COLORS = ['var(--ramp-1)', 'var(--ramp-2)', 'var(--ramp-3)', 'var(--ramp-4)', 'var(--ramp-5)'];
-    const PCT_FILL = ['var(--fill-1)', 'var(--fill-2)', 'var(--fill-3)', 'var(--fill-4)', 'var(--fill-5)'];
-    const ICON_BG = ['var(--tint-1)', 'var(--tint-2)', 'var(--tint-3)', 'var(--tint-4)', 'var(--tint-5)'];
 
     // Builds one stat tile. Four of these sit in a fixed row, so the value,
     // label and sub-line all come through the same shape whether the card is
     // populated or still locked. Every value is text (career titles and the
     // stream reason come from the API or a saved run), so all of it is escaped.
     function dbStat(o) {
-      return '<div class="stat-card' + (o.locked ? ' locked' : '') + '">' +
-        '<div class="stat-icon" style="background:' + (o.tint || 'var(--surface2)') + ';">' + esc(o.icon) + '</div>' +
-        '<div class="stat-val' + (o.isText ? ' is-text' : '') + '"' +
-        (o.color ? ' style="color:' + o.color + ';"' : '') + '>' + esc(o.val) + '</div>' +
-        '<div class="stat-label">' + esc(o.label) + '</div>' +
-        '<div class="stat-change">' + esc(o.sub) + '</div>' +
-        '</div>';
+      return '<div class="stat' + (o.locked ? ' locked' : '') + '">' +
+        '<span class="stat-value">' + (o.locked ? icon('lock') + 'Locked' : esc(o.val)) + '</span>' +
+        '<span class="stat-label">' + esc(o.label) + '</span></div>';
+    }
+
+    function dbToday() {
+      try { return new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { return ''; }
     }
 
     function syncDashboard() {
@@ -2556,167 +2541,144 @@
       const title = document.getElementById('db-title');
       const sub = document.getElementById('db-sub');
       const ctaBtn = document.getElementById('db-cta-btn');
+      const date = document.getElementById('db-date');
+      if (date) date.textContent = dbToday();
 
-      // ── NO RESULTS: show empty / CTA state ─────────────────────────
+      // ── No results yet: the quiz is the one thing to do ─────────────
       if (!appResults) {
-        title.textContent = 'Welcome to Crackeer 👋';
-        sub.textContent = 'Take the 25-question quiz to discover careers that fit you.';
-        ctaBtn.textContent = 'Take Career Quiz →';
+        title.innerHTML = 'Let\'s find <span class="hl">your direction</span>.';
+        sub.textContent = 'Answer 25 quick questions about what you enjoy. We\'ll match you with careers and build a step-by-step roadmap for the one you pick.';
+        ctaBtn.hidden = true;
+        ctaBtn.textContent = 'Start the quiz';
         ctaBtn.onclick = cqStart;
-
         main.innerHTML =
-          '<div class="db-empty">' +
-          '<div class="db-empty-icon">🧭</div>' +
-          '<h3>Start with the career quiz</h3>' +
-          '<p>Answer 25 quick questions and our AI will match you to the careers ' +
-          'that fit your interests and the world you want to work in.</p>' +
-          '<button class="btn btn-primary btn-lg" onclick="cqStart()">Start the Career Quiz — 6 mins →</button>' +
-          '<div class="db-unlocks">' +
-          '<span class="db-unlock">🎯 Ranked career matches</span>' +
-          '<span class="db-unlock">🛤️ Stream recommendation</span>' +
-          '<span class="db-unlock">🗺️ 5-year roadmap</span>' +
-          '</div>' +
-          '</div>';
-
-        // Locked, but still readable. The previous treatment was opacity .4
-        // over a --border-coloured value, which vanished on a white canvas.
-        stats.innerHTML =
-          dbStat({ locked: 1, icon: '🔒', val: '—', isText: 1, label: 'Top Career Match', sub: 'Take the quiz to unlock' }) +
-          dbStat({ locked: 1, icon: '🔒', val: '—', isText: 1, label: 'Recommended Stream', sub: 'Take the quiz to unlock' }) +
-          dbStat({ locked: 1, icon: '📝', val: '0', label: 'Quiz Sessions Done', sub: 'Complete your first quiz' }) +
-          dbStat({ locked: 1, icon: '🔍', val: '—', isText: 1, label: 'Careers Evaluated', sub: 'Unlocks after the quiz' });
+          '<section class="card hero-card hero-card-media" aria-labelledby="db-quiz-title">' + illo('rocket', 'lg') +
+          '<div class="stack"><div class="stack-sm stack"><h2 class="card-title-lg" id="db-quiz-title">Take the career quiz</h2>' +
+          '<p class="card-sub">25 questions and about 6 minutes. There are no right or wrong answers, just pick what sounds like you.</p></div>' +
+          '<div class="cluster cluster-lg"><button class="btn btn-primary" onclick="cqStart()">Start the quiz</button><span class="small muted">You can pause and come back.</span></div></div></section>' +
+          '<aside class="card-flat stack"><div class="cluster cluster-lg">' + illo('trophy', 'sm') +
+          '<div class="grow stack-xs stack"><h2 class="card-title">Weekly contests</h2><p class="card-sub">Five questions every Saturday about your future career. They unlock once you have a career match.</p></div></div></aside>';
+        stats.innerHTML = ['Top match', 'Strong matches', 'Recommended stream', 'Questions answered'].map(l => dbStat({ locked: 1, label: l })).join('');
         return;
       }
 
-      // ── HAS RESULTS: populate from appResults ──────────────────────
-      // top is undefined when every career scored under RS_MIN_FIT: the
-      // engine shows fewer matches rather than weak ones, down to none.
-      const d = appResults, top = d.top_careers[0];
+      // ── With results ───────────────────────────────────────────────
+      // top is undefined when every career scored under RS_MIN_FIT.
+      const d = appResults, top = (d.top_careers || [])[0], r = d.riasec || {};
+      title.innerHTML = top ? 'Your <span class="hl">path</span> is taking shape.' : 'Your results are in.';
+      sub.textContent = (d.personality_type ? d.personality_type + '. ' : '') + (d.stream_recommendation ? cqStreamLabel(d) + ' is your recommended stream for Class 11.' : '');
+      ctaBtn.hidden = false;
+      ctaBtn.innerHTML = top ? icon('route') + 'Open my roadmap' : 'Explore careers';
+      ctaBtn.onclick = () => navTo(top ? 'roadmap' : 'explorer');
 
-      title.textContent = 'Your Dashboard 🎯';
-      sub.textContent = d.personality_type + ' · Quiz completed · ' + d.stream_recommendation + ' recommended';
-      ctaBtn.textContent = top ? 'View All Matches →' : 'Explore Careers →';
-      ctaBtn.onclick = () => navTo(top ? 'results' : 'explorer');
-
-      // Welcome banner
-      let bannerHtml =
-        '<div class="welcome-banner">' +
-        '<div class="welcome-text">' +
-        (top
-          ? '<h2>Top match: ' + esc(top.emoji) + ' ' + esc(top.title) +
-            ' <span class="wb-pct">' + esc(top.match_pct) + '%</span></h2>'
-          : '<h2>No strong career match yet</h2>') +
-        '<p>' + esc(d.personality_type) + ' · Recommending <strong>' + esc(d.stream_recommendation) + '</strong> for Class 11</p>' +
-        '</div>' +
-        (top
-          ? '<button class="btn btn-primary" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See All Matches →</button>'
-          : '<button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore Careers →</button>') +
-        '</div>';
-
-      // Career strip
-      if (top) {
-        bannerHtml += '<div class="section-label">Top Career Matches' +
-          '<button class="sl-link" onclick="navTo(\'results\',document.querySelectorAll(\'.nav-item\')[1])">See all →</button></div>';
-        bannerHtml += '<div class="top-career-strip" id="db-strip">';
-        d.top_careers.forEach((c, i) => {
-          bannerHtml +=
-            '<div class="career-pill" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
-            '<span style="font-size:1.125rem;">' + esc(c.emoji) + '</span>' +
-            '<div><div class="career-pill-name">' + esc(c.title) + '</div></div>' +
-            '<div class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + esc(c.match_pct) + '%</div>' +
-            '</div>';
-        });
-        bannerHtml += '</div>';
-      }
-      // A result from the old question set still shows, but the student is
-      // asked to retake, and the main button becomes the retake.
+      const code = (r.code || '').split('').filter(l => 'RIASEC'.includes(l));
+      const names = code.map(l => { const x = (r.ranked || []).find(z => z.dim === l); return x ? x.name : l; });
+      let html = '';
       if (!rsIsCurrentResult(d)) {
-        bannerHtml = cqRetakeNotice() + bannerHtml;
-        ctaBtn.textContent = 'Retake Career Quiz →';
+        html += '<div class="alert alert-warn">' + cqRetakeNotice() + '</div>';
+        ctaBtn.textContent = 'Retake the quiz';
         ctaBtn.onclick = cqStart;
       }
-      main.innerHTML = bannerHtml;
+      html += '<div class="grid-main-side"><div class="stack-lg stack">';
+      html += top
+        ? '<section class="card stack" aria-labelledby="db-top-title"><div class="card-head"><div class="stack-xs stack"><p class="small muted">Your top match</p>' +
+          '<h2 class="card-title-lg" id="db-top-title">' + esc(top.title) + '</h2></div><span class="badge ' + fitClass(top.match_pct) + '">' + esc(fitLabel(top.match_pct)) + '</span></div>' +
+          (code.length ? '<div class="cluster cluster-lg"><div class="riasec" aria-label="Your interest code: ' + esc(names.join(', ')) + '">' +
+            code.map(l => '<span class="riasec-tile" data-dim="' + l + '">' + l + '</span>').join('') + '</div><p class="dim-names">' + esc(names.join(', ')) + '</p></div>' : '') +
+          (top.why ? '<p>' + esc(top.why) + '</p>' : '') +
+          '<div class="cluster cluster-lg"><button class="btn btn-secondary" data-career="' + esc(top.title) + '" onclick="cdOpen(this.dataset.career)">See what it involves</button>' +
+          '<button class="btn btn-ghost" onclick="navTo(\'results\')">See all matches</button></div></section>'
+        : '<section class="card-flat">' + '<div class="empty">' + illo('magnifier', 'lg') + '<h2 class="empty-title">No strong match yet</h2>' +
+          '<p class="empty-text">No career scored above ' + RS_MIN_FIT + '% from your answers. Browse every career and see how each one fits you.</p>' +
+          '<div class="cluster"><button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore careers</button></div></div></section>';
+      if (d.stream_recommendation) {
+        html += '<section class="card-flat stack-sm stack" aria-labelledby="db-stream-title"><p class="small muted">Recommended stream for Class 11</p>' +
+          '<h2 class="card-title" id="db-stream-title">' + esc(cqStreamLabel(d)) + '</h2>' +
+          (d.stream_reason ? '<p class="card-sub">' + esc(d.stream_reason) + '</p>' : '') +
+          '<div><button class="btn btn-secondary btn-sm" onclick="exploreStream(appResults && appResults.stream_recommendation)">Careers in this stream</button></div></section>';
+      }
+      html += '</div><aside class="stack-lg stack">';
+      const others = (d.top_careers || []).slice(1);
+      if (others.length) {
+        html += '<section class="card-flat stack-sm stack" aria-labelledby="db-careers-title"><h2 class="card-title" id="db-careers-title">Your other matches</h2><div class="stack-sm stack" id="db-strip">' +
+          others.map(c => '<button class="pill career-pill" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)"><span class="pill-num career-pill-pct">' +
+            esc(Math.round(c.match_pct)) + '%</span><span class="career-pill-name">' + esc(c.title) + '</span></button>').join('') + '</div></section>';
+      }
+      html += '<section class="card-ink stack" aria-labelledby="db-contest-title"><div class="cluster cluster-lg">' + illo('trophy', 'sm') +
+        '<div class="grow stack-xs stack"><h2 class="card-title" id="db-contest-title">Weekly contests</h2><p class="muted small">Five questions every Saturday about your career. Climb the leaderboard and keep your streak.</p></div></div>' +
+        '<button class="btn btn-primary" onclick="navTo(\'contests\')">Go to contests</button></section>';
+      html += '</aside></div>';
+      main.innerHTML = html;
 
-      // Stat cards
+      const strong = (d.top_careers || []).filter(c => c.match_pct >= 75).length;
       stats.innerHTML =
-        (top
-          ? dbStat({
-            icon: top.emoji, tint: ICON_BG[0], color: PCT_COLORS[0],
-            val: top.match_pct + '%', label: 'Top Career Match', sub: top.title
-          })
-          : dbStat({
-            icon: '🔍', tint: ICON_BG[0], val: '—', isText: 1,
-            label: 'Top Career Match', sub: 'None above ' + RS_MIN_FIT + '% yet'
-          })) +
-        dbStat({
-          icon: '🛤️', tint: ICON_BG[1], color: PCT_COLORS[1],
-          val: d.stream_recommendation, isText: 1, label: 'Recommended Stream',
-          sub: d.stream_reason
-        }) +
-        dbStat({
-          icon: '🎯', tint: ICON_BG[2], color: PCT_COLORS[2],
-          val: d.top_careers.length, label: 'Careers Matched', sub: 'From your quiz answers'
-        }) +
-        dbStat({
-          icon: '✅', tint: ICON_BG[3], color: PCT_COLORS[3],
-          // The previous question set had 20 questions.
-          val: String(rsIsCurrentResult(d) ? RS_QUESTIONS.length : 20), label: 'Questions Answered', sub: 'Quiz complete'
-        });
+        dbStat({ val: top ? Math.round(top.match_pct) + '%' : 'None yet', label: 'Top match' }) +
+        dbStat({ val: String(strong), label: 'Strong matches' }) +
+        dbStat({ val: d.stream_recommendation || '—', label: 'Recommended stream' }) +
+        dbStat({ val: String(rsIsCurrentResult(d) ? RS_QUESTIONS.length : 20), label: 'Questions answered' });
     }
 
-    function syncResults() {
+    let rsFilter = '';
+    function syncResults(keepFilter) {
       const list = document.getElementById('career-list');
+      const bar = document.getElementById('results-filter');
       const streamVal = document.getElementById('results-stream-val');
       const streamBadge = document.getElementById('results-stream-badge');
+      const banner = document.getElementById('results-stream-banner');
+      if (!keepFilter) rsFilter = '';
+
+      const empty = (art, title, text, btn) => '<section class="card-flat"><div class="empty">' + illo(art, 'lg') +
+        '<h2 class="empty-title">' + title + '</h2><p class="empty-text">' + text + '</p><div class="cluster">' + btn + '</div></div></section>';
 
       if (!appResults) {
-        if (streamVal) streamVal.textContent = '—';
-        if (streamBadge) { streamBadge.textContent = 'Take the quiz to unlock'; streamBadge.style.color = 'var(--muted)'; }
-        if (list) list.innerHTML =
-          '<div style="text-align:center;padding:56px 20px;color:var(--muted);">' +
-          '<div style="font-size:2.5rem;margin-bottom:16px;">📊</div>' +
-          '<div style="font-size:1rem;font-weight:700;margin-bottom:8px;">No career matches yet</div>' +
-          '<div style="font-size:0.875rem;margin-bottom:24px;">Complete the career quiz to see your personalised career rankings.</div>' +
-          '<button class="btn btn-primary" onclick="cqStart()">Take Career Quiz →</button>' +
-          '</div>';
+        if (banner) banner.hidden = true;
+        if (bar) bar.innerHTML = '';
+        if (streamVal) streamVal.textContent = '';
+        if (list) list.innerHTML = empty('rocket', 'Take the quiz to see your matches',
+          'Answer 25 questions about what you enjoy and we\'ll rank every career for you. It takes about 6 minutes.',
+          '<button class="btn btn-primary" onclick="cqStart()">Start the career quiz</button>');
         return;
       }
 
       const d = appResults;
-      if (streamVal) streamVal.textContent = d.stream_recommendation;
-      if (streamBadge) { streamBadge.textContent = 'See careers in this stream'; streamBadge.style.color = 'var(--accent2)'; }
+      if (banner) banner.hidden = !d.stream_recommendation;
+      if (streamVal) streamVal.textContent = cqStreamLabel(d);
+      if (streamBadge) streamBadge.textContent = 'See careers in this stream';
 
       if (!list) return;
-      list.innerHTML = '';
-      if (!d.top_careers.length) {
-        list.innerHTML =
-          '<div style="text-align:center;padding:56px 20px;color:var(--muted);">' +
-          '<div style="font-size:2.5rem;margin-bottom:16px;">🔍</div>' +
-          '<div style="font-size:1rem;font-weight:700;margin-bottom:8px;">No strong career match yet</div>' +
-          '<div style="font-size:0.875rem;margin-bottom:24px;">No career scored above ' + RS_MIN_FIT +
-          '% from your answers. Browse every career and see how each one fits you.</div>' +
-          '<button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore Careers →</button>' +
-          '</div>';
+      const careers = d.top_careers || [];
+      if (!careers.length) {
+        if (bar) bar.innerHTML = '';
+        list.innerHTML = empty('magnifier', 'No strong matches yet',
+          'None of the careers scored above ' + RS_MIN_FIT + '% for you. That usually means your answers were spread across many areas, which is fine. Retake the quiz, or explore careers yourself.',
+          '<button class="btn btn-primary" onclick="cqStart()">Retake the quiz</button><button class="btn btn-secondary" onclick="navTo(\'explorer\')">Explore careers</button>');
         return;
       }
-      d.top_careers.forEach((c, i) => {
-        const color = PCT_COLORS[i];
-        const div = document.createElement('div');
-        div.className = 'career-card';
-        div.onclick = () => cdOpen(c.title);
-        div.innerHTML =
-          '<div class="career-rank ' + (i < 2 ? 'top' : '') + '">' + (i + 1) + '</div>' +
-          '<div class="career-icon-wrap" style="background:' + ICON_BG[i] + ';">' + esc(c.emoji) + '</div>' +
-          '<div class="career-info">' +
-          '<div class="career-name">' + esc(c.title) + '</div>' +
-          '<div class="career-field">' + esc(c.field) + '</div>' +
-          '<div class="career-reason">"' + esc(c.why) + '"</div>' +
-          '</div>' +
-          '<div class="career-score-wrap">' +
-          '<div class="career-pct" style="color:' + color + ';">' + esc(c.match_pct) + '%</div>' +
-          '<div class="pct-mini-bar"><div class="pct-mini-fill" style="width:' + Number(c.match_pct) + '%;background:' + PCT_FILL[i] + ';"></div></div>' +
-          '</div>';
-        list.appendChild(div);
+
+      // Filter chips: All plus every field present in these matches.
+      if (bar) {
+        const counts = {};
+        careers.forEach(c => { const f = c.field || 'Other'; counts[f] = (counts[f] || 0) + 1; });
+        const chip = (label, cat, n) => '<button class="chip filter-chip' + (rsFilter === cat ? ' active' : '') + '" type="button" role="radio" aria-checked="' + (rsFilter === cat) +
+          '" data-cat="' + esc(cat) + '" onclick="filterChip(this)">' + esc(label) + ' <span class="chip-count">' + n + '</span></button>';
+        bar.innerHTML = chip('All', '', careers.length) + Object.keys(counts).map(f => chip(f, f, counts[f])).join('');
+      }
+
+      list.innerHTML = '';
+      careers.filter(c => !rsFilter || (c.field || 'Other') === rsFilter).forEach(c => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'card card-link career-card stack-sm stack';
+        card.onclick = () => cdOpen(c.title);
+        card.innerHTML = '<span class="card-head"><span class="card-title career-name"></span><span class="badge ' + fitClass(c.match_pct) + '"></span></span>' +
+          '<span class="small muted career-field"></span><span class="card-sub career-reason"></span>' +
+          (c.salary ? '<span class="small"><span class="muted">Starting salary</span> <b class="career-salary"></b></span>' : '');
+        card.querySelector('.career-name').textContent = c.title;
+        card.querySelector('.badge').textContent = fitLabel(c.match_pct);
+        card.querySelector('.career-field').textContent = [c.field, c.stream].filter(Boolean).join(', ');
+        card.querySelector('.career-reason').textContent = c.why || '';
+        if (c.salary) card.querySelector('.career-salary').textContent = String(c.salary).replace(/\s*starting$/i, '');
+        list.appendChild(card);
       });
     }
 
@@ -2754,15 +2716,14 @@
     function cdRender(picked) {
       const body = document.getElementById('cd-body');
       const back = document.getElementById('cd-back');
-      back.textContent = '← Back to ' + (CD_BACK[cdFrom] || 'Matches');
+      back.innerHTML = icon('arrow-left') + 'Back to ' + (CD_BACK[cdFrom] || 'Matches');
       const tops = (appResults && appResults.top_careers) || [];
       const d = cdCareerData(picked) || (tops[0] && cdCareerData(tops[0].title));
       if (!d) {
-        body.innerHTML =
-          '<div class="db-empty"><div class="db-empty-icon">🧭</div>' +
-          '<h3>Pick a career to see its details</h3>' +
-          '<p>Take the career quiz to get your matches, or browse every career in the explorer.</p>' +
-          '<button class="btn btn-primary btn-lg" onclick="navTo(\'explorer\')">Explore Careers →</button></div>';
+        body.innerHTML = '<section class="card-flat"><div class="empty">' + illo('map-pin', 'lg') +
+          '<h1 class="empty-title">Pick a career to see its details</h1>' +
+          '<p class="empty-text">Take the career quiz to get your matches, or browse every career in the explorer.</p>' +
+          '<div class="cluster"><button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore careers</button></div></div></section>';
         return;
       }
 
@@ -2771,77 +2732,54 @@
       // The quiz's own figure when this is one of the student's matches, so
       // the page agrees with Career Matches.
       const pct = d.top ? d.top.match_pct : fit ? Math.round(fit.fit * 100) : null;
-      const band = pct === null ? null : d.rank >= 0 ? d.rank : exBand(pct);
 
-      let html =
-        '<div class="cd-hero"><div>' +
-        '<div class="cd-icon" style="background:' + (band === null ? 'var(--surface2)' : ICON_BG[band]) +
-        ';margin-bottom:12px;">' + esc(c.emoji || '🎯') + '</div>' +
-        '<div class="cd-name">' + esc(c.title) + '</div>' +
-        '<div class="cd-badges">' +
-        (c.field ? '<span class="badge badge-purple">' + esc(c.field) + '</span>' : '') +
-        (c.stream ? '<span class="badge ' + cqStreamBadge(c.stream) + '">' + esc(c.stream) + '</span>' : '') +
-        '</div>' +
-        '<p style="font-size:0.8125rem;color:var(--muted);">' + esc(c.why || '') + '</p>' +
-        '</div><div style="text-align:right;margin-left:auto;flex-shrink:0;">' +
-        (pct === null
-          ? '<div class="cd-fit" style="color:var(--muted);">—</div><div class="cd-fit-label">Take the quiz to see your fit</div>'
-          : '<div class="cd-fit" style="color:' + PCT_COLORS[band] + ';">' + esc(pct) + '%</div>' +
-          '<div class="cd-fit-label">' + esc(rsFitLabel(pct)) + '</div>') +
-        '<div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">' +
-        (d.rank >= 0
-          ? '<button class="btn btn-secondary btn-sm" data-career="' + esc(c.title) +
-          '" onclick="spCareer=this.dataset.career;navTo(\'space\')">📰 News &amp; jobs</button>'
-          : '') +
-        (pct === null ? '<button class="btn btn-primary btn-sm" onclick="cqStart()">Take the quiz</button>' : '') +
-        '</div></div></div>';
+      let html = '<section class="card stack" aria-labelledby="cd-title">' +
+        '<div class="card-head"><div class="stack-xs stack"><p class="small muted">' + esc([c.field, c.stream].filter(Boolean).join(', ')) + '</p>' +
+        '<h1 class="card-title-lg" id="cd-title">' + esc(c.title) + '</h1></div>' +
+        (pct === null ? '<span class="badge fit-low">Fit unknown</span>' : '<span class="badge ' + fitClass(pct) + '">' + esc(fitLabel(pct)) + '</span>') + '</div>' +
+        (c.why ? '<p>' + esc(c.why) + '</p>' : '') +
+        '<div class="cluster">' +
+        (d.rank >= 0 ? '<button class="btn btn-primary" data-career="' + esc(c.title) + '" onclick="spCareer=this.dataset.career;navTo(\'space\')">' + icon('newspaper') + 'News and jobs</button>' : '') +
+        (pct === null ? '<button class="btn btn-primary" onclick="cqStart()">Take the quiz to see your fit</button>' : '') +
+        '<button class="btn btn-ghost" onclick="navTo(\'chat\')">' + icon('message-square') + 'Ask AI Chat about it</button></div></section>';
 
+      html += '<div class="grid-2">';
       // Why it fits: the three layers the match % is blended from.
       if (fit) {
-        const layer = (label, part, hint) =>
-          '<div class="salary-card"><div class="salary-stage">' + label + '</div>' +
-          '<div class="salary-val">' + (part === null ? '—' : Math.round(part * 100) + '%') + '</div>' +
-          '<div class="cd-hint">' + hint + '</div></div>';
-        html += '<div class="cd-section"><h3>How it fits you</h3><div class="salary-grid">' +
-          layer('Interests', fit.parts.interest, 'What you enjoy doing vs. the work') +
-          layer('World', fit.parts.domain, 'The area you want to work in') +
-          layer('Subjects', fit.parts.subjects, 'Your strong subjects vs. what it needs') +
-          '</div></div>';
+        const layer = (label, part) => '<div class="bar-row"><span class="bar-row-label">' + label + '</span>' +
+          (part === null ? '<span class="muted small">Not enough answers</span><span></span>'
+            : '<progress class="progress progress-ink" max="100" value="' + Math.round(part * 100) + '">' + Math.round(part * 100) + '</progress><span class="bar-row-value">' + Math.round(part * 100) + '</span>') + '</div>';
+        html += '<section class="card-flat stack" aria-labelledby="cd-fit-title"><h2 class="card-title" id="cd-fit-title">How it fits you</h2>' +
+          layer('Interests', fit.parts.interest) + layer('World', fit.parts.domain) + layer('Subjects', fit.parts.subjects) +
+          '<p class="small muted">Interests compare what you enjoy with the work, world is the area you want to work in, and subjects compare your strong subjects with what it needs.</p></section>';
       }
-
-      // The kind of work: the career's three strongest interest areas, with
-      // the ones that are also in the student's own top three marked.
+      // The kind of work: the career's three strongest interest areas.
       if (d.cat && d.cat.riasec) {
         const mine = String((appResults && appResults.riasec && appResults.riasec.code) || '').split('');
         const dims = RS_DIMS.slice().sort((a, b) => (d.cat.riasec[b] || 0) - (d.cat.riasec[a] || 0)).slice(0, 3);
-        html += '<div class="cd-section"><h3>What the work involves</h3><div class="college-list">' +
-          dims.map(k =>
-            '<div class="college-row"><span class="college-row-name">' + RS_DIM_EMOJI[k] + ' ' + esc(RS_DIM_PLAIN[k]) +
-            (mine.includes(k) ? ' <span class="badge badge-green" style="margin-left:8px;">One of your strengths</span>' : '') +
-            '</span><span class="college-row-city">' + esc(RS_DIM_MEANING[k]) + '</span></div>').join('') +
-          '</div></div>';
+        html += '<section class="card-flat stack" aria-labelledby="cd-areas-title"><h2 class="card-title" id="cd-areas-title">What the work involves</h2>' +
+          '<div class="riasec" aria-label="Work areas ' + dims.join(' ') + '">' + dims.map(k => '<span class="riasec-tile" data-dim="' + k + '">' + k + '</span>').join('') + '</div>' +
+          '<div class="list">' + dims.map(k => '<div class="list-row"><span class="grow"><span class="list-title">' + esc(RS_DIM_PLAIN[k]) + '</span>' +
+            (mine.includes(k) ? ' <span class="badge fit-strong">One of your strengths</span>' : '') +
+            '<br><span class="list-meta">' + esc(RS_DIM_MEANING[k]) + '</span></span></div>').join('') + '</div></section>';
       }
+      html += '</div>';
 
       const subjects = ((d.cat && d.cat.subjects) || []).map(k => RS_SUBJECTS[k]).filter(Boolean);
       const worlds = ((d.cat && d.cat.domains) || []).map(k => RS_DOMAINS[k]).filter(Boolean);
-      html += '<div class="cd-section"><h3>At a glance</h3><div class="salary-grid">' +
-        '<div class="salary-card"><div class="salary-stage">Starting salary</div>' +
-        '<div class="salary-val" style="color:var(--accent2);">' + esc(c.salary || '—') + '</div></div>' +
-        '<div class="salary-card"><div class="salary-stage">Class 11 stream</div>' +
-        '<div class="salary-val" style="color:var(--accent);">' + esc(c.stream || '—') + '</div></div>' +
-        '<div class="salary-card"><div class="salary-stage">World</div>' +
-        '<div class="salary-val" style="color:#fcd34d;">' +
-        (worlds.length ? worlds.map(w => w.emoji).join(' ') : '—') + '</div>' +
-        '<div class="cd-hint">' + esc(worlds.map(w => w.label).join(' · ')) + '</div></div>' +
-        '</div></div>';
+      html += '<div class="grid-2"><section class="card-flat stack" aria-labelledby="cd-glance-title"><h2 class="card-title" id="cd-glance-title">At a glance</h2><dl class="kv">' +
+        '<dt class="exa-key">Starting salary</dt><dd class="exa-val">' + esc(String(c.salary || 'Not listed').replace(/\s*starting$/i, '')) + '</dd>' +
+        '<dt class="exa-key">Class 11 stream</dt><dd class="exa-val">' + esc(c.stream || 'Any stream') + '</dd>' +
+        (worlds.length ? '<dt class="exa-key">World</dt><dd class="exa-val">' + esc(worlds.map(w => stripEmoji(w.label)).join(', ')) + '</dd>' : '') +
+        '</dl></section>';
       if (subjects.length) {
-        html += '<div class="cd-section"><h3>Subjects to focus on</h3><div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-          subjects.map((s, i) => '<span class="badge ' + ['badge-purple', 'badge-blue', 'badge-green'][i % 3] + '">' +
-            s.emoji + ' ' + esc(s.label) + '</span>').join('') + '</div></div>';
+        html += '<section class="card-flat stack" aria-labelledby="cd-subj-title"><h2 class="card-title" id="cd-subj-title">Subjects to focus on</h2><div class="cluster">' +
+          subjects.map(sj => '<span class="badge badge-outline">' + esc(stripEmoji(sj.label)) + '</span>').join('') + '</div></section>';
       }
+      html += '</div>';
 
-      html += '<div class="cd-section"><h3>Your path from Class 10</h3>' +
-        '<div class="page-sub" id="cd-rm-note">Loading roadmap…</div><div class="timeline" id="cd-timeline"></div></div>';
+      html += '<section class="card-flat stack" aria-labelledby="cd-rm-title"><h2 class="card-title" id="cd-rm-title">Your path from Class 10</h2>' +
+        '<div class="alert alert-info" id="cd-rm-note" role="status">Loading roadmap…</div><ol class="timeline" id="cd-timeline"></ol></section>';
       body.innerHTML = html;
 
       const req = ++cdReq;
@@ -2852,7 +2790,7 @@
       }, err => {
         if (req !== cdReq) return;
         document.getElementById('cd-rm-note').textContent = err.code === 'not_found'
-          ? 'We\'re still writing the roadmap for ' + c.title + '.'
+          ? 'We\'re still writing the roadmap for ' + c.title + '. Check back soon, or ask AI Chat for the steps.'
           : err.message;
       });
     }
@@ -3082,48 +3020,29 @@
 
     function exCard(item) {
       const c = item.career, pct = item.match_pct;
-      const band = pct === null ? null : exBand(pct);
-      const div = document.createElement('div');
-      div.className = 'explore-card';
-      div.title = c.why;   // the one-line reason, without stretching every card
-      div.onclick = () => cdOpen(c.title);
-      div.innerHTML =
-        '<div class="explore-icon" style="background:' +
-        (band === null ? 'var(--surface2)' : ICON_BG[band]) + ';">' + c.emoji + '</div>' +
-        '<h4></h4>' +
-        '<div class="field"></div>' +
-        '<span class="badge ' + cqStreamBadge(c.stream) + '" style="margin-bottom:10px;"></span>' +
-        '<div class="ex-salary"></div>' +
-        (band === null ? '' :
-          '<div class="fit"><div class="fit-bar"><div class="fit-fill" style="width:' + pct +
-          '%;background:' + PCT_FILL[band] + ';"></div></div>' +
-          '<span style="color:' + PCT_COLORS[band] + ';">' + pct + '%</span></div>');
-      // Career text is authored copy with quotes and apostrophes in it, so it
-      // goes in as text, never as markup.
-      div.querySelector('h4').textContent = c.title;
-      div.querySelector('.field').textContent = c.field;
-      div.querySelector('.badge').textContent = c.stream;
-      div.querySelector('.ex-salary').textContent = '💰 ' + c.salary;
-      return div;
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'card-flat card-link explore-card stack-sm stack';
+      card.title = c.why || '';   // the one-line reason, without stretching every card
+      card.onclick = () => cdOpen(c.title);
+      card.innerHTML = '<span class="card-head"><span class="card-title"></span>' +
+        (pct === null ? '' : '<span class="badge ' + fitClass(pct) + '"></span>') + '</span>' +
+        '<span class="small muted field"></span><span class="small ex-salary"></span>';
+      card.querySelector('.card-title').textContent = c.title;
+      if (pct !== null) card.querySelector('.badge').textContent = fitLabel(pct);
+      card.querySelector('.field').textContent = [c.field, c.stream].filter(Boolean).join(', ');
+      card.querySelector('.ex-salary').textContent = c.salary ? String(c.salary).replace(/\s*starting$/i, '') + ' to start' : 'Salary not listed';
+      return card;
     }
 
-    // ── Rendering: the bar, the active-filter pills, and the drawer ──
-    // Counts are rebuilt on every render so they track the other filters. A
-    // control's own selection always stays selectable even when nothing
-    // matches it, so a choice can never silently disappear.
-    // A real <button>, not the decorative <div> chips elsewhere in the app:
-    // inside a modal dialog these have to be reachable and operable from the
-    // keyboard. dataset.k lets focus survive the re-render after a click.
     function exChip(key, label, count, on, onClick) {
       const el = document.createElement('button');
       el.type = 'button';
-      el.className = 'filter-chip' + (on ? ' active' : '') +
-        (count === 0 && !on ? ' is-empty' : '');
+      el.className = 'chip filter-chip' + (on ? ' active' : '') + (count === 0 && !on ? ' is-empty' : '');
+      el.disabled = count === 0 && !on;
       el.dataset.k = key;
       el.setAttribute('aria-pressed', String(!!on));
-      // Label and count are separate spans so the count can sit back a step
-      // visually instead of reading as part of the name.
-      el.innerHTML = '<span class="fc-label"></span><span class="fc-n"></span>';
+      el.innerHTML = '<span class="fc-label"></span><span class="fc-n chip-count"></span>';
       el.querySelector('.fc-label').textContent = label;
       el.querySelector('.fc-n').textContent = count;
       el.onclick = onClick;
@@ -3132,15 +3051,14 @@
 
     function exSection(title, chips) {
       const wrap = document.createElement('div');
-      wrap.innerHTML = '<div class="ex-group-title"></div><div class="ex-group-chips"></div>';
+      wrap.className = 'stack-sm stack';
+      wrap.innerHTML = '<p class="ex-group-title field-label"></p><div class="ex-group-chips chip-group"></div>';
       wrap.querySelector('.ex-group-title').textContent = title;
       const row = wrap.querySelector('.ex-group-chips');
       chips.forEach(c => row.appendChild(c));
       return wrap;
     }
 
-    // How many filters are narrowing the grid right now. The search box is
-    // not counted — it is visible on its own.
     function exActiveCount() {
       return (exGroup !== 'all' ? 1 : 0) + (exStream !== 'all' ? 1 : 0) + (exFit !== 'all' ? 1 : 0);
     }
@@ -3170,7 +3088,7 @@
       }
 
       const searchClear = document.getElementById('ex-search-clear');
-      if (searchClear) searchClear.className = 'ex-search-clear' + (exQuery ? ' is-on' : '');
+      if (searchClear) searchClear.hidden = !exQuery;
 
       const n = exActiveCount();
       const btn = document.getElementById('ex-filter-btn');
@@ -3212,20 +3130,20 @@
       if (exQuery.trim()) pills.push(['Search', '“' + exQuery.trim() + '”', exClearSearch]);
 
       pills.forEach(([key, value, remove]) => {
-        const el = document.createElement('div');
-        el.className = 'ex-active-pill';
-        el.innerHTML = '<span class="exa-key"></span><span class="exa-val"></span>' +
-          '<button type="button" aria-label="Remove filter">✕</button>';
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'chip selected ex-active-pill';
+        el.innerHTML = '<span class="exa-key"></span>: <span class="exa-val"></span>' + icon('x') + '<span class="visually-hidden"> (remove)</span>';
         el.querySelector('.exa-key').textContent = key;
         el.querySelector('.exa-val').textContent = value;
-        el.querySelector('button').onclick = remove;
+        el.onclick = remove;
         wrap.appendChild(el);
       });
 
       if (pills.length > 1) {
         const clear = document.createElement('button');
         clear.type = 'button';
-        clear.className = 'ex-active-clear';
+        clear.className = 'btn btn-ghost btn-sm ex-active-clear';
         clear.textContent = 'Clear all';
         clear.onclick = exClear;
         wrap.appendChild(clear);
@@ -3286,15 +3204,12 @@
       shown.forEach(it => grid.appendChild(exCard(it)));
 
       if (!shown.length) {
-        const none = document.createElement('div');
-        none.className = 'ex-none';
-        none.innerHTML =
-          '<div style="font-size:2rem;margin-bottom:10px;">🔍</div>' +
-          '<div style="font-weight:700;margin-bottom:4px;"></div>' +
-          '<div style="font-size:0.8125rem;margin-bottom:18px;">Nothing matches every filter at once — ' +
-          'try loosening one.</div>' +
-          '<button class="btn btn-secondary btn-sm" onclick="exClear()">Clear filters</button>';
-        none.querySelector('div:nth-child(2)').textContent = exQuery.trim()
+        const none = document.createElement('section');
+        none.className = 'card-flat ex-none';
+        none.innerHTML = '<div class="empty">' + illo('magnifier', 'lg') + '<h2 class="empty-title"></h2>' +
+          '<p class="empty-text">Nothing matches every filter at once. Try a shorter word, a subject you like, or loosen a filter.</p>' +
+          '<div class="cluster"><button class="btn btn-secondary" onclick="exClear()">Clear search and filters</button></div></div>';
+        none.querySelector('.empty-title').textContent = exQuery.trim()
           ? 'No careers match “' + exQuery.trim() + '”'
           : 'No careers match these filters';
         grid.appendChild(none);
@@ -3307,7 +3222,7 @@
         sub.textContent = (shown.length === exCareers.length
           ? 'All ' + exCareers.length + ' careers'
           : 'Showing ' + shown.length + ' of ' + exCareers.length + ' careers') +
-          (exHasFit() ? '' : ' · take the quiz to see your fit %');
+          (exHasFit() ? '' : '. Take the quiz to see how each one fits you.');
       }
 
       return shown.length;
@@ -3444,12 +3359,15 @@
       const d = appResults, top = d.top_careers[0];
       pgRenderEvolution([d]);
       pgLoadEvolution();
-      // AI note
-      const note = document.querySelector('#pg-ai-note div:last-child');
-      if (note) note.textContent =
-        '"Your profile points strongly toward ' + d.personality_type.replace('The ', '') + '. ' +
-        (top ? top.title + ' is your top career at ' + top.match_pct + '%. ' : '') +
-        'Stream recommendation: ' + d.stream_recommendation + '."';
+      // The note is built only from the student's real results (spec §5.3 #6).
+      const box = document.getElementById('pg-ai-note');
+      const note = box && box.querySelector('.ai-note-text');
+      if (note) {
+        note.textContent = 'Your profile points towards ' + String(d.personality_type || 'your interests').replace(/^The /, 'the ').toLowerCase().replace(/^the /, 'the ') + '. ' +
+          (top ? top.title + ' is your top career at ' + Math.round(top.match_pct) + '%. ' : '') +
+          (d.stream_recommendation ? 'Your recommended stream is ' + cqStreamLabel(d) + '.' : '');
+        box.hidden = false;
+      }
     }
 
     // ── Roadmap (app.html#/roadmap) ──
@@ -3471,8 +3389,7 @@
       const pick = has(career) ? career : has(rmCareer) ? rmCareer : careers[0].title;
       rmRemember(pick);
       appSetHash(appHash('roadmap'));
-      sel.innerHTML = careers.map(c => '<option value="' + esc(c.title) + '">' +
-        esc((c.emoji ? c.emoji + ' ' : '') + c.title) + '</option>').join('');
+      sel.innerHTML = careers.map(c => '<option value="' + esc(c.title) + '">' + esc(c.title) + ' (' + Math.round(c.match_pct) + '%)</option>').join('');
       sel.value = pick;
       rmShow(pick);
     }
@@ -3492,7 +3409,7 @@
     function rmShow(career) {
       const req = ++rmReq;
       const match = ((appResults && appResults.top_careers) || []).find(c => c.title === career);
-      document.getElementById('rm-career').textContent = (match && match.emoji ? match.emoji + ' ' : '') + career;
+      document.getElementById('rm-career').textContent = career;
       document.getElementById('rm-timeline').innerHTML = '';
       rmNote('Loading roadmap…');
       CareerAPI.me.roadmap(career).then(r => {
@@ -3509,17 +3426,17 @@
 
     // Also drawn on the career detail page. The first stage is "now", so it
     // shows as reached.
+    // One <li> per stage, direct children of the list (rmExportPdf counts them).
     function rmTimeline(steps) {
-      return steps.map((s, i) =>
-        '<div class="tl-item' + (i === 0 ? ' done' : '') + '"><div class="tl-dot"></div><div class="tl-card">' +
-        '<div class="tl-year">' + esc(s.period) + '</div>' +
-        '<div class="tl-title">' + esc(s.title) + '</div>' +
-        '<div class="tl-actions">' + (s.actions || []).map(a => '<div class="tl-action">' + esc(a) + '</div>').join('') +
-        '</div></div></div>').join('');
+      return (steps || []).map((s, i) =>
+        '<li class="tl-item' + (i === 0 ? ' current' : '') + '"><span class="tl-dot">' + (i + 1) + '</span>' +
+        '<p class="tl-title">' + esc(s.title) + '</p><p class="tl-meta">' + esc(s.period || '') + '</p>' +
+        ((s.actions || []).length ? '<div class="tl-body"><ul>' + s.actions.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : '') +
+        '</li>').join('');
     }
 
     function rmMessage(text) {
-      document.getElementById('rm-career').textContent = '—';
+      document.getElementById('rm-career').textContent = 'Your top career';
       document.getElementById('rm-timeline').innerHTML = '';
       rmNote(text);
     }
@@ -3536,8 +3453,7 @@
     // fetches that career's live feed from careerAPI (GET /career-news?career=):
     // four category lists, which the All tab merges. Feeds are kept for the
     // page's life, so switching back to a career is instant.
-    const SP_BADGE = { news: 'badge-purple', jobs: 'badge-green', exams: 'badge-blue', scholarships: 'badge-orange' };
-    const SP_ICON = { news: '📰', jobs: '💼', exams: '📝', scholarships: '🏅' };
+    const SP_ICON = { news: 'newspaper', jobs: 'briefcase', exams: 'graduation-cap', scholarships: 'star' };
     const spFeeds = {};
     let spCareer = null, spTab = 'all', spReq = 0;
 
@@ -3551,26 +3467,21 @@
         document.getElementById('sp-foot').hidden = true;
         spNote('');
         document.getElementById('sp-feed').innerHTML =
-          '<div class="db-empty">' +
-          '<div class="db-empty-icon">📰</div>' +
-          '<h3>Your Career Space fills up after the quiz</h3>' +
-          '<p>Take the career quiz and we\'ll bring you the latest news, jobs, exams and scholarships ' +
-          'for each of your top career matches.</p>' +
-          '<button class="btn btn-primary btn-lg" onclick="cqStart()">Start the Career Quiz →</button>' +
-          '</div>';
+          '<div class="empty">' + illo('rocket', 'lg') +
+          '<h2 class="empty-title">Your Career Space fills up after the quiz</h2>' +
+          '<p class="empty-text">Take the career quiz and we\'ll bring you the latest news, jobs, exams and scholarships for each of your top career matches.</p>' +
+          '<div class="cluster"><button class="btn btn-primary" onclick="cqStart()">Start the career quiz</button></div></div>';
         return;
       }
       if (careers.some(c => c.title === career)) spCareer = career;
       else if (!careers.some(c => c.title === spCareer)) spCareer = careers[0].title;
       spTab = tab || 'all';  // checked against the feed's categories once it loads
       spSyncHash();
-      pills.innerHTML = careers.map((c, i) =>
-        '<button class="career-pill' + (c.title === spCareer ? ' active' : '') + '" role="tab" aria-selected="' +
+      pills.innerHTML = careers.map(c =>
+        '<button class="pill career-pill' + (c.title === spCareer ? ' active' : '') + '" type="button" role="tab" aria-selected="' +
         (c.title === spCareer) + '" data-career="' + esc(c.title) + '" onclick="spPick(this.dataset.career)">' +
-        '<span style="font-size:1.125rem;">' + esc(c.emoji || '') + '</span>' +
-        '<span class="career-pill-name">' + esc(c.title) + '</span>' +
-        '<span class="career-pill-pct" style="color:' + PCT_COLORS[i] + ';">' + esc(c.match_pct) + '%</span>' +
-        '</button>').join('');
+        '<span class="pill-num career-pill-pct">' + esc(Math.round(c.match_pct)) + '%</span>' +
+        '<span class="career-pill-name">' + esc(c.title) + '</span></button>').join('');
       spShow(spCareer);
     }
 
@@ -3626,11 +3537,11 @@
       if (spTab !== 'all' && !feed.categories.some(c => c.key === spTab)) spTab = 'all';
       spSyncHash();
       const total = new Set([].concat.apply([], feed.categories.map(c => c.items.map(it => it.url)))).size;
-      const chip = (key, label, n) => '<button class="filter-chip' + (spTab === key ? ' active' : '') + (n ? '' : ' is-empty') +
-        '" role="tab" aria-selected="' + (spTab === key) + '" onclick="spSetTab(\'' + key + '\')">' +
-        label + '<span class="fc-n">' + n + '</span></button>';
-      document.getElementById('sp-tabs').innerHTML = chip('all', '✨ All', total) +
-        feed.categories.map(c => chip(c.key, (SP_ICON[c.key] || '') + ' ' + esc(c.label), c.items.length)).join('');
+      const chip = (key, label, n) => '<button class="tab-btn filter-chip' + (spTab === key ? ' active' : '') + (n ? '' : ' is-empty') +
+        '" type="button" role="tab" aria-selected="' + (spTab === key) + '"' + (n || spTab === key ? '' : ' disabled') + ' onclick="spSetTab(\'' + key + '\')">' +
+        label + ' <span class="fc-n chip-count">' + n + '</span></button>';
+      document.getElementById('sp-tabs').innerHTML = chip('all', 'All', total) +
+        feed.categories.map(c => chip(c.key, esc(stripEmoji(c.label)), c.items.length)).join('');
 
       const items = spItems(feed);
       const labels = {};
@@ -3639,22 +3550,18 @@
       document.getElementById('sp-feed').innerHTML = items.map(it => {
         const url = /^https?:\/\//i.test(it.url) ? it.url : '#';
         const img = it.image && /^https:\/\//i.test(it.image)
-          ? '<img class="sp-thumb" src="' + esc(it.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
-        return '<a class="sp-item" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
-          '<div class="sp-item-body">' +
-          '<div class="sp-meta">' +
-          (spTab === 'all' ? '<span class="badge ' + (SP_BADGE[it.cat] || 'badge-purple') + '">' + esc(labels[it.cat] || it.cat) + '</span>' : '') +
-          '<span class="sp-source">' + esc(it.source || it.provider || '') + '</span>' +
-          (it.published_at ? '<span class="sp-time" title="' + esc(new Date(it.published_at).toLocaleString('en-IN')) + '">' + esc(spAgo(it.published_at)) + '</span>' : '') +
-          '</div>' +
-          '<div class="sp-title">' + esc(it.title) + '</div>' +
-          '</div>' + img + '</a>';
+          ? '<img class="sp-thumb" src="' + esc(it.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">'
+          : '<span class="icon-tile sp-thumb">' + icon(SP_ICON[it.cat] || 'newspaper') + '</span>';
+        const meta = [spTab === 'all' ? stripEmoji(labels[it.cat] || it.cat) : '', it.source || it.provider || '', it.published_at ? spAgo(it.published_at) : ''].filter(Boolean).join(', ');
+        return '<a class="list-row sp-item" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + img +
+          '<span class="grow"><span class="list-title sp-title">' + esc(it.title) + '</span><br><span class="list-meta sp-meta">' + esc(meta) + '</span></span>' +
+          icon('external-link') + '<span class="visually-hidden"> (opens in a new tab)</span></a>';
       }).join('');
 
       const foot = document.getElementById('sp-foot');
       foot.hidden = false;
       foot.textContent = (feed.sources && feed.sources.length ? 'Headlines from ' + feed.sources.join(' and ') : 'Live headlines') +
-        (feed.updated_at ? ' · updated ' + spAgo(feed.updated_at) : '') +
+        (feed.updated_at ? ', updated ' + spAgo(feed.updated_at) : '') +
         '. Crackeer doesn\'t write these stories: check dates and eligibility on the official website before you apply.';
     }
 
@@ -3670,7 +3577,8 @@
 
     function spNote(text, retry) {
       const el = document.getElementById('sp-note');
-      el.innerHTML = esc(text) + (retry ? ' <button class="sp-retry" onclick="spShow(spCareer)">Try again</button>' : '');
+      el.className = 'alert ' + (retry ? 'alert-error' : 'alert-info');
+      el.innerHTML = '<span>' + esc(text) + '</span>' + (retry ? ' <button class="btn btn-secondary btn-sm sp-retry" onclick="spShow(spCareer)">' + icon('refresh-cw') + 'Try again</button>' : '');
       el.hidden = !text;
     }
 
@@ -3696,11 +3604,9 @@
       const box = document.getElementById('pg-evolution-rows');
       if (!box) return;
       const row = (label, top, latest) => !top ? '' :
-        '<div style="display:flex;align-items:center;gap:16px;font-size:0.8125rem;">' +
-        '<span style="color:' + (latest ? 'var(--accent2);font-weight:700' : 'var(--muted)') + ';width:64px;">' + label + '</span>' +
-        '<span style="font-weight:' + (latest ? 700 : 600) + ';">' + esc((top.emoji || '') + ' ' + top.title) + '</span>' +
-        '<span style="color:' + (latest ? 'var(--accent2);font-weight:800' : '#a8a3ff;font-weight:700') + ';margin-left:auto;">' +
-        esc(top.match_pct) + '%' + (latest ? ' ✦' : '') + '</span></div>';
+        '<div class="list-row"><span class="icon-tile">' + icon(latest ? 'sparkles' : 'clock') + '</span>' +
+        '<span class="grow"><span class="list-title">' + esc(top.title) + ', ' + esc(Math.round(top.match_pct)) + '%</span><br><span class="list-meta">' + label + ' quiz</span></span>' +
+        (latest ? '<span class="badge fit-strong">Latest</span>' : '') + '</div>';
       const topOf = d => d && d.top_careers && d.top_careers[0];
-      box.innerHTML = row('Previous', topOf(runs[1]), false) + row('Latest', topOf(runs[0]), true);
+      box.innerHTML = row('Latest', topOf(runs[0]), true) + row('Previous', topOf(runs[1]), false);
     }

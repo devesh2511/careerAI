@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>App shell · Crackeer prototype</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/shell.js" defer></script>
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="app" data-screen="shell-demo">
+  <div data-shell="app" data-active="dashboard" data-live="true"></div>
+  <main class="app-main" data-proto-root></main>
+
+  <template data-state="home" data-label="Home selected">
+    <div class="page">
+      <header class="page-head">
+        <div>
+          <h1>App shell</h1>
+          <p class="page-sub">Sidebar from 1024px up. Below that, the bottom bar with Home, Roadmap, Contests, AI Chat and More.</p>
+        </div>
+      </header>
+      <div class="grid-2">
+        <div class="card stack-sm stack"><h2 class="card-title">Content card</h2><p class="card-sub">Content keeps clear of the bottom bar, even at the end of a long page.</p></div>
+        <div class="card stack-sm stack"><h2 class="card-title">Second card</h2><p class="card-sub">Cards wrap to one column on phones.</p></div>
+      </div>
+      <div class="card-flat stack">
+        <p>Long content to scroll. Students should be able to read the last line of every page without the navigation covering it.</p>
+        <p>Long content to scroll. Students should be able to read the last line of every page without the navigation covering it.</p>
+        <p>Long content to scroll. Students should be able to read the last line of every page without the navigation covering it.</p>
+        <p>Long content to scroll. Students should be able to read the last line of every page without the navigation covering it.</p>
+        <p>Long content to scroll. Students should be able to read the last line of every page without the navigation covering it.</p>
+        <p>This is the last line of the page.</p>
+      </div>
+    </div>
+  </template>
+
+  <template data-state="more-open" data-label="More sheet open" data-body-class="nav-open">
+    <div class="page">
+      <header class="page-head"><div><h1>App shell</h1><p class="page-sub">The More sheet holds Career Matches, Explore careers, Career Space, Settings, the theme switch and Log out.</p></div></header>
+    </div>
+  </template>
+
+  <template data-state="contests-live" data-label="Contests selected, live" data-shell-active="contests">
+    <div class="page">
+      <header class="page-head"><div><h1>Contests</h1><p class="page-sub">The live indicator sits beside the trophy icon and never covers the icon or the label.</p></div></header>
+    </div>
+  </template>
+</body>
+</html>

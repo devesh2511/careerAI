@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Your profile · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="evaluation" data-screen="evaluation">
+  <div class="flow" data-proto-root></div>
+
+  <template data-state="summary" data-label="Profile at a glance">
+    <header class="flow-bar">
+      <a class="btn btn-icon" href="onboarding.html?state=step-4" aria-label="Back to onboarding"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg></a>
+      <p class="flow-title">Before the quiz</p>
+      <span aria-hidden="true"></span>
+    </header>
+    <main class="flow-main">
+      <div class="stack-sm stack"><h1 id="eval-title">Here's what you told us</h1><p class="muted" id="eval-sub">Check it looks right, then start the quiz. Your answers here and in the quiz decide your matches.</p></div>
+      <section class="card stack-lg stack" aria-labelledby="ev-card-title">
+        <div class="section-head"><h2 class="card-title" id="ev-card-title">Your profile at a glance</h2><a class="btn btn-ghost btn-sm" href="onboarding.html"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-pencil"/></svg>Edit</a></div>
+        <dl class="kv">
+          <dt>Class</dt><dd>Class 10</dd>
+          <dt>Board</dt><dd>CBSE</dd>
+          <dt>Medium</dt><dd>English</dd>
+          <dt>City</dt><dd>Pune</dd>
+          <dt>Best marks</dt><dd>Mathematics, 87%</dd>
+        </dl>
+        <hr class="divider">
+        <div class="stack-sm stack"><p class="field-label">Subjects you like</p><div class="cluster"><span class="badge badge-outline">Mathematics</span><span class="badge badge-outline">Science</span><span class="badge badge-outline">Computer</span></div></div>
+        <div class="stack-sm stack"><p class="field-label">Hobbies</p><div class="cluster"><span class="badge badge-outline">Coding</span><span class="badge badge-outline">Gaming</span></div></div>
+        <div class="stack-sm stack"><p class="field-label">Dream job</p><p data-stress>I want to build apps that people use every day.</p></div>
+        <div class="stack-sm stack"><p class="field-label">Preferences</p><p>Private company, open to studying anywhere.</p></div>
+      </section>
+      <section class="card-ink quiz-start" aria-labelledby="ev-start-title">
+        <div class="illo"><img src="../assets/illustrations/rocket-200.webp" alt=""></div>
+        <div class="stack-sm stack"><h2 class="card-title-lg" id="ev-start-title">Ready for the quiz?</h2><p class="muted">25 questions, about 6 minutes. Pick what sounds like you, not what sounds impressive.</p></div>
+        <a class="btn btn-primary" href="career-quiz.html">Start the career quiz</a>
+      </section>
+    </main>
+  </template>
+</body>
+</html>

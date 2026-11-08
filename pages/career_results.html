@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Career Results</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Your career report</title>
   <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
   <link rel="icon" href="data:," />
   <!-- Resolve the theme before first paint: a deferred script would let a
@@ -18,151 +18,106 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="airesults">
-
-  <!-- ════════════════════════════════════════
-     AI CAREER RESULTS SCREEN
-════════════════════════════════════════ -->
   <div id="airesults" class="screen active">
-    <div class="air-wrap">
+  <header class="public-header">
+    <a class="logo" href="../index.html">Crackeer<span class="logo-dot">.</span></a>
+    <div class="cluster"><button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button><button class="btn btn-secondary btn-sm" type="button" onclick="show('dashboard')">Go to the app</button></div>
+  </header>
+  <main class="report">
+    <div class="air-print-head print-only">
+      <p class="logo">Crackeer<span class="logo-dot">.</span></p>
+      <p>Career report, generated <span id="air-print-date"></span>.</p>
+    </div>
 
-      <!-- Print-only masthead: the on-screen top bar is mostly buttons, which
-           are dropped from the PDF, so the paper copy needs its own title and
-           a date stamp saying when the report was generated. -->
-      <div class="air-print-head">
-        <div class="air-print-brand">Crackeer</div>
-        <div class="air-print-meta">Career Report · generated <span id="air-print-date">—</span></div>
+    <section class="report-hero stack" aria-labelledby="air-personality-type">
+      <div class="cluster">
+        <p class="small muted">Your career report</p>
+        <span class="badge badge-accent" id="air-demo-badge" hidden>Scored on this device</span>
       </div>
-
-      <!-- Top bar -->
-      <div class="air-topbar">
-        <div>
-          <div style="font-size:0.6875rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">
-            Your AI Career Report</div>
-          <h2
-            style="font-size:1.5rem;font-weight:800;letter-spacing:-.5px;margin-top:4px;display:flex;align-items:center;gap:10px;">
-            Career Matches
-            <span id="air-demo-badge" class="air-demo-badge">Demo Mode</span>
-          </h2>
-        </div>
-        <div class="no-print" style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-ghost btn-sm" onclick="cqSavePdf()" title="Save this report as a PDF">⬇ Save
-            PDF</button>
-          <button class="btn btn-ghost btn-sm" onclick="cqStart()">🔄 Retake</button>
-          <button class="btn btn-secondary btn-sm" onclick="show('landing')">← Home</button>
-          <button class="btn btn-primary btn-sm" onclick="show('dashboard')">Open Full App →</button>
-        </div>
+      <h1><span class="hl" id="air-personality-type">Loading your report…</span></h1>
+      <p class="report-lede" id="air-personality-desc"></p>
+      <div class="alert alert-warn" id="air-retake" hidden></div>
+      <div class="cluster cluster-lg no-print">
+        <button class="btn btn-primary" type="button" onclick="show('dashboard')">Open the full app</button>
+        <button class="btn btn-secondary" type="button" onclick="cqSavePdf()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-printer"/></svg>Save as PDF</button>
+        <button class="btn btn-ghost" type="button" onclick="cqStart()">Retake quiz</button>
       </div>
+    </section>
 
-      <!-- Retake prompt for a result saved by the old question set. -->
-      <div id="air-retake"></div>
-
-      <!-- Personality card -->
-      <div class="air-hero">
-        <div class="air-personality-label">Your Career Personality</div>
-        <div class="air-personality-type" id="air-personality-type">Loading…</div>
-        <div class="air-personality-desc" id="air-personality-desc">Loading your profile…</div>
+    <section class="grid-2" aria-label="Stream">
+      <div class="card stack">
+        <p class="small muted">Recommended stream for Class 11</p>
+        <h2 class="card-title-lg" id="air-stream-val"></h2>
+        <p id="air-stream-reason"></p>
+        <div class="no-print"><button class="btn btn-secondary btn-sm" type="button" onclick="exploreStream(appResults && appResults.stream_recommendation)">Careers in this stream</button></div>
       </div>
-
-      <!-- Stream recommendation -->
-      <div class="air-stream-box">
-        <div style="font-size:2rem;flex-shrink:0;">🛤️</div>
-        <div class="air-stream-left">
-          <div class="air-stream-label">Recommended Stream for Class 11</div>
-          <div class="air-stream-val" id="air-stream-val">PCM+CS</div>
-          <div class="air-stream-reason" id="air-stream-reason">Loading…</div>
-        </div>
-        <button class="btn btn-secondary btn-sm no-print" style="align-self:center;flex-shrink:0;"
-          onclick="exploreStream(appResults && appResults.stream_recommendation)">Careers in this stream →</button>
+      <div class="card-flat stack" id="air-streams-wrap" hidden>
+        <h2 class="card-title">How each stream fits you</h2>
+        <div class="stack" id="air-streams"></div>
       </div>
+    </section>
 
-      <!-- All four streams ranked: best-fit careers and subject strength,
-           side by side. Hidden for results saved before the ranking. -->
-      <div class="air-streams" id="air-streams-wrap" style="display:none;">
-        <div class="air-enjoy-title">How the four streams compare</div>
-        <div id="air-streams"></div>
+    <section class="card stack-lg stack" aria-labelledby="air-code-title">
+      <div class="stack-sm stack">
+        <h2 id="air-code-title">Your interest code</h2>
+        <p class="muted small" id="air-riasec-note"></p>
       </div>
-
-      <!-- ── Interest profile (doc section 15) ──────────────────────
-           Six areas as bars, strongest first. The areas are named in
-           plain language; the RIASEC letters appear only as the code. -->
-      <div class="air-riasec-box">
-        <div class="air-riasec-head">
-
-          <div class="air-riasec-box">
-            <div class="air-riasec-head">
-              <div class="air-riasec-head-left">
-                <div class="air-riasec-title">Your Career Interest Profile</div>
-                <div class="air-riasec-sub" id="air-riasec-note"></div>
-              </div>
-              <!-- The code is three letters, so it means nothing on its own.
-               Rather than repeat the area names here, each bar below is
-               tagged with its letter — the bars are the key. -->
-              <div class="air-riasec-code-wrap">
-                <div class="air-riasec-code-label">Your code</div>
-                <div class="air-riasec-code" id="air-riasec-code">—</div>
-              </div>
-            </div>
-
-            <!-- Decodes the three letters before the chart, so the code is
-             already explained by the time the bars are read. Only the
-             student's own letters are listed; every area is named on the
-             bars themselves. -->
-            <div class="air-code-key-wrap">
-              <div class="air-enjoy-title">What your code means</div>
-              <div class="air-code-key" id="air-code-key"></div>
-            </div>
-
-            <div id="air-riasec-bars"></div>
-
-            <!-- Filled from Part 2 of the quiz; hidden for older results. -->
-            <div class="air-enjoy-wrap" id="air-domains-wrap" style="display:none;">
-              <div class="air-enjoy-title">Worlds you're drawn to</div>
-              <div class="air-domains" id="air-domains"></div>
-            </div>
-
-            <div class="air-enjoy-wrap">
-              <div class="air-enjoy-title">You may enjoy</div>
-              <ul class="air-enjoy" id="air-enjoy"></ul>
-            </div>
+      <div class="report-code">
+        <div class="riasec riasec-lg" id="air-riasec-code"></div>
+        <dl class="code-key" id="air-code-key"></dl>
+      </div>
+      <div class="grid-2">
+        <div class="stack-sm stack" id="air-riasec-bars"></div>
+        <div class="stack-lg stack">
+          <div class="stack-sm stack" id="air-domains-wrap" hidden>
+            <h3>Worlds you're drawn to</h3>
+            <div class="chip-group" id="air-domains"></div>
           </div>
-
-          <!-- Career cards -->
-          <div
-            style="font-size:0.8125rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-            Careers to explore</div>
-          <div style="font-size:0.75rem;color:var(--muted);margin-bottom:16px;" id="air-match-note"></div>
-          <div id="air-careers"></div>
-
-          <!-- CTAs -->
-          <div class="no-print" style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="show('dashboard')"
-              style="flex:1;min-width:160px;justify-content:center;">🏠 Explore Full Dashboard</button>
-            <button class="btn btn-secondary" onclick="cqSavePdf()" style="justify-content:center;">⬇ Save as
-              PDF</button>
-            <button class="btn btn-secondary" onclick="cqStart()" style="justify-content:center;">🔄 Retake
-              Quiz</button>
-          </div>
-
-          <!-- How the match was produced. Was an "add your API key" prompt, but
-           the app runs in demo mode only and the Settings field is gone. -->
-          <div class="air-footer-hint" id="air-api-hint">
-            <strong style="color:#a8a3ff;">How this was matched:</strong> your answers were scored across six
-            career-interest areas, and your "which world" answers showed where you'd like to work. Both were
-            compared against every career in the database to rank the closest fits. Your result is saved to your account, so it's here whenever you log in.
-            <br /><br />
-            <strong style="color:#a8a3ff;">Remember:</strong> this is a guide for exploration — it does not decide
-            your future.
+          <div class="stack-sm stack">
+            <h3>What you'll probably enjoy</h3>
+            <ul class="enjoy-list" id="air-enjoy"></ul>
           </div>
         </div>
       </div>
+    </section>
 
-      <script src="../scripts/riasec_engine.js"></script>
-      <script src="../scripts/careerapi_mock.js"></script>
-      <script src="../scripts/script.js"></script>
+    <section class="section" aria-labelledby="air-careers-title">
+      <div class="stack-sm stack">
+        <h2 id="air-careers-title">Careers that fit you</h2>
+        <p class="muted" id="air-match-note"></p>
+      </div>
+      <div class="grid-2" id="air-careers"></div>
+    </section>
+
+    <section class="card-sunk stack-sm stack" id="air-api-hint" aria-labelledby="air-how-title">
+      <h2 class="card-title" id="air-how-title">How this was matched</h2>
+      <p class="small">Your answers were scored across six career-interest areas, and your "which world" answers showed where you'd like to work. Both were compared against every career in our list to rank the closest fits. Your result is saved to your account, so it's here whenever you log in.</p>
+      <p class="small"><b>Remember:</b> this is a guide for exploring, not a decision about your future.</p>
+    </section>
+
+    <section class="card-ink report-next no-print" aria-labelledby="air-next-title">
+      <div class="stack-sm stack">
+        <h2 class="card-title-lg" id="air-next-title">Ready to plan it out?</h2>
+        <p class="muted">The full app turns your top match into a step-by-step roadmap, plus weekly contests and an AI you can ask anything.</p>
+      </div>
+      <div class="cluster cluster-lg">
+        <button class="btn btn-primary" type="button" onclick="show('dashboard')">Open the full app</button>
+        <button class="btn btn-ghost" type="button" onclick="show('landing')">Back to home</button>
+      </div>
+    </section>
+  </main>
+  </div>
+
+  <script src="../scripts/riasec_engine.js"></script>
+  <script src="../scripts/careerapi_mock.js"></script>
+  <script src="../scripts/script.js"></script>
 
 </body>
 

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=new URLSearchParams(location.search).get('theme');try{t=t||localStorage.getItem('careerai_theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})()</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tell us about you · Crackeer</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layouts.css">
+  <script src="../js/proto.js" defer></script>
+</head>
+<body data-page="onboarding" data-screen="onboarding">
+  <div class="flow" data-proto-root></div>
+
+  <template data-state="step-1" data-label="Step 1: About you">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title" id="ob-count">Step 1 of 4</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="ob-bar" max="4" value="1">1 of 4</progress>
+    </header>
+    <main class="flow-main" id="onboarding">
+      <ol class="ob-steps" id="ob-dots" aria-label="Steps"><li class="dot active" aria-current="step"><span class="dot-mark">1</span><span class="dot-label">About you</span></li><li class="dot "><span class="dot-mark">2</span><span class="dot-label">Marks</span></li><li class="dot "><span class="dot-mark">3</span><span class="dot-label">Interests</span></li><li class="dot "><span class="dot-mark">4</span><span class="dot-label">Preferences</span></li></ol>
+      <div class="stack-sm stack"><h1 id="ob-title">About you</h1><p class="muted" id="ob-sub">So we can match careers to your board, medium and city.</p></div>
+      <div class="alert alert-error" id="ob-error" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><span>Marks must be between 0 and 100. Check Science.</span></div>
+      <section class="stack-lg stack" id="ob-step-1"><div class="grid-2"><div class="field"><label class="field-label" for="ob-class">Current class</label><div class="select-wrap"><select class="select" id="ob-class"><option>Class 9</option><option selected>Class 10</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div><div class="field"><label class="field-label" for="ob-board">School board</label><div class="select-wrap"><select class="select" id="ob-board"><option selected>CBSE</option><option>ICSE</option><option>State Board</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div><div class="field"><label class="field-label" for="ob-medium">Medium of instruction</label><div class="select-wrap"><select class="select" id="ob-medium"><option selected>English</option><option>Hindi</option><option>Regional language</option></select><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-chevron-down"/></svg></div></div><div class="field"><label class="field-label" for="ob-city">City</label><input class="input" id="ob-city" type="text" value="Pune" placeholder="e.g. Mumbai, Delhi, Bengaluru" autocomplete="address-level2" aria-describedby="ob-city-error"><p class="form-error" id="ob-city-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div></div></section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <button class="btn btn-secondary" id="ob-back" type="button" disabled><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg>Back</button>
+      <button class="btn btn-primary" id="ob-next" type="button">Next<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="step-2" data-label="Step 2: Your recent marks">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title" id="ob-count">Step 2 of 4</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="ob-bar" max="4" value="2">2 of 4</progress>
+    </header>
+    <main class="flow-main" id="onboarding">
+      <ol class="ob-steps" id="ob-dots" aria-label="Steps"><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">About you</span></li><li class="dot active" aria-current="step"><span class="dot-mark">2</span><span class="dot-label">Marks</span></li><li class="dot "><span class="dot-mark">3</span><span class="dot-label">Interests</span></li><li class="dot "><span class="dot-mark">4</span><span class="dot-label">Preferences</span></li></ol>
+      <div class="stack-sm stack"><h1 id="ob-title">Your recent marks</h1><p class="muted" id="ob-sub">Optional. Percentages from your last exam help us suggest a stream. Skip any you don't know.</p></div>
+      <div class="alert alert-error" id="ob-error" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><span>Marks must be between 0 and 100. Check Science.</span></div>
+      <section class="stack-lg stack" id="ob-step-2"><div class="grid-2 marks-grid"><div class="field mark-field"><label class="field-label" for="ob-mark-maths">Mathematics</label><div class="mark-input"><input class="input" id="ob-mark-maths" data-subject="Mathematics" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80" value="87"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-science">Science</label><div class="mark-input"><input class="input" id="ob-mark-science" data-subject="Science" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80" value="79"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-english">English</label><div class="mark-input"><input class="input" id="ob-mark-english" data-subject="English" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80" value="82"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-social">Social Studies</label><div class="mark-input"><input class="input" id="ob-mark-social" data-subject="Social Studies" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80"><span class="muted">%</span></div></div></div></section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <button class="btn btn-secondary" id="ob-back" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg>Back</button>
+      <button class="btn btn-primary" id="ob-next" type="button">Next<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="step-3" data-label="Step 3: What you enjoy">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title" id="ob-count">Step 3 of 4</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="ob-bar" max="4" value="3">3 of 4</progress>
+    </header>
+    <main class="flow-main" id="onboarding">
+      <ol class="ob-steps" id="ob-dots" aria-label="Steps"><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">About you</span></li><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">Marks</span></li><li class="dot active" aria-current="step"><span class="dot-mark">3</span><span class="dot-label">Interests</span></li><li class="dot "><span class="dot-mark">4</span><span class="dot-label">Preferences</span></li></ol>
+      <div class="stack-sm stack"><h1 id="ob-title">What you enjoy</h1><p class="muted" id="ob-sub">Pick everything that sounds like you.</p></div>
+      <div class="alert alert-error" id="ob-error" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><span>Marks must be between 0 and 100. Check Science.</span></div>
+      <section class="stack-lg stack" id="ob-step-3"><div class="field"><span class="field-label" id="ob-subjects-label">Favourite subjects</span><p class="field-hint">Pick all you like.</p><div class="chip-group" id="ob-subjects" role="group" aria-labelledby="ob-subjects-label" data-proto-select="multi"><button class="chip selected" type="button" aria-pressed="true">Mathematics</button><button class="chip selected" type="button" aria-pressed="true">Science</button><button class="chip selected" type="button" aria-pressed="true">Computer</button><button class="chip" type="button" aria-pressed="false">English</button><button class="chip" type="button" aria-pressed="false">Art and Design</button><button class="chip" type="button" aria-pressed="false">Social Studies</button><button class="chip" type="button" aria-pressed="false">Economics</button><button class="chip" type="button" aria-pressed="false">Music</button></div></div><div class="field"><span class="field-label" id="ob-hobbies-label">Hobbies and interests</span><div class="chip-group" id="ob-hobbies" role="group" aria-labelledby="ob-hobbies-label" data-proto-select="multi"><button class="chip" type="button" aria-pressed="false">Drawing and design</button><button class="chip selected" type="button" aria-pressed="true">Coding</button><button class="chip" type="button" aria-pressed="false">Sports</button><button class="chip" type="button" aria-pressed="false">Music</button><button class="chip" type="button" aria-pressed="false">Reading</button><button class="chip selected" type="button" aria-pressed="true">Gaming</button><button class="chip" type="button" aria-pressed="false">Debating</button><button class="chip" type="button" aria-pressed="false">Cooking</button></div></div><div class="field"><label class="field-label" for="ob-dream">Dream job or role model <span class="optional">(optional)</span></label><input class="input" id="ob-dream" type="text" placeholder="e.g. I want to design apps like Instagram" aria-describedby="ob-dream-error"><p class="form-error" id="ob-dream-error" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg></p></div></section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <button class="btn btn-secondary" id="ob-back" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg>Back</button>
+      <button class="btn btn-primary" id="ob-next" type="button">Next<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="step-4" data-label="Step 4: What you want from work">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title" id="ob-count">Step 4 of 4</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="ob-bar" max="4" value="4">4 of 4</progress>
+    </header>
+    <main class="flow-main" id="onboarding">
+      <ol class="ob-steps" id="ob-dots" aria-label="Steps"><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">About you</span></li><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">Marks</span></li><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">Interests</span></li><li class="dot active" aria-current="step"><span class="dot-mark">4</span><span class="dot-label">Preferences</span></li></ol>
+      <div class="stack-sm stack"><h1 id="ob-title">What you want from work</h1><p class="muted" id="ob-sub">Last step. There are no wrong answers.</p></div>
+      <div class="alert alert-error" id="ob-error" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><span>Marks must be between 0 and 100. Check Science.</span></div>
+      <section class="stack-lg stack" id="ob-step-4"><div class="field"><span class="field-label" id="ob-pref-label">Where would you like to work?</span><div class="chip-group" id="ob-pref" role="radiogroup" aria-labelledby="ob-pref-label" data-proto-select="single"><button class="chip selected" type="button" role="radio" aria-checked="true">Private company</button><button class="chip" type="button" role="radio" aria-checked="false">Government job</button><button class="chip" type="button" role="radio" aria-checked="false">Start my own business</button></div></div><div class="field"><span class="field-label" id="ob-loc-label">Open to studying outside your city?</span><div class="chip-group" id="ob-loc" role="radiogroup" aria-labelledby="ob-loc-label" data-proto-select="single"><button class="chip selected" type="button" role="radio" aria-checked="true">Yes, anywhere</button><button class="chip" type="button" role="radio" aria-checked="false">Same state only</button><button class="chip" type="button" role="radio" aria-checked="false">Prefer my home city</button></div></div></section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <button class="btn btn-secondary" id="ob-back" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg>Back</button>
+      <button class="btn btn-primary" id="ob-next" type="button">Finish<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="error" data-label="Step 2 with an invalid mark">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title" id="ob-count">Step 2 of 4</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="ob-bar" max="4" value="2">2 of 4</progress>
+    </header>
+    <main class="flow-main" id="onboarding">
+      <ol class="ob-steps" id="ob-dots" aria-label="Steps"><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">About you</span></li><li class="dot active" aria-current="step"><span class="dot-mark">2</span><span class="dot-label">Marks</span></li><li class="dot "><span class="dot-mark">3</span><span class="dot-label">Interests</span></li><li class="dot "><span class="dot-mark">4</span><span class="dot-label">Preferences</span></li></ol>
+      <div class="stack-sm stack"><h1 id="ob-title">Your recent marks</h1><p class="muted" id="ob-sub">Optional. Percentages from your last exam help us suggest a stream. Skip any you don't know.</p></div>
+      <div class="alert alert-error" id="ob-error" role="alert"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><span>Marks must be between 0 and 100. Check Science.</span></div>
+      <section class="stack-lg stack" id="ob-step-2"><div class="grid-2 marks-grid"><div class="field mark-field"><label class="field-label" for="ob-mark-maths">Mathematics</label><div class="mark-input"><input class="input" id="ob-mark-maths" data-subject="Mathematics" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80" value="87"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-science">Science</label><div class="mark-input"><input class="input is-invalid" id="ob-mark-science" data-subject="Science" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80" value="112" aria-invalid="true" aria-describedby="ob-error"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-english">English</label><div class="mark-input"><input class="input" id="ob-mark-english" data-subject="English" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80" value="82"><span class="muted">%</span></div></div><div class="field mark-field"><label class="field-label" for="ob-mark-social">Social Studies</label><div class="mark-input"><input class="input" id="ob-mark-social" data-subject="Social Studies" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 80"><span class="muted">%</span></div></div></div></section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <button class="btn btn-secondary" id="ob-back" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg>Back</button>
+      <button class="btn btn-primary" id="ob-next" type="button">Next<svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-right"/></svg></button>
+    </div></footer>
+  </template>
+
+  <template data-state="saving" data-label="Saving the last step">
+    <header class="flow-bar">
+      <span aria-hidden="true"></span>
+      <p class="flow-title" id="ob-count">Step 4 of 4</p>
+      <span aria-hidden="true"></span>
+      <progress class="progress" id="ob-bar" max="4" value="4">4 of 4</progress>
+    </header>
+    <main class="flow-main" id="onboarding">
+      <ol class="ob-steps" id="ob-dots" aria-label="Steps"><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">About you</span></li><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">Marks</span></li><li class="dot done"><span class="dot-mark"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check"/></svg></span><span class="dot-label">Interests</span></li><li class="dot active" aria-current="step"><span class="dot-mark">4</span><span class="dot-label">Preferences</span></li></ol>
+      <div class="stack-sm stack"><h1 id="ob-title">What you want from work</h1><p class="muted" id="ob-sub">Last step. There are no wrong answers.</p></div>
+      <div class="alert alert-error" id="ob-error" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-circle-alert"/></svg><span>Marks must be between 0 and 100. Check Science.</span></div>
+      <section class="stack-lg stack" id="ob-step-4"><div class="field"><span class="field-label" id="ob-pref-label">Where would you like to work?</span><div class="chip-group" id="ob-pref" role="radiogroup" aria-labelledby="ob-pref-label" data-proto-select="single"><button class="chip selected" type="button" role="radio" aria-checked="true">Private company</button><button class="chip" type="button" role="radio" aria-checked="false">Government job</button><button class="chip" type="button" role="radio" aria-checked="false">Start my own business</button></div></div><div class="field"><span class="field-label" id="ob-loc-label">Open to studying outside your city?</span><div class="chip-group" id="ob-loc" role="radiogroup" aria-labelledby="ob-loc-label" data-proto-select="single"><button class="chip selected" type="button" role="radio" aria-checked="true">Yes, anywhere</button><button class="chip" type="button" role="radio" aria-checked="false">Same state only</button><button class="chip" type="button" role="radio" aria-checked="false">Prefer my home city</button></div></div></section>
+    </main>
+    <footer class="flow-foot"><div class="flow-foot-inner">
+      <button class="btn btn-secondary" id="ob-back" type="button"><svg class="icon" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-arrow-left"/></svg>Back</button>
+      <button class="btn btn-primary busy" id="ob-next" type="button">Saving</button>
+    </div></footer>
+  </template>
+</body>
+</html>

@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Crazy way to crack career</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Find the career that fits you</title>
   <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
   <link rel="icon" href="data:," />
   <!-- Resolve the theme before first paint: a deferred script would let a
@@ -18,207 +18,89 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="landing">
-
-  <!-- ════════════════════════════════════════
-     LANDING PAGE
-════════════════════════════════════════ -->
   <div id="landing" class="screen active">
-    <nav class="land-nav">
-      <div class="land-logo">Crack<span>eer</span></div>
-      <div class="land-nav-menu">
-        <a href="#features">Features</a>
-        <a href="#how">How it works</a>
-        <a href="#start">Get started</a>
-      </div>
-      <div class="land-nav-links">
-        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
-          <span class="ti ti-moon" aria-hidden="true">🌙</span>
-          <span class="ti ti-sun" aria-hidden="true">☀️</span>
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="show('auth')">Login</button>
-        <button class="btn btn-primary btn-sm" onclick="show('auth')">Get Started</button>
-      </div>
-    </nav>
+  <header class="public-header">
+    <a class="logo" href="index.html">Crackeer<span class="logo-dot">.</span></a>
+    <nav class="landing-nav" aria-label="Sections"><a href="#how">How it works</a><a href="#features">What you get</a></nav>
+    <div class="cluster"><button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button><button class="btn btn-ghost btn-sm landing-login" type="button" onclick="show('auth')">Log in</button><button class="btn btn-primary btn-sm" type="button" onclick="cqStart()">Get started</button></div>
+  </header>
+  <main class="public-main">
 
-    <!-- ── Hero: copy left, product mock right ── -->
-    <div class="land-hero">
-      <div class="land-hero-copy">
-        <div class="land-eyebrow">For Class 9 &amp; 10 Students</div>
-        <h1 class="land-h1">Discover the Career<br /><span>You Were Born For</span></h1>
-        <p class="land-p">AI-powered career discovery. Answer a few questions, take a personalised aptitude quiz, and
-          get your top career matches with a step-by-step roadmap.</p>
-        <div class="land-cta">
-          <button class="btn btn-primary btn-lg" onclick="cqStart()">Take the Career Quiz →</button>
-          <button class="btn btn-secondary btn-lg" onclick="show('auth')">Create Account</button>
+    <section class="landing-hero" aria-labelledby="lp-title">
+      <div class="stack-lg stack">
+        <h1 class="landing-title" id="lp-title">Find the career that fits <span class="hl">how you think</span>.</h1>
+        <p class="landing-lede">A 25-question quiz, honest career matches and a step-by-step roadmap from Class 9 to your first job. Built for school students in India.</p>
+        <div class="cluster cluster-lg">
+          <button class="btn btn-primary" type="button" onclick="cqStart()">Take the career quiz</button>
+          <button class="btn btn-secondary" type="button" onclick="show('auth')">I have an account</button>
         </div>
-        <div class="land-reassure">
-          <span><b>✓</b> About 15 minutes</span>
-        </div>
+        <p class="small muted">You'll create an account first so your results are saved. The quiz takes about 6 minutes.</p>
       </div>
-
-      <!-- A mock of the quiz-then-result payoff. Decorative: it is a static
-           illustration of the real screens, so it is hidden from assistive
-           tech rather than announced as live content. -->
-      <div class="land-visual" aria-hidden="true">
-        <div class="lv-card lv-card-q">
-          <div class="lv-head"><span>Question 7 of 25</span><span>📦 New Gadget</span></div>
-          <div class="lv-q">A new gadget arrives at home. What do you do first?</div>
-          <div class="lv-opts">
-            <div class="lv-opt on"><i></i>Unscrew it to see the parts inside</div>
-            <div class="lv-opt"><i></i>Decorate it or change how it looks</div>
-            <div class="lv-opt on"><i></i>Read up on how it actually works</div>
-          </div>
+      <div class="landing-visual" aria-hidden="true">
+        <div class="card landing-card-main stack">
+          <div class="card-head"><div class="stack-xs stack"><span class="small muted">Top match</span><span class="card-title-lg">Software Engineer</span></div><span class="badge fit-strong">86%</span></div>
+          <div class="riasec"><span class="riasec-tile" data-dim="I">I</span><span class="riasec-tile" data-dim="R">R</span><span class="riasec-tile" data-dim="A">A</span></div>
+          <div class="bar-row"><span class="bar-row-label">Thinker</span><progress class="progress" data-dim="I" max="100" value="82">82</progress><span class="bar-row-value">82</span></div>
+          <div class="bar-row"><span class="bar-row-label">Doer</span><progress class="progress" data-dim="R" max="100" value="71">71</progress><span class="bar-row-value">71</span></div>
         </div>
-        <div class="lv-card lv-card-r">
-          <div class="lv-head"><span>Your top matches</span><span>Sample</span></div>
-          <div class="lv-match">
-            <div class="lv-match-ico ic-violet">⚙️</div>
-            <div class="lv-match-name">Mechanical Engineer<small>PCM · Strong aptitude fit</small></div>
-            <div class="lv-match-pct">92%</div>
-          </div>
-          <div class="lv-match">
-            <div class="lv-match-ico ic-teal">🔬</div>
-            <div class="lv-match-name">Research Scientist<small>PCB · High curiosity score</small></div>
-            <div class="lv-match-pct">87%</div>
-          </div>
-          <div class="lv-match">
-            <div class="lv-match-ico ic-blue">📊</div>
-            <div class="lv-match-name">Data Analyst<small>PCM · Logical reasoning</small></div>
-            <div class="lv-match-pct">81%</div>
+        <div class="landing-row">
+          <div class="illo landing-illo"><img src="/assets/illustrations/rocket-400.webp" alt=""></div>
+          <div class="card-ink landing-card-contest stack-sm stack">
+            <div class="cluster cluster-between"><span class="card-title">Saturday contest</span><span class="live-badge"><span class="live-dot"></span>LIVE</span></div>
+            <span class="countdown">02:14:37</span>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ── What the product does, in numbers ── -->
-    <div class="land-facts">
-      <div class="facts-grid">
-        <div class="fact">
-          <div class="fact-val">25</div>
-          <div class="fact-label">Quiz questions</div>
-        </div>
-        <div class="fact">
-          <div class="fact-val">75+</div>
-          <div class="fact-label">Careers ranked</div>
-        </div>
-        <div class="fact">
-          <div class="fact-val">15 min</div>
-          <div class="fact-label">Start to plan</div>
-        </div>
-        <div class="fact">
-          <div class="fact-val">5 yr</div>
-          <div class="fact-label">Roadmap ahead</div>
-        </div>
-      </div>
-    </div>
+    <section class="landing-facts" aria-label="At a glance">
+      <div><span class="stat-value">25</span><span class="stat-label">questions about what you enjoy</span></div>
+      <div><span class="stat-value">6 min</span><span class="stat-label">to finish the quiz</span></div>
+      <div><span class="stat-value">300+</span><span class="stat-label">careers with roadmaps</span></div>
+      <div><span class="stat-value">Every Sat</span><span class="stat-label">a new 5-question contest</span></div>
+    </section>
 
-    <div class="land-features" id="features">
-      <h2 class="land-feat-title">Everything you need to choose right</h2>
-      <p class="land-feat-sub">From "I have no idea" to "I have a plan" — in under 15 minutes.</p>
-      <div class="feat-grid">
-        <div class="feat-card">
-          <div class="feat-icon ic-violet">🎯</div>
-          <h3>Career Match Score</h3>
-          <p>75+ careers ranked by how well they fit your interests, the work you enjoy, and your strongest subjects. Every score comes with a
-            plain-English reason.</p>
-        </div>
-        <div class="feat-card">
-          <div class="feat-icon ic-teal">🧠</div>
-          <h3>Career Interest Quiz</h3>
-          <p>25 everyday-scenario questions on your interests, the world you want to work in, and your favourite
-            subjects. Built on the Holland (RIASEC) model counsellors use worldwide.</p>
-        </div>
-        <div class="feat-card">
-          <div class="feat-icon ic-blue">🛤️</div>
-          <h3>Stream Recommendation</h3>
-          <p>Get a clear recommendation for PCM, PCB, Commerce, or Arts — with the reasoning and subject plan to back it
-            up.</p>
-        </div>
-        <div class="feat-card">
-          <div class="feat-icon ic-pink">🗺️</div>
-          <h3>5-Year Roadmap</h3>
-          <p>A personalised timeline from your current class to your first job. Milestones, exams, college types — all
-            in one place.</p>
-        </div>
-        <div class="feat-card">
-          <div class="feat-icon ic-orange">💬</div>
-          <h3>AI Chat Counsellor</h3>
-          <p>Ask anything — "Is data science good for me?", "What do architects earn?" — and get honest, data-backed
-            answers instantly.</p>
-        </div>
-        <div class="feat-card">
-          <div class="feat-icon ic-purple">📈</div>
-          <h3>Progress Tracker</h3>
-          <p>Retake the quiz each year (Class 9 → 10) and watch your career clarity grow as your interests develop.
-          </p>
-        </div>
-      </div>
-    </div>
+    <section class="landing-section" id="how" aria-labelledby="lp-how">
+      <h2 id="lp-how">How it works</h2>
+      <ol class="landing-steps">
+        <li><span class="tl-dot">1</span><div><h3>Sign up</h3><p class="muted">Use the School ID from your school, or get your own plan.</p></div></li>
+        <li><span class="tl-dot">2</span><div><h3>Take the quiz</h3><p class="muted">25 questions about what you like doing. No marks, no wrong answers.</p></div></li>
+        <li><span class="tl-dot">3</span><div><h3>See your matches</h3><p class="muted">Careers ranked by how well they fit your interests, subjects and stream.</p></div></li>
+        <li><span class="tl-dot">4</span><div><h3>Follow your roadmap</h3><p class="muted">What to study, which exams to take and when, year by year.</p></div></li>
+      </ol>
+    </section>
 
-    <div class="land-steps" id="how">
-      <h2 class="land-feat-title">How it works</h2>
-      <p class="land-feat-sub">Four steps. 15 minutes. A career plan for life.</p>
-      <div class="steps-grid">
-        <div class="step">
-          <div class="step-num">1</div>
-          <h4>Build Your Profile</h4>
-          <p>Tell us your class, marks, favourite subjects, and hobbies in 5 minutes.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <h4>AI Evaluates You</h4>
-          <p>Our AI reads your profile and prepares a personalised aptitude quiz just for you.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <h4>Take the Quiz</h4>
-          <p>25 quick questions on your interests, the work you enjoy, and your subjects.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">4</div>
-          <h4>Get Your Plan</h4>
-          <p>Career matches, stream recommendation, and a full 5-year roadmap — instantly.</p>
-        </div>
+    <section class="landing-section" id="features" aria-labelledby="lp-features">
+      <h2 id="lp-features">What you get</h2>
+      <div class="grid-3">
+        <div class="card-flat stack-sm stack"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-list-checks"/></svg></span><h3>Career quiz</h3><p class="muted">Finds your interest code from six areas, from Doer to Organiser.</p></div>
+        <div class="card-flat stack-sm stack"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-compass"/></svg></span><h3>Career matches</h3><p class="muted">Every match comes with a fit score and the reason it suits you.</p></div>
+        <div class="card-flat stack-sm stack"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-route"/></svg></span><h3>Roadmaps</h3><p class="muted">Stream, subjects, entrance exams and colleges, in order.</p></div>
+        <div class="card-flat stack-sm stack"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-message-square"/></svg></span><h3>AI Chat</h3><p class="muted">Ask anything about a career and get answers that know your results.</p></div>
+        <div class="card-flat stack-sm stack"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-trophy"/></svg></span><h3>Weekly contests</h3><p class="muted">Five questions every Saturday, a leaderboard and a streak to keep.</p></div>
+        <div class="card-flat stack-sm stack"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-newspaper"/></svg></span><h3>Career Space</h3><p class="muted">News, internships and jobs for the career you picked.</p></div>
       </div>
-    </div>
+    </section>
 
-    <div class="land-final" id="start">
-      <h2 class="land-feat-title">Ready to find your direction?</h2>
-      <p class="land-feat-sub">Start the quiz now — you can create an account later to save your results.</p>
-      <div class="land-final-cta">
-        <button class="btn btn-primary btn-lg" onclick="cqStart()">Take the Career Quiz →</button>
-        <button class="btn btn-secondary btn-lg" onclick="show('auth')">Create Account</button>
-      </div>
-    </div>
+    <section class="card-ink landing-final" aria-labelledby="lp-final">
+      <div class="stack-sm stack"><h2 class="card-title-lg" id="lp-final">Six minutes now saves a lot of guessing later.</h2><p class="muted">Start with the quiz. Your matches and roadmap are ready the moment you finish.</p></div>
+      <button class="btn btn-primary" type="button" onclick="cqStart()">Take the career quiz</button>
+    </section>
 
-    <div class="land-footer">
-      <div class="footer-grid">
-        <div>
-          <div class="land-logo">Crack<span>eer</span></div>
-          <p class="footer-blurb">The crazy way to crack your career. Career discovery built for Class 9 &amp; 10 students in India. Interests, aptitude
-            and academics in one plan.</p>
-        </div>
-        <div class="footer-cols">
-          <div class="footer-col">
-            <h5>Product</h5>
-            <a href="#features">Features</a>
-            <a href="#how">How it works</a>
-            <a href="#start">Take the quiz</a>
-          </div>
-          <div class="footer-col">
-            <h5>Account</h5>
-            <a href="pages/auth.html">Log in</a>
-            <a href="pages/auth.html">Create account</a>
-            <a href="pages/admin_login.html">Admin login</a>
-          </div>
-        </div>
-      </div>
-      <div class="footer-base">Crackeer · Crazy way to crack career · Built for Class 9 &amp; 10 students in India</div>
-    </div>
+    <footer class="landing-footer">
+      <span class="logo">Crackeer<span class="logo-dot">.</span></span>
+      <nav class="cluster cluster-lg" aria-label="Footer"><a href="pages/auth.html">Log in</a><a href="pages/auth.html#register">Create an account</a><a href="pages/admin_login.html">School admin login</a></nav>
+      <p class="small muted">Made for students in Classes 8 to 12.</p>
+    </footer>
+  
+  </main>
   </div>
 
   <script src="scripts/riasec_engine.js"></script>
