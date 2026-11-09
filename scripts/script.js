@@ -397,6 +397,34 @@
       });
     });
 
+    // The Contests LIVE badge in the sidebar and tab bar (spec §4.2): on while a
+    // contest is open. The contest state is cached for 5 minutes in the tab, so
+    // moving between pages doesn't refetch it; the leaderboard passes in fresh state.
+    const LIVE_KEY = 'careerai_contest_live';
+    function contestIsLive(st) {
+      const c = st && st.contest;
+      return !!(c && c.status !== 'upcoming' && c.status !== 'closed' && Date.parse(c.closes_at) > Date.now());
+    }
+    function showLiveBadge(live) {
+      document.querySelectorAll('.nav-live, .tab-live').forEach(el => { el.hidden = !live; });
+    }
+    function syncLiveBadge(state) {
+      if (state) {
+        const live = contestIsLive(state);
+        try { sessionStorage.setItem(LIVE_KEY, JSON.stringify({ live, at: Date.now(), until: state.contest ? state.contest.closes_at : null })); } catch (e) { }
+        showLiveBadge(live);
+        return;
+      }
+      let cached = null;
+      try { cached = JSON.parse(sessionStorage.getItem(LIVE_KEY)); } catch (e) { }
+      if (cached && Date.now() - cached.at < 5 * 60e3) {
+        showLiveBadge(cached.live && (!cached.until || Date.parse(cached.until) > Date.now()));
+        return;
+      }
+      if (typeof ContestAPI === 'undefined') { showLiveBadge(false); return; }
+      ContestAPI.getState().then(st => syncLiveBadge(st), () => showLiveBadge(false));
+    }
+
     function initPage() {
       switch (CURRENT_PAGE) {
         case 'app': {
@@ -406,11 +434,12 @@
           window.addEventListener('hashchange', () => appRoute());
           appRoute(true);
           syncUser();
+          syncLiveBadge();
           cqInitPrint(appPrintTitle);
           break;
         }
         case 'chat':
-          syncUser(); chatLoadContext(); chatInitMem();
+          syncUser(); chatLoadContext(); chatInitMem(); syncLiveBadge();
           // Ready to type on a laptop; a phone keeps its keyboard down until tapped
           if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) document.getElementById('chat-input').focus();
           break;

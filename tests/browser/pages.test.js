@@ -291,6 +291,31 @@ test('composer never covers last message', { skip: !!ONLY && !ONLY.includes('cha
   }
 });
 
+test('chat stop button stops a streaming reply', { skip: !!ONLY && !ONLY.includes('chat') }, async () => {
+  const sc = require('./scenarios/chat.js').find(x => x.id === 'chat-streaming');
+  const page = await newPage('light', sc);
+  await page.setViewportSize({ width: 390, height: 800 });
+  await open(page, sc);
+  assert.ok(await page.evaluate(() => document.getElementById('chat-send').classList.contains('busy')), 'send button is in the Stop state while streaming');
+  await page.click('#chat-send', { timeout: 3000 });
+  await page.waitForFunction(() => !document.getElementById('chat-send').classList.contains('busy'), null, { timeout: 3000 });
+  await page.context().close();
+});
+
+test('contests LIVE badge follows the contest state', { skip: !runShell }, async () => {
+  const live = require('./scenarios/contests.js').find(x => x.id === 'contests-live').stubs;
+  for (const [stubs, want] of [[live, true], [{}, false]]) {
+    for (const [w, sel] of [[390, '.tabbar .tab-live'], [1280, '.sidebar .nav-live']]) {
+      const page = await newPage('light', { stubs });
+      await page.setViewportSize({ width: w, height: 800 });
+      await open(page, { page: 'pages/app.html', hash: '#/dashboard', ready: '#db-title', stubs });
+      await page.waitForTimeout(800);
+      assert.strictEqual(await page.isVisible(sel), want, `${w}px ${sel} visible should be ${want}`);
+      await page.context().close();
+    }
+  }
+});
+
 test('harness loads a logged-in app page', { skip: !!ONLY && !ONLY.includes('harness') }, async () => {
   const page = await newPage('light');
   await open(page, { page: 'pages/app.html', hash: '#/dashboard', ready: '#db-title' });

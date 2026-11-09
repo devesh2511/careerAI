@@ -290,6 +290,8 @@ body.shell-chat .app-main, body.has-shell.shell-chat .app-main { padding: 0; }
 .chat-send { border-radius: 12px; }
 .chat-send.busy { background: var(--accent-text); border-color: var(--accent-text); color: var(--live-ink); }
 .chat-send.busy::before { display: none; }
+/* .btn.busy blocks clicks (a saving button); the chat Stop button must stay tappable. */
+.chat-send.busy { pointer-events: auto; }
 .chat-hint { max-width: 760px; margin: 6px auto 0; }
 @media (max-width: 639.98px) { .chat-hint { display: none; } }
 body.chat-mem-open .chat-mem { transform: none; visibility: visible; transition: transform var(--dur) var(--ease-out), visibility 0s; }

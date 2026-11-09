@@ -376,6 +376,7 @@
         if (seq !== lbSeq) return;
         lbData = { state, week, live, history, scope, career };
         lbDraw();
+        if (typeof syncLiveBadge === 'function') syncLiveBadge(state);
       }).catch(err => {
         if (seq !== lbSeq) return;
         // A retaken quiz can drop the career this board was on: start over on the current one.
