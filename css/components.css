@@ -461,12 +461,11 @@ a.list-row:hover .list-title { text-decoration: underline; text-underline-offset
   padding: 3px 6px 7px 3px; margin: -3px -6px -7px -3px;
 }
 .sp-careers::-webkit-scrollbar { display: none; }
-/* With a mouse there's no swipe, so the rows keep a thin scrollbar. */
+/* With a mouse there's no swipe, so the rows wrap onto more lines instead of scrolling
+   (nothing overflows, so spEdges adds no faded edge either). */
 @media (hover: hover) and (pointer: fine) {
-  .sp-careers, #sp-tabs { scrollbar-width: thin; scrollbar-color: var(--line-soft) transparent; }
-  .sp-careers::-webkit-scrollbar, #sp-tabs::-webkit-scrollbar { display: block; height: 6px; }
-  .sp-careers::-webkit-scrollbar-thumb, #sp-tabs::-webkit-scrollbar-thumb { background: var(--line-soft); border-radius: var(--r-pill); }
-  #sp-tabs { padding-bottom: 6px; }
+  .sp-careers, #sp-tabs { flex-wrap: wrap; overflow-x: visible; }
+  .sp-careers { row-gap: var(--sp-3); }
 }
 /* The page grid's one column must not grow to fit these unwrapped rows. */
 #space { grid-template-columns: minmax(0, 1fr); }
