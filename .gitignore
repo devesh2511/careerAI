@@ -24,3 +24,6 @@ ui_redesign/tools/node_modules/
 
 # Browser test dependencies
 tests/browser/node_modules/
+
+# Tests — not part of the site
+tests/
