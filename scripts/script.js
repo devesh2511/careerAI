@@ -944,14 +944,14 @@
       if (!window.CareerAPI) return;
       CareerAPI.me.get().then(m => {
         const n = document.querySelector('.user-name'), av = document.querySelector('.user-avatar');
-        if (n) n.textContent = m.student.full_name;
+        if (n) { n.textContent = m.student.full_name; n.title = m.student.full_name; }
         if (av) av.textContent = m.student.full_name.charAt(0).toUpperCase();
         const hi = document.getElementById('chat-hello-name');
         if (hi) hi.textContent = ' ' + m.student.full_name.split(' ')[0];
       }, () => { });
       CareerAPI.me.profile().then(r => {
         const cls = document.getElementById('user-class');
-        if (cls) cls.textContent = profileSummary(r.profile);
+        if (cls) { cls.textContent = profileSummary(r.profile); cls.title = cls.textContent; }
       }, () => { });
     }
 
@@ -3567,7 +3567,9 @@
     // page's life, so switching back to a career is instant.
     const SP_ICON = { news: 'newspaper', jobs: 'briefcase', exams: 'graduation-cap', scholarships: 'star' };
     const spFeeds = {};
-    let spCareer = null, spTab = 'all', spReq = 0;
+    // The feed shows the lead stories plus SP_PAGE cards, and SP_PAGE more per "Show more".
+    const SP_PAGE = 24;
+    let spCareer = null, spTab = 'all', spReq = 0, spShown = SP_PAGE;
 
     // career and tab come from the address (#/space/<career>?tab=jobs).
     function spLoad(career, tab) {
@@ -3593,7 +3595,8 @@
         '<button class="pill career-pill' + (c.title === spCareer ? ' active' : '') + '" type="button" role="tab" aria-selected="' +
         (c.title === spCareer) + '" data-career="' + esc(c.title) + '" onclick="spPick(this.dataset.career)">' +
         '<span class="pill-num career-pill-pct">' + esc(Math.round(c.match_pct)) + '%</span>' +
-        '<span class="career-pill-name">' + esc(c.title) + '</span></button>').join('');
+        '<span class="career-pill-name" title="' + esc(c.title) + '">' + esc(c.title) + '</span></button>').join('');
+      spWatchEdges();
       spShow(spCareer);
     }
 
@@ -3603,10 +3606,13 @@
         const on = p.dataset.career === career;
         p.classList.toggle('active', on);
         p.setAttribute('aria-selected', on);
+        if (on) spReveal(p);
       });
+      spShown = SP_PAGE;
       if (spFeeds[career]) { spRender(); return; }
       const req = ++spReq;
-      document.getElementById('sp-tabs').innerHTML = document.getElementById('sp-feed').innerHTML = '';
+      document.getElementById('sp-tabs').innerHTML = '';
+      document.getElementById('sp-feed').innerHTML = spSkeleton();
       document.getElementById('sp-foot').hidden = true;
       spNote('Finding the latest for ' + career + '…');
       CareerAPI.me.careerNews(career).then(r => {
@@ -3614,6 +3620,7 @@
         if (req === spReq) spRender();
       }, err => {
         if (req !== spReq) return;
+        document.getElementById('sp-feed').innerHTML = '';
         spNote(err.code === 'not_found'
           ? 'We don\'t have a news feed for ' + career + ' yet. Pick another of your matches above.'
           : err.message, true);
@@ -3622,7 +3629,7 @@
 
     // Picking a career is a history entry; a tab only rewrites the address.
     function spPick(career) { appGo(appHash('space', career, { tab: spTab === 'all' ? null : spTab })); }
-    function spSetTab(key) { spTab = key; spRender(); }
+    function spSetTab(key) { spTab = key; spShown = SP_PAGE; spRender(); }
     function spSyncHash() {
       if (appView === 'space' && spCareer) appSetHash(appHash('space', spCareer, { tab: spTab === 'all' ? null : spTab }));
     }
@@ -3643,6 +3650,10 @@
       return out.sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''));
     }
 
+    // Magazine layout: a lead story (the newest one with a photo from the
+    // last 3 days, else the newest) with the next two beside it, then the
+    // rest as cards under Today / This week / Earlier. Most items have no
+    // photo (Google News never sends one), so a card reads fine without it.
     function spRender() {
       const feed = spFeeds[spCareer];
       if (!feed) return;
@@ -3651,30 +3662,127 @@
       const total = new Set([].concat.apply([], feed.categories.map(c => c.items.map(it => it.url)))).size;
       const chip = (key, label, n) => '<button class="tab-btn filter-chip' + (spTab === key ? ' active' : '') + (n ? '' : ' is-empty') +
         '" type="button" role="tab" aria-selected="' + (spTab === key) + '"' + (n || spTab === key ? '' : ' disabled') + ' onclick="spSetTab(\'' + key + '\')">' +
+        (SP_ICON[key] ? '<span class="sp-dot sp-cat-' + key + '" aria-hidden="true"></span>' : '') +
         label + ' <span class="fc-n chip-count">' + n + '</span></button>';
-      document.getElementById('sp-tabs').innerHTML = chip('all', 'All', total) +
+      const tabs = document.getElementById('sp-tabs');
+      tabs.innerHTML = chip('all', 'All', total) +
         feed.categories.map(c => chip(c.key, esc(stripEmoji(c.label)), c.items.length)).join('');
+      const activeTab = tabs.querySelector('.active');
+      if (activeTab) spReveal(activeTab);
 
       const items = spItems(feed);
       const labels = {};
-      feed.categories.forEach(c => { labels[c.key] = c.label; });
+      feed.categories.forEach(c => { labels[c.key] = stripEmoji(c.label); });
       spNote(items.length ? '' : 'Nothing new here in the last few weeks. Check the other tabs, or come back in a few days.');
-      document.getElementById('sp-feed').innerHTML = items.map(it => {
-        const url = /^https?:\/\//i.test(it.url) ? it.url : '#';
-        const img = it.image && /^https:\/\//i.test(it.image)
-          ? '<img class="sp-thumb" src="' + esc(it.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">'
-          : '<span class="icon-tile sp-thumb">' + icon(SP_ICON[it.cat] || 'newspaper') + '</span>';
-        const meta = [spTab === 'all' ? stripEmoji(labels[it.cat] || it.cat) : '', it.source || it.provider || '', it.published_at ? spAgo(it.published_at) : ''].filter(Boolean).join(', ');
-        return '<a class="list-row sp-item" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + img +
-          '<span class="grow"><span class="list-title sp-title">' + esc(it.title) + '</span><br><span class="list-meta sp-meta">' + esc(meta) + '</span></span>' +
-          icon('external-link') + '<span class="visually-hidden"> (opens in a new tab)</span></a>';
-      }).join('');
+
+      let html = '', rest = items;
+      if (items.length >= 4) {
+        const recent = Date.now() - 3 * 864e5;
+        const lead = items.find(it => spImg(it) && new Date(it.published_at) >= recent) || items[0];
+        const side = items.filter(it => it !== lead).slice(0, 2);
+        rest = items.filter(it => it !== lead && !side.includes(it));
+        html += '<div class="sp-lead">' + spCard(lead, labels, 'lead') +
+          '<div class="sp-lead-side">' + side.map(it => spCard(it, labels, 'side')).join('') + '</div></div>';
+      }
+      const shown = rest.slice(0, spShown);
+      const today = new Date().setHours(0, 0, 0, 0), week = today - 6 * 864e5;
+      const groups = [['Today', []], ['This week', []], ['Earlier', []]];
+      shown.forEach(it => {
+        const t = it.published_at ? new Date(it.published_at).getTime() : NaN;  // undated: Earlier
+        groups[t >= today ? 0 : t >= week ? 1 : 2][1].push(it);
+      });
+      html += groups.filter(g => g[1].length).map(g =>
+        '<section class="sp-group" aria-label="' + g[0] + '"><h2 class="sp-group-head">' + g[0] +
+        ' <span class="sp-group-n">' + g[1].length + '</span></h2>' +
+        '<div class="sp-grid">' + g[1].map(it => spCard(it, labels)).join('') + '</div></section>').join('');
+      const left = rest.length - shown.length;
+      if (left > 0) {
+        html += '<div class="sp-more"><button class="btn btn-secondary" type="button" onclick="spMore()">Show ' +
+          Math.min(left, SP_PAGE) + ' more <span class="chip-count">of ' + left + '</span></button></div>';
+      }
+      document.getElementById('sp-feed').innerHTML = html;
+      spEdges();
 
       const foot = document.getElementById('sp-foot');
       foot.hidden = false;
       foot.textContent = (feed.sources && feed.sources.length ? 'Headlines from ' + feed.sources.join(' and ') : 'Live headlines') +
         (feed.updated_at ? ', updated ' + spAgo(feed.updated_at) : '') +
         '. Crackeer doesn\'t write these stories: check dates and eligibility on the official website before you apply.';
+    }
+
+    function spImg(it) { return it.image && /^https:\/\//i.test(it.image) ? it.image : ''; }
+
+    // kind: 'lead', 'side' or nothing (a grid card).
+    function spCard(it, labels, kind) {
+      const url = /^https?:\/\//i.test(it.url) ? it.url : '#';
+      const cat = SP_ICON[it.cat] ? it.cat : 'news';
+      const img = kind === 'side' ? '' : spImg(it);
+      const src = it.source || it.provider || '';
+      const when = it.published_at ? spAgo(it.published_at) : '';
+      return '<a class="sp-card sp-cat-' + cat + (kind ? ' sp-card-' + kind : '') + (img ? ' has-img' : '') +
+        '" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
+        (img ? '<span class="sp-media"><img src="' + esc(img) + '" alt="" loading="' + (kind === 'lead' ? 'eager' : 'lazy') +
+          '" referrerpolicy="no-referrer" onerror="spImgFail(this)"></span>' : '') +
+        (kind === 'lead' ? '<span class="sp-lead-art" aria-hidden="true">' + icon(SP_ICON[cat]) + '</span>' : '') +
+        '<span class="sp-body">' +
+        '<span class="sp-kicker">' + icon(SP_ICON[cat], 'icon sp-kicker-icon') + esc(labels[it.cat] || it.cat) + '</span>' +
+        '<span class="sp-title" dir="auto">' + esc(it.title) + '</span>' +
+        '<span class="sp-meta">' +
+        // <bdi>: a right-to-left source name mustn't reorder the line.
+        (src ? '<bdi class="sp-src">' + esc(src) + '</bdi>' : '') +
+        (src && when ? '<span aria-hidden="true">·</span>' : '') +
+        (when ? '<span class="sp-when">' + esc(when) + '</span>' : '') +
+        icon('external-link', 'icon sp-ext') + '</span></span>' +
+        '<span class="visually-hidden"> (opens in a new tab)</span></a>';
+    }
+
+    // A photo that fails to load leaves the card as a no-photo card.
+    function spImgFail(img) {
+      const card = img.closest('.sp-card');
+      if (card) card.classList.remove('has-img');
+      img.parentNode.remove();
+    }
+
+    function spMore() {
+      const cards = () => document.querySelectorAll('#sp-feed .sp-grid .sp-card');
+      const before = cards().length;
+      spShown += SP_PAGE;
+      spRender();
+      const next = cards()[before];
+      if (next) next.focus({ preventScroll: true });
+    }
+
+    function spSkeleton() {
+      const card = '<div class="sp-card sp-skel"><span class="sp-body"><span class="skeleton skeleton-pill"></span>' +
+        '<span class="skeleton skeleton-line w-80"></span><span class="skeleton skeleton-line w-60"></span>' +
+        '<span class="skeleton skeleton-line w-40"></span></span></div>';
+      return '<div class="sp-grid" aria-hidden="true">' + card + card + card + '</div>';
+    }
+
+    // The career and category rows scroll sideways on small screens; a faded
+    // edge shows there is more to scroll to.
+    function spEdges() {
+      document.querySelectorAll('#space .sp-scroll').forEach(el => {
+        const max = el.scrollWidth - el.clientWidth;
+        el.classList.toggle('fade-start', el.scrollLeft > 2);
+        el.classList.toggle('fade-end', max - el.scrollLeft > 2);
+      });
+    }
+    let spEdgesWatched = false;
+    function spWatchEdges() {
+      if (spEdgesWatched) return;
+      spEdgesWatched = true;
+      document.querySelectorAll('#space .sp-scroll').forEach(el => el.addEventListener('scroll', spEdges, { passive: true }));
+      window.addEventListener('resize', spEdges, { passive: true });
+    }
+    // Scrolls a row sideways (never the page) so its selected pill is in view.
+    function spReveal(el) {
+      const row = el.parentElement;
+      if (!row || row.scrollWidth <= row.clientWidth) return;
+      const l = el.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft, r = l + el.offsetWidth;
+      if (l < row.scrollLeft) row.scrollLeft = l - 44;  // clear the 40px faded edge
+      else if (r > row.scrollLeft + row.clientWidth) row.scrollLeft = r - row.clientWidth + 44;
+      spEdges();
     }
 
     function spAgo(iso) {

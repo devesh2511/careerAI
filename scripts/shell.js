@@ -42,7 +42,9 @@
 
   function sidebar(o) {
     var html = '<aside class="sidebar" aria-label="Main navigation">' +
-      '<button class="logo sidebar-logo" type="button" onclick="navTo(\'dashboard\')">Crackeer<span class="logo-dot">.</span></button><nav class="sidebar-nav">';
+      '<div class="sidebar-top"><button class="logo sidebar-logo" type="button" onclick="navTo(\'dashboard\')">Crackeer<span class="logo-dot">.</span></button>' +
+      '<button class="theme-toggle btn btn-icon btn-sm" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false">' + themeIcons() + '</button></div>' +
+      '<nav class="sidebar-nav">';
     GROUPS.forEach(function (g) {
       html += '<p class="nav-group">' + g[0] + '</p>';
       g[1].forEach(function (p) {
@@ -55,7 +57,6 @@
       '<button class="user-profile' + on('settings', o.active) + '"' + go('settings') + '>' +
       '<span class="avatar user-avatar">?</span>' +
       '<span class="user-meta"><span class="user-name">Student</span><span id="user-class"></span></span></button>' +
-      '<button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false">' + themeIcons() + '</button>' +
       '</div></aside>';
     return html;
   }
