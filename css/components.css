@@ -3,7 +3,9 @@
    are added alongside these in markup, never instead of them. */
 
 /* ---------- Layout primitives ---------- */
-.stack { display: grid; gap: var(--sp-4); align-content: start; }
+/* minmax(0, 1fr): the one column is never wider than the stack, so a child with
+   unwrapped text (e.g. an ellipsised career pill) can't push it past its card. */
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); align-content: start; }
 .stack-xs { gap: var(--sp-1); }
 .stack-sm { gap: var(--sp-2); }
 .stack-lg { gap: var(--sp-6); }

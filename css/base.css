@@ -26,7 +26,10 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* The site never scrolls sideways; wide content (tables, career rows) scrolls in its own box.
+   clip (not hidden) keeps position: sticky working. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: clip; }
+body { overflow-x: clip; }
 @media (min-width: 1600px) { html { font-size: 106.25%; } }
 @media (min-width: 1920px) { html { font-size: 112.5%; } }
 @media (min-width: 2400px) { html { font-size: 125%; } }

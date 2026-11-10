@@ -17,7 +17,7 @@
   padding: var(--sp-5) var(--sp-4) calc(var(--tabbar-h) + var(--sp-9) + env(safe-area-inset-bottom));
 }
 @media (min-width: 768px) { .app-main { padding-inline: var(--sp-8); } }
-.page { max-width: var(--content-max); margin-inline: auto; display: grid; gap: var(--sp-6); align-content: start; }
+.page { max-width: var(--content-max); margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); align-content: start; }
 .page-narrow { max-width: 760px; }
 .page-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--sp-3) var(--sp-4); }
 .page-head > div { min-width: 0; }
