@@ -1272,11 +1272,29 @@
       bubble.parentNode.insertBefore(box, bubble.nextSibling);
     }
     // Errors and notes go under the reply and its sources, above the time.
-    function addChatError(bubble, message, quiet) {
+    // With onRetry the error also gets a Retry button.
+    function addChatError(bubble, message, quiet, onRetry) {
       const box = document.createElement('div');
       box.className = quiet ? 'msg-note' : 'msg-error alert alert-error';
-      box.textContent = message;
+      const text = document.createElement('span');
+      text.textContent = message;
+      box.appendChild(text);
+      if (onRetry) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-secondary btn-sm msg-retry';
+        btn.innerHTML = icon('refresh-cw') + '<span>Retry</span>';
+        btn.onclick = onRetry;
+        box.appendChild(btn);
+      }
       bubble.parentNode.insertBefore(box, bubble.parentNode.querySelector('.msg-time'));
+    }
+    // Worth retrying: network drops, a broken stream, server or model trouble
+    // and the short rate limit. Bad requests and the daily cap would just fail again.
+    function chatRetryable(err) {
+      if (err.code === 'daily_limit_reached') return false;
+      return !(err.status >= 400 && err.status < 500) || err.status === 408 || err.status === 429 ||
+        err.code === 'conversation_expired';
     }
     // Follow a streaming reply only while the student is already at the
     // bottom, so scrolling up to reread isn't yanked back down.
@@ -1290,16 +1308,23 @@
       document.getElementById('chat-new').hidden = show;
     }
 
-    async function sendChat() {
+    // retry = { text, failed }: resend text and swap out the failed reply,
+    // keeping the student's question bubble and whatever is in the composer.
+    async function sendChat(retry) {
       const inp = document.getElementById('chat-input');
-      const msg = inp.value.trim();
+      const msg = retry ? retry.text : inp.value.trim();
       if (!msg || chatAbort) return;
-      inp.value = '';
-      chatAutosize(inp);
+      if (!retry) {
+        inp.value = '';
+        chatAutosize(inp);
+      }
       inp.focus();
       chatShowWelcome(false);
       chatPlaceSave(false);
-      addMsg(msg, 'user');
+      // Only the latest failure can be retried; an older one would land out of order.
+      document.querySelectorAll('#chat-messages .msg-retry').forEach(b => b.remove());
+      if (retry) retry.failed.remove();
+      else addMsg(msg, 'user');
       const bubble = addMsg('', 'ai');
       bubble.innerHTML = '<span class="msg-typing" aria-label="Thinking"><span></span><span></span><span></span></span>';
       chatToBottom();
@@ -1340,12 +1365,14 @@
         }
         if (err.status === 402) { redirect('paywall'); return; }
         bubble.innerHTML = reply ? renderReply(reply) : '';
+        const failed = bubble.closest('.msg');
+        const onRetry = chatRetryable(err) ? () => sendChat({ text: msg, failed: failed }) : null;
         if (err.code === 'conversation_expired') {
           chatId = newChatId();
           chatHistory = [];
-          addChatError(bubble, "This chat expired, so I've started a new one. Please send your question again.");
+          addChatError(bubble, "This chat expired, so I've started a new one. Tap Retry to ask again.", false, onRetry);
         } else {
-          addChatError(bubble, err.message);
+          addChatError(bubble, err.message, false, onRetry);
         }
         chatToBottom();
       } finally {

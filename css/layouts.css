@@ -281,7 +281,8 @@ body.shell-chat .app-main, body.has-shell.shell-chat .app-main { padding: 0; }
 .msg-typing > span:nth-child(2) { animation-delay: 0.15s; }
 .msg-typing > span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes typing { 30% { transform: translateY(-4px); opacity: 1; } 0%, 60%, 100% { opacity: 0.4; } }
-.msg-error { max-width: 620px; }
+.msg-error { max-width: 620px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.msg-retry { flex: 0 0 auto; }
 .msg-note { display: flex; gap: var(--sp-2); align-items: center; justify-content: center; font-size: var(--fs-small); color: var(--muted); text-align: center; }
 .chat-composer { flex: 0 0 auto; border-top: var(--outline-soft); background: var(--paper); padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom)); }
 .chat-composer-inner { max-width: 760px; margin-inline: auto; display: flex; gap: var(--sp-2); align-items: flex-end; background: var(--surface); border: var(--outline); border-radius: 18px; padding: 6px 6px 6px 14px; box-shadow: var(--shadow-hard); }
