@@ -335,7 +335,7 @@ Elements hidden with the `hidden` attribute (they rely on the global `[hidden]` 
 
 ### A.3 Classes the JS selects or toggles
 
-- **Selected by JS:** `.page`, `.nav-item`, `.user-profile`, `.user-avatar`, `.user-name`, `.sidebar`, `.theme-toggle`, `.auth-tab`, `.password-toggle`, `.field`, `.form-error`, `.chip`, `.dot`, `.cq-opt`, `.cq-letter`, `.al-step`, `.al-step-icon`, `.filter-chip`, `.badge`, `.career-pill`, `.ex-group-chips`, `.ex-group-title`, `.ex-salary`, `.exa-key`, `.exa-val`, `.fc-label`, `.fc-n`, the `.air-*` name/reason/key classes, `.msg`, `.msg-body`, `.msg-bubble`, `.msg-time`, `.msg-actions`, `.msg-save`, `.chat-sug-text`, `.chat-hl`, `.chat-mem-close`, plus `.turn`, `.who` and `.text` in the PDF render.
+- **Selected by JS:** `.page`, `.nav-item`, `.user-profile`, `.user-avatar`, `.user-name`, `.sidebar`, `.theme-toggle`, `.auth-tab`, `.password-toggle`, `.field`, `.form-error`, `.chip`, `.dot`, `.cq-opt`, `.cq-letter`, `.al-step`, `.al-step-icon`, `.filter-chip`, `.badge`, `.career-pill`, `.ex-group-chips`, `.ex-group-title`, `.ex-salary`, `.exa-key`, `.exa-val`, `.fc-label`, `.fc-n`, the `.air-*` name/reason/key classes, `.msg`, `.msg-body`, `.msg-bubble`, `.msg-time`, `.msg-actions`, `.msg-save`, `.msg-avatar` and `.msg-sources` (both read by the chat PDF), `.chat-sug-text`, `.chat-hl`, `.chat-mem-close`.
 - **Toggled state classes:** `active`, `selected`, `on` / `off`, `is-on`, `is-invalid`, `is-ok`, `busy` / `idle`, `lit`, `flash`, `dragging`, `done` / `loading` / `pending`, `no-print`.
 - **Toggled body classes:** `nav-open` (becomes the More-sheet open state), `ex-filters-open`, `chat-mem-open`.
 - **Retired with §5.3 #2:** `.toggle` and the notification toggles' `on` / `off` handling.

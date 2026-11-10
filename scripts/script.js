@@ -1391,8 +1391,9 @@
     // shape Hindi or draw emoji, a picture of the browser's text can. A
     // picture can't be selected or searched, so invisible text is laid over
     // each line (as in a scanned PDF) and clickable areas over the links.
-    // Both libraries and the text font are vendored in assets/vendor/ and
-    // load on first click.
+    // Both libraries and the text font are vendored in assets/vendor/; jsPDF
+    // and the font load into the page on first click, html2canvas into the
+    // hidden frame on every save (see chatSavePdf for why).
     const CHAT_SAVE_SKIP = new Set(('a an the i me my mine we our you your is are am was be can could ' +
       'should would will shall do does did how what which who whom whose why when where there this that ' +
       'these those it its to for of in on at by with from about into after before and or but if so as ' +
@@ -1450,49 +1451,83 @@
       btn.disabled = busy;
       btn.querySelector('span').textContent = label || (busy ? 'Saving…' : 'Save this chat');
     }
+    // The light palette of css/tokens.css, as literals: the copy is drawn in a
+    // frame without the site's CSS, and stays light when the screen is dark.
+    const CHAT_PDF_PAPER = '#f6f1e7';
+    const CHAT_PDF_SPARKLES = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="#f6f1e7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 ' +
+      '5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 ' +
+      '0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/>' +
+      '<path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>';
     // The standalone page the PDF is drawn from, or '' for an empty thread.
+    // Same markup and look as the chat on screen (css/layouts.css, AI Chat):
+    // avatars, outlined reply bubbles, dark user bubbles on the right.
     function chatSaveDoc(title) {
-      const me = (document.querySelector('.user-name') || {}).textContent;
       const turns = [...document.querySelectorAll('#chat-messages .msg')].map(m => {
         const bubble = m.querySelector('.msg-bubble'), time = m.querySelector('.msg-time');
         const user = m.classList.contains('user');
         if (!bubble || !bubble.textContent.trim()) return '';
+        const avatar = user
+          ? '<div class="msg-avatar user-av">' + esc((m.querySelector('.msg-avatar') || {}).textContent || '?') + '</div>'
+          : '<div class="msg-avatar ai-av">' + CHAT_PDF_SPARKLES + '</div>';
+        // The numbered links under a reply, as on screen.
+        const sources = [...m.querySelectorAll('.msg-sources a[href]')].map(a => {
+          const n = a.querySelector('b'), label = a.textContent.slice(n ? n.textContent.length : 0);
+          return '<a href="' + esc(a.href) + '">' + (n ? '<b>' + esc(n.textContent) + '</b>' : '') + esc(label) + '</a>';
+        }).join('');
         // A user turn is plain text; a reply is already escaped by renderReply.
-        return '<section class="turn' + (user ? ' user' : '') + '"><div class="who">' +
-          esc(user ? (me && me.trim()) || 'You' : 'AI Career Counsellor') +
-          (time ? '<span>' + esc(time.textContent) + '</span>' : '') + '</div>' +
-          '<div class="text">' + (user ? esc(bubble.textContent) : bubble.innerHTML) + '</div></section>';
+        return '<div class="msg' + (user ? ' user' : '') + '">' + avatar + '<div class="msg-body">' +
+          '<div class="msg-bubble">' + (user ? esc(bubble.textContent) : bubble.innerHTML) + '</div>' +
+          (sources ? '<div class="msg-sources">' + sources + '</div>' : '') +
+          (time ? '<div class="msg-time">' + esc(time.textContent) + '</div>' : '') + '</div></div>';
       }).join('');
       if (!turns) return '';
       const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+      const font = (name, file, weight) => '@font-face{font-family:"' + name + '";font-weight:' + weight +
+        ';src:url(' + new URL(BASE + 'assets/fonts/' + file, location.href).href + ')}';
       return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>' + esc(title) + '</title><style>' +
-        '*{box-sizing:border-box}html{background:#fff}' +
-        'body{margin:0;padding:0 60px 1px;font:11pt/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari",sans-serif;color:#1d1b2e}' +
-        'header{border-bottom:2px solid #6c63ff;padding-bottom:10px;margin-bottom:18px}' +
-        '.brand{font-weight:800;font-size:15pt}.brand span{color:#6c63ff}' +
-        'h1{font-size:13pt;margin:4px 0 2px}.meta{color:#6b6880;font-size:9pt}' +
-        '.turn{margin:0 0 14px;padding:10px 14px;border-radius:10px;border:1px solid #e4e2f0}' +
-        '.turn.user{background:#f1f0ff;border-color:#d9d6ff}' +
-        '.who{font-weight:700;font-size:9pt;color:#6c63ff;margin-bottom:4px;display:flex;justify-content:space-between}' +
-        '.who span{font-weight:400;color:#8a879c}.turn.user .text{white-space:pre-wrap}' +
-        '.text p{margin:0 0 8px}.text h4{font-size:11.5pt;margin:12px 0 4px}' +
-        '.text ul,.text ol{margin:0 0 8px;padding-left:22px}.text li{margin:3px 0}' +
-        '.text>:first-child{margin-top:0}.text>:last-child{margin-bottom:0}' +
-        '.text code{font-family:ui-monospace,Consolas,monospace;font-size:.9em;background:#f3f2f8;border-radius:4px;padding:0 4px}' +
-        '.text a{color:#4b43d6;overflow-wrap:anywhere}' +
-        'footer{margin-top:18px;color:#8a879c;font-size:8.5pt;text-align:center}' +
-        '</style></head><body><header><div class="brand">Crack<span>eer</span></div>' +
-        '<h1>' + esc(title) + '</h1><div class="meta">Chat with the AI Career Counsellor · ' + esc(date) + '</div></header>' +
-        turns + '<footer>AI can make mistakes, so double-check admissions and fees.</footer></body></html>';
+        font('Inter', 'inter-latin-wght.woff2', '100 900') + font('Fraunces', 'fraunces-latin-opsz.woff2', '100 900') +
+        font('Space Grotesk', 'space-grotesk-latin-700.woff2', 700) +
+        '*{box-sizing:border-box;margin:0}html{background:' + CHAT_PDF_PAPER + '}' +
+        'body{padding:0 60px 1px;font:15px/1.55 Inter,"Segoe UI",system-ui,-apple-system,"Noto Sans Devanagari",sans-serif;' +
+        'color:#1d1b18;overflow-wrap:anywhere}' +
+        'header{padding-bottom:12px;margin-bottom:24px;border-bottom:1.5px solid #ddd3c1}' +
+        '.logo{font:800 22px/1 Fraunces,Georgia,serif;letter-spacing:-.02em}.logo span{color:#e0482b}' +
+        'h1{font:800 20px/1.1 Fraunces,Georgia,serif;letter-spacing:-.01em;margin-top:14px}' +
+        '.meta{margin-top:4px;font-size:13px;color:#675f53}' +
+        '.thread{display:grid;gap:20px}' +
+        '.msg{display:flex;gap:10px;align-items:flex-start;min-width:0}.msg.user{flex-direction:row-reverse}' +
+        '.msg-avatar{width:32px;height:32px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center}' +
+        '.ai-av{background:#1d1b18}' +
+        '.user-av{background:#9ad1f5;color:#1d1b18;border:1.5px solid #1d1b18;font:700 14px/1 Fraunces,Georgia,serif}' +
+        '.msg-body{display:grid;gap:6px;min-width:0;max-width:620px}.msg.user .msg-body{justify-items:end}' +
+        '.msg-bubble{padding:12px 14px;border-radius:14px 14px 14px 4px;background:#fffdf8;border:1.5px solid #ddd3c1;min-width:0}' +
+        '.msg.user .msg-bubble{background:#1d1b18;color:#f6f1e7;border-color:#1d1b18;border-radius:14px 14px 4px 14px;white-space:pre-wrap}' +
+        '.msg-bubble>*+*{margin-top:8px}' +
+        '.msg-bubble ul{padding-left:1.1em;display:grid;gap:4px}.msg-bubble ol{padding-left:40px}' +
+        '.msg-bubble h4{font:600 16px/1.1 Fraunces,Georgia,serif;letter-spacing:-.01em}' +
+        '.msg-bubble code{font-family:ui-monospace,Consolas,monospace;font-size:.9em}' +
+        'a{color:#b2341a;text-underline-offset:.18em}' +
+        // The underline is a border: html2canvas draws a 13px link's
+        // underline through the middle of the text.
+        '.msg-sources{display:grid;justify-items:start;gap:6px;font-size:13px}' +
+        '.msg-sources a{text-decoration:none;border-bottom:1px solid #b2341a;line-height:1.35}' +
+        '.msg-sources b{font-family:"Space Grotesk",Inter,sans-serif;margin-right:6px}' +
+        '.msg-time{font-size:12px;color:#675f53}' +
+        'footer{margin-top:24px;font-size:13px;color:#675f53;text-align:center}' +
+        '</style></head><body><header><div class="logo">Crackeer<span>.</span></div>' +
+        '<h1>' + esc(title) + '</h1><div class="meta">AI Chat · ' + esc(date) + '</div></header>' +
+        '<main class="thread">' + turns + '</main>' +
+        '<footer>AI can make mistakes, so double-check admissions and fees.</footer></body></html>';
     }
     // Page breaks go under the lowest line or block that still fits, so no
     // line of text is sliced in two; only a block taller than a page is cut.
     function chatPdfPages(doc) {
       const height = doc.documentElement.scrollHeight;
-      const stops = [...doc.querySelectorAll('header, .who, .text > *, .text li, .turn, footer')]
+      const stops = [...doc.querySelectorAll('header, .msg, .msg-bubble > *, .msg-bubble li, .msg-bubble, .msg-sources a, .msg-time, footer')]
         .map(n => n.getBoundingClientRect().bottom);
       // A tall user message is one block, so let it break between its lines.
-      doc.querySelectorAll('.turn.user .text').forEach(t => {
+      doc.querySelectorAll('.msg.user .msg-bubble').forEach(t => {
         const range = doc.createRange();
         range.selectNodeContents(t);
         [...range.getClientRects()].forEach(r => stops.push(r.bottom));
@@ -1556,13 +1591,28 @@
       frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + CHAT_PDF_W + 'px;height:' + CHAT_PDF_PAGE + 'px;border:0';
       try {
         await Promise.all([
-          chatLoadScript(BASE + 'assets/vendor/html2canvas.min.js'),
           chatLoadScript(BASE + 'assets/vendor/jspdf.umd.min.js'),
           chatLoadScript(BASE + 'assets/vendor/pdf-text-font.js'),
           new Promise(ok => { frame.onload = ok; frame.srcdoc = html; document.body.appendChild(frame); })
         ]);
         const doc = frame.contentDocument;
-        if (doc.fonts) await doc.fonts.ready;
+        // html2canvas runs inside the frame, not on the page. It finds each
+        // line's baseline by measuring an <img> in its own document, and the
+        // site's img { display: block } (css/base.css) throws that off: every
+        // line came out a few px low, list numbers sat above their items and
+        // the last line of a page was cut in two.
+        await new Promise((ok, fail) => {
+          const s = doc.createElement('script');
+          s.src = new URL(BASE + 'assets/vendor/html2canvas.min.js', location.href).href;
+          s.onload = ok;
+          s.onerror = () => fail(new Error('Could not load html2canvas'));
+          doc.head.appendChild(s);
+        });
+        if (doc.fonts) {
+          await Promise.all(['400 15px Inter', '700 15px Inter', '800 20px Fraunces', '700 13px "Space Grotesk"']
+            .map(f => doc.fonts.load(f).catch(() => {})));
+          await doc.fonts.ready;
+        }
         const height = doc.documentElement.scrollHeight;
         frame.style.height = height + 'px';
         const pages = chatPdfPages(doc);
@@ -1574,16 +1624,19 @@
         // not JPEG: JPEG blurs and rings around the edges of letters.
         for (let i = 0; i < pages.length; i++) {
           const p = pages[i];
-          const canvas = await html2canvas(doc.body, {
+          const canvas = await frame.contentWindow.html2canvas(doc.body, {
             x: 0, y: p.top, width: CHAT_PDF_W, height: p.bottom - p.top,
             scrollX: 0, scrollY: 0, windowWidth: CHAT_PDF_W, windowHeight: height,
-            scale: 3, backgroundColor: '#ffffff', logging: false
+            scale: 3, backgroundColor: CHAT_PDF_PAPER, logging: false
           });
           if (i) pdf.addPage();
+          // The paper colour runs into the margins too, like the site's page.
+          pdf.setFillColor(CHAT_PDF_PAPER);
+          pdf.rect(0, 0, 210, 297, 'F');
           pdf.addImage(canvas, 'PNG', 0, margin, 210, (p.bottom - p.top) * k, undefined, 'FAST');
           if (pages.length > 1) {
             pdf.setFontSize(8);
-            pdf.setTextColor(138, 135, 156);
+            pdf.setTextColor(103, 95, 83);
             pdf.text((i + 1) + ' / ' + pages.length, 105, 297 - margin / 2, { align: 'center' });
           }
         }
