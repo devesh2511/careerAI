@@ -2573,8 +2573,8 @@
       const retakeBtn = document.getElementById('db-retake-btn');
       const date = document.getElementById('db-date');
       if (date) date.textContent = dbToday();
-      // Shown only alongside existing results; the no-results hero and the
-      // stale-results CTA already offer the quiz.
+      // Shown whenever there are results; with none, the hero card below is
+      // the quiz button.
       if (retakeBtn) retakeBtn.hidden = true;
 
       // ── No results yet: the quiz is the one thing to do ─────────────
@@ -2609,11 +2609,8 @@
       let html = '';
       if (!rsIsCurrentResult(d)) {
         html += '<div class="alert alert-warn">' + cqRetakeNotice() + '</div>';
-        ctaBtn.textContent = 'Retake the quiz';
-        ctaBtn.onclick = cqStart;
-      } else if (retakeBtn) {
-        retakeBtn.hidden = false;
       }
+      if (retakeBtn) retakeBtn.hidden = false;
       html += '<div class="grid-main-side"><div class="stack-lg stack">';
       html += top
         ? '<section class="card stack" aria-labelledby="db-top-title"><div class="card-head"><div class="stack-xs stack"><p class="small muted">Your top match</p>' +
