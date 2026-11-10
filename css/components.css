@@ -331,9 +331,9 @@ a.card:hover, .card-link:hover { transform: translate(-1px, -1px); box-shadow: 4
 a.list-row:hover .list-title { text-decoration: underline; text-underline-offset: 0.18em; }
 .list-title { font-weight: 600; min-width: 0; }
 .list-meta { font-size: var(--fs-small); color: var(--muted); }
-.kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-4); font-size: var(--fs-small); }
+.kv { display: grid; grid-template-columns: fit-content(45%) minmax(0, 1fr); gap: var(--sp-2) var(--sp-4); font-size: var(--fs-small); }
 .kv dt { color: var(--muted); }
-.kv dd { font-weight: 600; text-align: right; margin: 0; }
+.kv dd { font-weight: 600; text-align: right; margin: 0; min-width: 0; overflow-wrap: break-word; }
 .icon-tile { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; display: grid; place-items: center; background: var(--accent-weak); color: var(--accent-text); }
 .icon-tile-ink { background: var(--ink); color: var(--paper); }
 
