@@ -1,8 +1,21 @@
 /* Page layouts: app shell, step flow, public pages, printable report. */
 
 /* ---------- Brand ---------- */
-.logo { font-family: var(--font-display); font-weight: 800; font-size: 1.375rem; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; line-height: 1; }
-.logo-dot { color: var(--accent); }
+/* The logo is the Road C lockup from /assets/brand/logo.svg: the road and the
+   wordmark take currentColor (--ink), the full stop takes --accent, so both
+   themes come from tokens. The height keeps the wordmark's capitals the size
+   the old text logo had. */
+.logo { display: inline-flex; align-items: center; color: var(--ink); text-decoration: none; line-height: 0; }
+.logo-mark { display: block; height: 1.75rem; width: auto; flex: none; }
+/* Two optical cuts of the same lockup share one frame: compact (3 road dashes)
+   by default, micro (2 heavier dashes) once the logo shrinks below 360px, where
+   the full height would push the header buttons onto a second line. */
+.logo-cut-micro { display: none; }
+@media (max-width: 359px) {
+  .logo-mark { height: 1.375rem; }
+  .logo-cut-compact { display: none; }
+  .logo-cut-micro { display: inline; }
+}
 
 /* ---------- Theme toggle icons ---------- */
 .theme-icon-dark { display: none; }

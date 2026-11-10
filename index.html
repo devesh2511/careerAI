@@ -5,8 +5,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Crackeer · Find the career that fits you</title>
-  <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
-  <link rel="icon" href="data:," />
+  <link rel="icon" href="/assets/brand/favicon-16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon.ico" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/brand/site.webmanifest" />
   <!-- Resolve the theme before first paint: a deferred script would let a
        dark-mode user see a white flash on every navigation. -->
   <script>
@@ -27,7 +30,7 @@
 <body data-page="landing">
   <div id="landing" class="screen active">
   <header class="public-header">
-    <a class="logo" href="index.html">Crackeer<span class="logo-dot">.</span></a>
+    <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 878 193" role="img" aria-label="Crackeer"><use class="logo-cut-compact" href="/assets/brand/logo.svg#logo-horizontal"/><use class="logo-cut-micro" href="/assets/brand/logo.svg#logo-horizontal-micro"/></svg></a>
     <nav class="landing-nav" aria-label="Sections"><a href="#how">How it works</a><a href="#features">What you get</a></nav>
     <div class="cluster"><button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button><button class="btn btn-ghost btn-sm landing-login" type="button" onclick="show('auth')">Log in</button><button class="btn btn-primary btn-sm" type="button" onclick="cqStart()">Get started</button></div>
   </header>
@@ -95,7 +98,7 @@
     </section>
 
     <footer class="landing-footer">
-      <span class="logo">Crackeer<span class="logo-dot">.</span></span>
+      <span class="logo"><svg class="logo-mark" viewBox="0 0 878 193" role="img" aria-label="Crackeer"><use class="logo-cut-compact" href="/assets/brand/logo.svg#logo-horizontal"/><use class="logo-cut-micro" href="/assets/brand/logo.svg#logo-horizontal-micro"/></svg></span>
       <nav class="cluster cluster-lg" aria-label="Footer"><a href="pages/auth.html">Log in</a><a href="pages/auth.html#register">Create an account</a><a href="pages/admin_login.html">School admin login</a></nav>
       <p class="small muted">Made for students in Classes 8 to 12.</p>
     </footer>

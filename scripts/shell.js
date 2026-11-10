@@ -42,7 +42,7 @@
 
   function sidebar(o) {
     var html = '<aside class="sidebar" aria-label="Main navigation">' +
-      '<div class="sidebar-top"><button class="logo sidebar-logo" type="button" onclick="navTo(\'dashboard\')">Crackeer<span class="logo-dot">.</span></button>' +
+      '<div class="sidebar-top"><button class="logo sidebar-logo" type="button" onclick="navTo(\'dashboard\')"><svg class="logo-mark" viewBox="0 0 878 193" role="img" aria-label="Crackeer"><use class="logo-cut-compact" href="/assets/brand/logo.svg#logo-horizontal"/><use class="logo-cut-micro" href="/assets/brand/logo.svg#logo-horizontal-micro"/></svg></button>' +
       '<button class="theme-toggle btn btn-icon btn-sm" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false">' + themeIcons() + '</button></div>' +
       '<nav class="sidebar-nav">';
     GROUPS.forEach(function (g) {
