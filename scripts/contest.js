@@ -411,7 +411,7 @@
         '<div class="tabs lb-tabs" role="tablist" aria-label="Leaderboard">' +
         chip(lbScope === 'global', 'Global', 'lbSetScope(\'global\')') +
         (careers.length
-          ? careers.map(c => chip(c === shown, ctEsc(c), 'lbSetCareer(this.dataset.career)', ' data-career="' + ctEsc(c) + '"')).join('')
+          ? careers.map(c => chip(c === shown, ctEsc(c), 'lbSetCareer(this.dataset.career)', ' data-career="' + ctEsc(c) + '" title="' + ctEsc(c) + '"')).join('')
           : chip(lbScope === 'career', 'My career', 'lbSetScope(\'career\')')) +
         '</div>' +
         lbBody() +

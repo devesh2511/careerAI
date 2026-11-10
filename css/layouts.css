@@ -300,6 +300,7 @@ body.shell-chat .app-main, body.has-shell.shell-chat .app-main { padding: 0; }
 .chat-composer-inner { max-width: 760px; margin-inline: auto; display: flex; gap: var(--sp-2); align-items: flex-end; background: var(--surface); border: var(--outline); border-radius: 18px; padding: 6px 6px 6px 14px; box-shadow: var(--shadow-hard); }
 .chat-composer-inner:focus-within { box-shadow: var(--shadow-hard), var(--focus-ring); }
 .chat-input, .chat-input:hover, .chat-input:focus { flex: 1 1 auto; min-width: 0; min-height: 40px; max-height: 160px; padding: 9px 0; border: 0; background: transparent; box-shadow: none; resize: none; }
+.chat-input::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* one line, not a half-hidden second */
 .chat-send { border-radius: 12px; }
 .chat-send.busy { background: var(--accent-text); border-color: var(--accent-text); color: var(--live-ink); }
 .chat-send.busy::before { display: none; }

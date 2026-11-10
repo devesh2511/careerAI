@@ -107,6 +107,10 @@
 /* ---------- Tabs & segmented ---------- */
 .tabs { display: flex; gap: var(--sp-1); overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; }
 .tabs::-webkit-scrollbar { display: none; }
+/* Leaderboard scope row: long career names. Touch swipes one line (a name never fills
+   the whole row); with a mouse there's no swipe, so the chips wrap instead. */
+.lb-tabs .tab-btn { display: block; max-width: min(18rem, 80%); overflow: hidden; text-overflow: ellipsis; line-height: calc(40px - 2 * var(--outline-w)); }
+@media (hover: hover) and (pointer: fine) { .lb-tabs { flex-wrap: wrap; overflow-x: visible; } .lb-tabs .tab-btn { max-width: 100%; } }
 .tab-btn {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
   min-height: 40px; padding: 0 var(--sp-4); border-radius: var(--r-pill);
@@ -265,7 +269,8 @@ a.card:hover, .card-link:hover { transform: translate(-1px, -1px); box-shadow: 4
 
 /* ---------- Table ---------- */
 .table-wrap { overflow-x: auto; }
-.table { font-size: var(--fs-small); }
+.table { font-size: var(--fs-small); overflow-wrap: break-word; } /* body's 'anywhere' would let auto table layout squeeze a column to one letter */
+.table a { white-space: nowrap; }
 .table th { text-align: left; font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: var(--outline-soft); white-space: nowrap; }
 .table td { padding: 12px 10px; border-bottom: var(--outline-soft); vertical-align: middle; }
 .table tr:last-child td { border-bottom: 0; }
@@ -273,6 +278,7 @@ a.card:hover, .card-link:hover { transform: translate(-1px, -1px); box-shadow: 4
 .table tr.is-me td { background: var(--accent-weak); font-weight: 600; }
 .table tr.is-me td:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .table tr.is-me td:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+@media (max-width: 479.98px) { .table th, .table td { padding-inline: 5px; } .table th { letter-spacing: 0.04em; } .lb-of { display: block; } } /* '#1 of 128' stacks so the history row fits a phone */
 
 /* ---------- Skeleton ---------- */
 .skeleton {
@@ -343,7 +349,7 @@ a.list-row:hover .list-title { text-decoration: underline; text-underline-offset
 .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line-soft); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
 
 /* ---------- Additions (dashboard) ---------- */
-.card-title-lg { font-family: var(--font-display); font-size: 1.625rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; }
+.card-title-lg { font-family: var(--font-display); font-size: clamp(1.375rem, 0.575rem + 4vw, 1.625rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; text-wrap: balance; }
 @media (min-width: 768px) { .card-title-lg { font-size: 2rem; } }
 .metric-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
 .metric { display: grid; gap: 2px; min-width: 0; padding: var(--sp-3); border-radius: var(--r-sm); background: var(--contest-well); }
@@ -472,7 +478,8 @@ a.list-row:hover .list-title { text-decoration: underline; text-underline-offset
 /* The page grid's one column must not grow to fit these unwrapped rows. */
 #space { grid-template-columns: minmax(0, 1fr); }
 .sp-careers .career-pill { flex: 0 0 auto; max-width: min(16rem, 78vw); scroll-snap-align: start; }
-.career-pill-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
+.career-pill-name { min-width: 0; overflow-wrap: normal; }
+.sp-careers .career-pill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sp-careers .career-pill.active { box-shadow: 3px 3px 0 var(--accent); }
 #sp-tabs .tab-btn.active .chip-count { color: inherit; opacity: 0.75; }
 .sp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat); flex: 0 0 auto; }
