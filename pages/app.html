@@ -5,8 +5,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crackeer · Dashboard</title>
-  <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
-  <link rel="icon" href="data:," />
+  <meta name="description" content="A 25-question quiz, honest career matches and a step-by-step roadmap from Class 9 to your first job. Built for school students in India." />
+  <!-- Link previews (WhatsApp, LinkedIn, X). Crawlers need absolute URLs, so these point at production. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Crackeer" />
+  <meta property="og:title" content="Crackeer · Dashboard" />
+  <meta property="og:description" content="A 25-question quiz, honest career matches and a step-by-step roadmap from Class 9 to your first job. Built for school students in India." />
+  <meta property="og:image" content="https://career-ai-six-plum.vercel.app/assets/brand/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Crackeer: Find the career that fits how you think." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="/assets/brand/favicon-16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon.ico" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/brand/site.webmanifest" />
   <!-- Resolve the theme before first paint: a deferred script would let a
        dark-mode user see a white flash on every navigation. -->
   <script>
@@ -18,7 +33,10 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="app">
@@ -27,493 +45,163 @@
      APP LAYOUT (sidebar + pages)
 ════════════════════════════════════════ -->
   <div id="app" class="screen active">
-    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div data-shell="app" data-active="dashboard" data-live="false"></div>
 
-    <div class="app-layout">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <div class="sidebar-logo">
-          <div class="logo-text">Crack<span>eer</span></div>
-        </div>
-        <nav class="nav">
-          <button class="nav-item active" data-page="dashboard" onclick="navTo('dashboard',this)"><span
-              class="icon">🏠</span>Dashboard</button>
-          <button class="nav-item" data-page="results" onclick="navTo('results',this)"><span
-              class="icon">📊</span>Career Matches</button>
-          <button class="nav-item" data-page="explorer" onclick="navTo('explorer',this)"><span
-              class="icon">🌍</span>Explore Careers</button>
-          <div class="nav-divider"></div>
-          <button class="nav-item" data-page="roadmap" onclick="navTo('roadmap',this)"><span
-              class="icon">🗺️</span>Roadmap</button>
-          <div class="nav-divider"></div>
-          <button class="nav-item" data-page="chat" onclick="navTo('chat',this)"><span class="icon">💬</span>AI
-            Chat</button>
-          <button class="nav-item" data-page="contests" onclick="navTo('contests',this)"><span
-              class="icon">🏆</span>Contests</button>
-          <button class="nav-item" data-page="space" onclick="navTo('space',this)"><span
-              class="icon">📰</span>My Career Space</button>
-        </nav>
-        <div class="sidebar-user">
-          <div class="user-row">
-            <button class="user-profile" data-page="settings" onclick="navTo('settings')" title="Settings"
-              aria-label="Open settings">
-              <div class="user-avatar">A</div>
-              <div class="user-info">
-                <div class="user-name"></div>
-                <div class="user-class" id="user-class"></div>
-              </div>
-            </button>
-            <div class="user-actions">
-              <button class="theme-toggle sidebar-theme" onclick="toggleTheme()" aria-label="Switch theme"
-                aria-pressed="false">
-                <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
-                <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
-              </button>
-              <button class="logout-btn" onclick="logout()" title="Logout" aria-label="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg></button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Main content -->
-      <div class="main-content">
-        <!-- Mobile header — CSS hides this above 640px -->
-        <div class="mobile-topbar">
-          <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
-          <div class="mobile-topbar-logo">Crack<span>eer</span></div>
-          <button class="theme-toggle mobile-theme" onclick="toggleTheme()" aria-label="Switch theme"
-            aria-pressed="false">
-            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
-            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
-          </button>
-        </div>
+      <main class="app-main">
 
 
         <!-- ── DASHBOARD ── -->
-        <div id="dashboard" class="page active">
-          <!-- topbar -->
-          <div class="topbar">
+        <div id="dashboard" class="page" hidden>
+          <header class="page-head">
             <div>
-              <div class="page-title" id="db-title">Welcome to Crackeer 👋</div>
-              <div class="page-sub" id="db-sub">Take the 25-question quiz to discover careers that fit you.</div>
+              <p class="muted small" id="db-date"></p>
+              <h1 id="db-title">Welcome to Crackeer.</h1>
+              <p class="page-sub" id="db-sub"></p>
             </div>
-            <button class="btn btn-primary btn-sm" id="db-cta-btn" onclick="cqStart()">Take Career Quiz →</button>
-          </div>
-
-          <!-- dynamic: welcome banner + career strip (empty until quiz taken) -->
-          <div id="db-main"></div>
-
-          <!-- quick actions (always visible) -->
-          <div class="section-label">Quick Actions</div>
-          <div class="quick-actions">
-            <div class="qa-card" onclick="navTo('roadmap')">
-              <div class="qa-icon ic-pink">🗺️</div>
-              <div class="qa-label">My Roadmap</div>
+            <div class="cluster">
+              <button class="btn btn-secondary" id="db-retake-btn" type="button" onclick="cqStart()" hidden><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-refresh-cw"/></svg>Retake career quiz</button>
+              <button class="btn btn-primary" id="db-cta-btn" type="button" onclick="cqStart()" hidden>Start the quiz</button>
             </div>
-            <div class="qa-card" onclick="navTo('chat')">
-              <div class="qa-icon ic-orange">💬</div>
-              <div class="qa-label">Ask AI</div>
+          </header>
+          <div class="stack-lg stack" id="db-main"><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div></div>
+          <section class="section" aria-labelledby="db-stats-title">
+            <h2 id="db-stats-title" class="visually-hidden">Your progress</h2>
+            <div class="grid-stats" id="db-stats"></div>
+          </section>
+          <section class="section" aria-labelledby="db-more-title">
+            <h2 id="db-more-title">Keep exploring</h2>
+            <div class="grid-2">
+              <button class="card-flat card-link action-card" type="button" onclick="navTo('explorer')"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-search"/></svg></span><span class="stack-xs stack"><span class="card-title">Explore careers</span><span class="card-sub">Compare careers by stream, salary and fit.</span></span></button>
+              <button class="card-flat card-link action-card" type="button" onclick="navTo('chat')"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-message-square"/></svg></span><span class="stack-xs stack"><span class="card-title">Ask AI Chat</span><span class="card-sub">&ldquo;Which entrance exams do I need for my top career?&rdquo;</span></span></button>
+              <button class="card-flat card-link action-card" type="button" onclick="navTo('space')"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-newspaper"/></svg></span><span class="stack-xs stack"><span class="card-title">Career Space</span><span class="card-sub">News, internships and jobs for your career.</span></span></button>
+              <button class="card-flat card-link action-card" type="button" onclick="cqDownloadReport()"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-download"/></svg></span><span class="stack-xs stack"><span class="card-title">Download your report</span><span class="card-sub">A printable PDF of your quiz results.</span></span></button>
             </div>
-            <div class="qa-card" onclick="navTo('explorer')">
-              <div class="qa-icon ic-teal">🌍</div>
-              <div class="qa-label">Explore Careers</div>
-            </div>
-            <div class="qa-card" onclick="cqStart()">
-              <div class="qa-icon ic-violet">🧠</div>
-              <div class="qa-label">Career Quiz</div>
-            </div>
-          </div>
-
-          <!-- dynamic: stat cards (empty until quiz taken) -->
-          <div class="db-stats" id="db-stats"></div>
+          </section>
         </div>
 
         <!-- ── CAREER MATCH RESULTS ── -->
-        <div id="results" class="page">
-          <div class="topbar">
-            <div>
-              <div class="page-title">Career Matches</div>
-              <div class="page-sub">Your top careers, scored from your latest career quiz</div>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="cqDownloadReport()">📥 Download Report</button>
+        <div id="results" class="page" hidden>
+          <header class="page-head">
+            <div><h1>Career Matches</h1><p class="page-sub">Careers ranked by how well they fit your interests, the subjects you enjoy and your stream.</p></div>
+            <button class="btn btn-secondary" type="button" onclick="cqDownloadReport()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-download"/></svg>Download report</button>
+          </header>
+          <div class="card-sunk stream-banner cluster cluster-between" id="results-stream-banner" hidden>
+            <p>Your recommended stream is <b id="results-stream-val"></b></p>
+            <button class="btn btn-ghost btn-sm" id="results-stream-badge" type="button" onclick="appResults ? exploreStream(appResults.stream_recommendation) : cqStart()">See careers in this stream</button>
           </div>
-          <div class="stream-banner" onclick="appResults ? exploreStream(appResults.stream_recommendation) : cqStart()">
-            <div class="stream-banner-left">
-              <span style="font-size:1.5rem;">🛤️</span>
-              <div>
-                <div class="stream-label">Recommended Stream for Class 11</div>
-                <div class="stream-val" id="results-stream-val">—</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;"><span id="results-stream-badge"
-                style="font-size:0.8125rem;color:var(--muted);">Take the quiz to unlock</span><span
-                style="color:var(--muted);">→</span></div>
-          </div>
-          <div class="results-filter">
-            <div class="filter-chip active" onclick="filterChip(this)">All</div>
-            <div class="filter-chip" onclick="filterChip(this)">Technology</div>
-            <div class="filter-chip" onclick="filterChip(this)">Design</div>
-            <div class="filter-chip" onclick="filterChip(this)">Science</div>
-            <div class="filter-chip" onclick="filterChip(this)">Business</div>
-            <div class="filter-chip" onclick="filterChip(this)">Medical</div>
-            <div class="filter-chip" onclick="filterChip(this)">Arts &amp; Law</div>
-          </div>
-          <div id="career-list">
-            <div class="career-card" onclick="navTo('careerdetail')">
-              <div class="career-rank top">1</div>
-              <div class="career-icon-wrap" style="background:rgba(108,99,255,.12);">🎨</div>
-              <div class="career-info">
-                <div class="career-name">UX / Product Designer</div>
-                <div class="career-field">Design · Technology</div>
-                <div class="career-reason">"Your spatial reasoning (91st %) and Drawing hobby align perfectly with
-                  design thinking."</div>
-              </div>
-              <div class="career-score-wrap">
-                <div class="career-pct" style="color:#a8a3ff;">92%</div>
-                <div class="pct-mini-bar">
-                  <div class="pct-mini-fill" style="width:92%;background:var(--accent);"></div>
-                </div>
-              </div>
-            </div>
-            <div class="career-card">
-              <div class="career-rank top">2</div>
-              <div class="career-icon-wrap" style="background:rgba(0,212,170,.1);">🏛️</div>
-              <div class="career-info">
-                <div class="career-name">Architect</div>
-                <div class="career-field">Design · Engineering</div>
-                <div class="career-reason">"Strong Maths + spatial skills. Architecture blends both with creativity."
-                </div>
-              </div>
-              <div class="career-score-wrap">
-                <div class="career-pct" style="color:var(--accent2);">85%</div>
-                <div class="pct-mini-bar">
-                  <div class="pct-mini-fill" style="width:85%;background:var(--accent2);"></div>
-                </div>
-              </div>
-            </div>
-            <div class="career-card">
-              <div class="career-rank">3</div>
-              <div class="career-icon-wrap" style="background:rgba(56,189,248,.1);">💻</div>
-              <div class="career-info">
-                <div class="career-name">Computer Science Engineer</div>
-                <div class="career-field">Technology · Computer Science</div>
-                <div class="career-reason">"Coding hobby + Maths strength = strong foundation for CS."</div>
-              </div>
-              <div class="career-score-wrap">
-                <div class="career-pct" style="color:#38bdf8;">79%</div>
-                <div class="pct-mini-bar">
-                  <div class="pct-mini-fill" style="width:79%;background:#38bdf8;"></div>
-                </div>
-              </div>
-            </div>
-            <div class="career-card">
-              <div class="career-rank">4</div>
-              <div class="career-icon-wrap" style="background:rgba(245,158,11,.1);">📊</div>
-              <div class="career-info">
-                <div class="career-name">Data Scientist</div>
-                <div class="career-field">Technology · Analytics</div>
-                <div class="career-reason">"Logical reasoning score in top 20% — ideal for data-heavy careers."</div>
-              </div>
-              <div class="career-score-wrap">
-                <div class="career-pct" style="color:#fcd34d;">71%</div>
-                <div class="pct-mini-bar">
-                  <div class="pct-mini-fill" style="width:71%;background:#fcd34d;"></div>
-                </div>
-              </div>
-            </div>
-            <div class="career-card">
-              <div class="career-rank">5</div>
-              <div class="career-icon-wrap" style="background:rgba(251,146,60,.1);">🎮</div>
-              <div class="career-info">
-                <div class="career-name">Game Designer</div>
-                <div class="career-field">Design · Technology · Gaming</div>
-                <div class="career-reason">"Gaming hobby + design interest + coding skills form a rare combination."
-                </div>
-              </div>
-              <div class="career-score-wrap">
-                <div class="career-pct" style="color:#fb923c;">68%</div>
-                <div class="pct-mini-bar">
-                  <div class="pct-mini-fill" style="width:68%;background:#fb923c;"></div>
-                </div>
-              </div>
-            </div>
-            <div class="career-card">
-              <div class="career-rank">6</div>
-              <div class="career-icon-wrap" style="background:rgba(167,139,250,.1);">📱</div>
-              <div class="career-info">
-                <div class="career-name">Product Manager</div>
-                <div class="career-field">Technology · Business</div>
-                <div class="career-reason">"Curiosity score of 88% suggests you'll thrive in problem-definition roles."
-                </div>
-              </div>
-              <div class="career-score-wrap">
-                <div class="career-pct" style="color:#a78bfa;">64%</div>
-                <div class="pct-mini-bar">
-                  <div class="pct-mini-fill" style="width:64%;background:#a78bfa;"></div>
-                </div>
-              </div>
-            </div>
-            <div class="career-card">
-              <div class="career-rank">7</div>
-              <div class="career-icon-wrap" style="background:rgba(255,101,132,.1);">🔬</div>
-              <div class="career-info">
-                <div class="career-name">Research Scientist</div>
-                <div class="career-field">Science · Academia</div>
-                <div class="career-reason">"High curiosity + logical aptitude suits research environments."</div>
-              </div>
-              <div class="career-score-wrap">
-                <div class="career-pct" style="color:var(--accent3);">58%</div>
-                <div class="pct-mini-bar">
-                  <div class="pct-mini-fill" style="width:58%;background:var(--accent3);"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="chip-group results-filter" id="results-filter" role="radiogroup" aria-label="Filter by field"></div>
+          <div class="grid-2" id="career-list" aria-live="polite"><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div></div>
         </div>
 
         <!-- ── CAREER EXPLORER ── -->
-        <div id="explorer" class="page">
-          <div class="topbar">
-            <div>
-              <div class="page-title">Explore Careers</div>
-              <!-- Counts are filled in by syncExplorer() from the career
-                   database, so the copy can never go stale when careers
-                   are added or removed. -->
-              <div class="page-sub" id="ex-sub">Browse every career in the database</div>
+        <div id="explorer" class="page" hidden>
+          <header class="page-head"><div><h1>Explore careers</h1><p class="page-sub">Browse every career, compare salaries and see how well each one fits you.</p></div></header>
+          <div class="ex-toolbar">
+            <div class="ex-search">
+              <svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-search"/></svg>
+              <label class="visually-hidden" for="ex-search">Search careers</label>
+              <input class="input" id="ex-search" type="search" placeholder="Search careers or subjects" autocomplete="off" oninput="exSearch(this.value)" />
+              <button class="btn btn-icon btn-sm ex-search-clear" id="ex-search-clear" type="button" onclick="exClearSearch()" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-x"/></svg></button>
             </div>
+            <button class="btn btn-secondary" id="ex-filter-btn" type="button" onclick="exOpenFilters()" aria-haspopup="dialog" aria-expanded="false" aria-controls="ex-drawer"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sliders-horizontal"/></svg>Filters<span class="badge badge-accent" id="ex-filter-count" hidden></span></button>
+            <div class="select-wrap ex-sort-wrap"><label class="visually-hidden" for="ex-sort">Sort</label><select class="select" id="ex-sort" onchange="exSetSort(this.value)"></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div>
           </div>
-          <!-- One line above the grid: a compact search on the left, the
-               drawer trigger and sort on the right. The filters themselves
-               live in the drawer, so browsing is not fenced off behind a
-               wall of controls. -->
-          <div class="ex-bar">
-            <div class="search-bar">
-              <input id="ex-search" aria-label="Search careers"
-                placeholder="Search careers…" oninput="exSearch(this.value)" />
-              <button class="ex-search-clear" id="ex-search-clear" onclick="exClearSearch()" title="Clear search"
-                aria-label="Clear search">✕</button>
-            </div>
-            <div class="ex-bar-actions">
-              <button class="ex-filter-btn" id="ex-filter-btn" onclick="exOpenFilters()" aria-haspopup="dialog"
-                aria-expanded="false" aria-controls="ex-drawer">
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                  <path
-                    d="M1.6 2.5h12.8a.5.5 0 0 1 .38.83L10 9.1v4.2a.5.5 0 0 1-.7.46l-2.6-1.15a.5.5 0 0 1-.3-.46V9.1L1.22 3.33a.5.5 0 0 1 .38-.83Z" />
-                </svg>
-                Filters
-                <span class="ex-filter-count" id="ex-filter-count" hidden></span>
-              </button>
-              <label class="ex-tool">
-                <span>Sort</span>
-                <select class="form-input ex-select" id="ex-sort" onchange="exSetSort(this.value)"></select>
-              </label>
-            </div>
-          </div>
-          <!-- What is currently narrowing the grid, each one removable, so an
-               active filter is never hidden inside a closed drawer. -->
-          <div class="ex-active" id="ex-active"></div>
-          <div class="explore-grid" id="explore-grid">
-          </div>
+          <div class="chip-group" id="ex-active" aria-label="Active filters"></div>
+          <p class="small muted" id="ex-sub" aria-live="polite">Loading careers…</p>
+          <div class="grid-auto" id="explore-grid"><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div></div>
         </div>
 
         <!-- ── CAREER DETAIL ── -->
-        <!-- Drawn by cdRender() in scripts/script.js for whichever career was
-             opened (cdOpen): catalogue copy from GET /careers, the fit
-             breakdown from the student's quiz, and the path from
-             GET /roadmap?career=. -->
-        <div id="careerdetail" class="page">
-          <button class="back-btn" id="cd-back" onclick="cdBack()">← Back to Matches</button>
-          <div id="cd-body"></div>
+        <!-- Drawn by cdRender() in scripts/script.js: catalogue copy from GET /careers,
+             the fit breakdown from the student's quiz, and the path from GET /roadmap?career=. -->
+        <div id="careerdetail" class="page" hidden>
+          <div><button class="btn btn-ghost btn-sm" id="cd-back" type="button" onclick="cdBack()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Back to matches</button></div>
+          <div class="stack-lg stack" id="cd-body"><div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="cluster"><div class="skeleton skeleton-pill"></div><div class="skeleton skeleton-pill"></div></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div></div>
         </div>
 
         <!-- ── ROADMAP ── -->
-        <div id="roadmap" class="page">
-          <div class="topbar">
-            <div>
-              <div class="page-title">5-Year Roadmap</div>
-              <div class="page-sub">Your personalised career path — Class 10 to first job</div>
-            </div><button class="btn btn-secondary btn-sm" onclick="rmExportPdf()">📥 Export PDF</button>
+        <!-- Drawn by rmLoad() in scripts/script.js from GET /roadmaps and GET /roadmap?career=. -->
+        <div id="roadmap" class="page" hidden>
+          <header class="page-head">
+            <div><p class="small muted">Your roadmap for</p><h1 id="rm-career">Loading…</h1><p class="page-sub">What to study, which exams to take and when, from now until your first job.</p></div>
+            <button class="btn btn-ghost" type="button" onclick="rmExportPdf()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-printer"/></svg>Export PDF</button>
+          </header>
+          <div class="card-flat rm-select-card no-print">
+            <label class="field-label" for="rm-select">Show the roadmap for</label>
+            <div class="select-wrap"><select class="select" id="rm-select" onchange="rmPick(this.value)"></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div>
           </div>
-          <!-- Drawn by rmLoad() in scripts/script.js from GET /roadmaps and
-               GET /roadmap?career= (careerAPI career_roadmaps table). -->
-          <div class="roadmap-target">
-            <div>
-              <div class="rm-label">Target Career</div>
-              <div class="rm-career" id="rm-career">Loading…</div>
-            </div>
-            <select class="form-input" id="rm-select" onchange="rmPick(this.value)"
-              aria-label="Target career"></select>
-          </div>
-          <div class="page-sub" id="rm-note" style="margin-bottom:16px;" hidden></div>
-          <div class="timeline" id="rm-timeline"></div>
+          <div class="alert alert-info" id="rm-note" role="status" hidden></div>
+          <section class="card" aria-labelledby="rm-career"><ol class="timeline" id="rm-timeline"></ol></section>
         </div>
 
         <!-- ── MY CAREER SPACE ── -->
-        <div id="space" class="page">
-          <div class="topbar">
-            <div>
-              <div class="page-title">My Career Space</div>
-              <div class="page-sub">The latest news, jobs, exams and scholarships for your top career matches</div>
-            </div>
-          </div>
-          <!-- Drawn by spLoad() in scripts/script.js: one pill per career the
-               quiz suggested, then that career's feed from careerAPI
-               (GET /career-news?career=). -->
-          <div class="sp-careers" id="sp-careers" role="tablist" aria-label="Career"></div>
-          <div class="lb-tabs sp-tabs" id="sp-tabs" role="tablist" aria-label="Category"></div>
-          <div class="page-sub" id="sp-note" hidden></div>
-          <div class="sp-feed" id="sp-feed"></div>
-          <div class="sp-foot" id="sp-foot" hidden></div>
+        <!-- Drawn by spLoad() in scripts/script.js: one pill per career the quiz suggested,
+             then that career's feed from careerAPI (GET /career-news?career=). -->
+        <div id="space" class="page" hidden>
+          <header class="page-head"><div><h1>Career Space</h1><p class="page-sub">News, internships, jobs, exams and scholarships for your top career matches.</p></div></header>
+          <div class="sp-careers sp-scroll" id="sp-careers" role="tablist" aria-label="Career"></div>
+          <div class="tabs sp-scroll" id="sp-tabs" role="tablist" aria-label="Category"></div>
+          <div class="alert alert-info" id="sp-note" role="status" hidden></div>
+          <section class="sp-feed" id="sp-feed" aria-label="Feed"><div class="sp-grid" aria-hidden="true"><div class="sp-card sp-skel"><span class="sp-body"><span class="skeleton skeleton-pill"></span><span class="skeleton skeleton-line w-80"></span><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span></div><div class="sp-card sp-skel"><span class="sp-body"><span class="skeleton skeleton-pill"></span><span class="skeleton skeleton-line w-80"></span><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span></div><div class="sp-card sp-skel"><span class="sp-body"><span class="skeleton skeleton-pill"></span><span class="skeleton skeleton-line w-80"></span><span class="skeleton skeleton-line w-60"></span><span class="skeleton skeleton-line w-40"></span></span></div></div></section>
+          <p class="small muted" id="sp-foot" hidden></p>
         </div>
 
         <!-- ── PROGRESS ── -->
-        <div id="contests" class="page">
-          <div class="topbar">
-            <div>
-              <div class="page-title">Contests</div>
-              <div class="page-sub">Weekly aptitude contest rankings</div>
-            </div><button class="btn btn-primary btn-sm" onclick="show('quiz')">Weekly Contest →</button>
-          </div>
-          <!-- Weekly aptitude contest: status, global/career leaderboards and
-               history — drawn by lbRender() in scripts/contest.js. -->
-          <div id="lb-root"></div>
-          <div class="card" id="pg-evolution" style="margin-bottom:16px;">
-            <div
-              style="font-size:0.8125rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">
-              Top Match Evolution</div>
-            <!-- Previous / Latest rows from the student's 2 saved career quiz
-                 runs — drawn by syncProgress() in scripts/script.js. -->
-            <div id="pg-evolution-rows" style="display:flex;flex-direction:column;gap:12px;">
-              <div style="font-size:0.8125rem;color:var(--muted);">Take the career quiz to see your top match.</div>
-            </div>
-          </div>
-          <div id="pg-ai-note"
-            style="background:rgba(108,99,255,.06);border:1px solid rgba(108,99,255,.2);border-radius:12px;padding:18px 20px;">
-            <div style="font-size:0.75rem;font-weight:700;color:#a8a3ff;margin-bottom:6px;">AI Note on Your Progress</div>
-            <div style="font-size:0.8125rem;color:var(--muted);line-height:1.7;">"Your interest in design has consistently
-              strengthened over 2 years. UX Designer is now a clear top match. Your spatial reasoning grew from 82 → 91
-              — exceptional for your age. Stick with PCM + CS."</div>
-          </div>
+        <div id="contests" class="page" hidden>
+          <header class="page-head">
+            <div><h1>Contests</h1><p class="page-sub">Five questions every Saturday about the career you picked. Play, climb the leaderboard and keep your streak going.</p></div>
+          </header>
+          <!-- Status, global/career leaderboards and history: drawn by lbRender() in scripts/contest.js. -->
+          <div class="stack-lg stack" id="lb-root"></div>
+          <section class="card-sunk ai-note" id="pg-ai-note" aria-label="What your results say" hidden>
+            <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sparkles"/></svg></span>
+            <div class="stack-xs stack"><p class="list-title">What your results say</p><p class="ai-note-text"></p></div>
+          </section>
+          <section class="card-flat stack" id="pg-evolution" aria-labelledby="pg-evo-title">
+            <h2 class="card-title" id="pg-evo-title">How your matches changed</h2>
+            <!-- Latest / previous rows from the student's 2 saved career quiz runs: drawn by syncProgress(). -->
+            <div class="list" id="pg-evolution-rows"><p class="muted small">Take the career quiz to see your top match.</p></div>
+          </section>
         </div>
 
         <!-- ── SETTINGS ── -->
-        <div id="settings" class="page">
-          <div class="topbar">
-            <div>
-              <div class="page-title">Settings</div>
-              <div class="page-sub">Manage your account and preferences</div>
-            </div>
-          </div>
-          <div class="settings-section">
-            <div class="settings-section-title">Profile</div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Full Name</div>
-                <div class="settings-row-sub" id="st-name">Loading…</div>
-                <div id="st-name-edit"></div>
-              </div><button class="btn btn-ghost btn-sm" onclick="stEditName()">Edit</button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">School ID</div>
-                <div class="settings-row-sub" id="st-school">Not added · your school gives you this</div>
-                <div id="st-school-edit"></div>
-              </div><button class="btn btn-ghost btn-sm" onclick="stEditSchool()">Edit</button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Email</div>
-                <div class="settings-row-sub" id="st-email">Devesh@gmail.com</div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Current Class</div>
-                <div class="settings-row-sub" id="st-class">Loading…</div>
-                <div id="st-class-edit"></div>
-              </div><button class="btn btn-ghost btn-sm" onclick="stEditClass()">Edit</button>
-            </div>
-          </div>
-          <div class="settings-section">
-            <div class="settings-section-title">Membership</div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Your plan</div>
-                <div class="settings-row-sub" id="st-plan">Loading…</div>
-              </div><span class="badge badge-green" id="st-plan-badge"></span>
-            </div>
-          </div>
-          <div class="settings-section">
-            <div class="settings-section-title">Notifications</div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Annual Quiz Reminder</div>
-                <div class="settings-row-sub">Remind me each June to retake the quiz</div>
-              </div><button class="toggle on" onclick="toggleBtn(this)"></button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Career Match Updates</div>
-                <div class="settings-row-sub">Notify when new careers are added</div>
-              </div><button class="toggle on" onclick="toggleBtn(this)"></button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Weekly Tip Emails</div>
-                <div class="settings-row-sub">Career tips for Class 10 students</div>
-              </div><button class="toggle off" onclick="toggleBtn(this)"></button>
-            </div>
-          </div>
-          <div class="settings-section">
-            <div class="settings-section-title">Quiz &amp; Data</div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Retake Career Interest Quiz</div>
-                <div class="settings-row-sub">Take the quiz again and get updated AI career results</div>
-              </div><button class="btn btn-primary btn-sm" onclick="cqStart()">Start Quiz →</button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Edit Interests &amp; Hobbies</div>
-                <div class="settings-row-sub">Update will refresh career scores</div>
-              </div><button class="btn btn-secondary btn-sm" onclick="show('onboarding')">Edit</button>
-            </div>
-          </div>
-          <!-- OpenAI Integration section removed: the app runs in demo mode
-               only, so an API key here would have had no effect. The
-               matching engine row below states what actually happens. -->
-          <div class="settings-section">
-            <div class="settings-section-title">Career Matching</div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-row-label">Matching engine</div>
-                <div class="settings-row-sub">Your results are scored on this device from your quiz answers. Only
-                  your top career match is sent to careerAI, to place you on the career leaderboard.</div>
-              </div><span class="badge badge-green">On-device</span>
-            </div>
-          </div>
+        <div id="settings" class="page page-narrow" hidden>
+          <header class="page-head"><div><h1>Settings</h1><p class="page-sub">Your profile, school and plan.</p></div></header>
+          <section class="card-flat settings-card" aria-labelledby="st-profile-title">
+            <h2 class="card-title" id="st-profile-title">Profile</h2>
+            <div class="setting"><div class="setting-main"><p class="setting-label">Name</p><p class="setting-value" id="st-name">Loading…</p></div><button class="btn btn-ghost btn-sm" type="button" onclick="stEditName()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-pencil"/></svg>Edit</button><div class="setting-slot" id="st-name-edit"></div></div>
+            <div class="setting"><div class="setting-main"><p class="setting-label">Email</p><p class="setting-value" id="st-email">Loading…</p></div></div>
+            <div class="setting"><div class="setting-main"><p class="setting-label">School ID</p><p class="setting-value" id="st-school">Loading…</p></div><button class="btn btn-ghost btn-sm" type="button" onclick="stEditSchool()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-pencil"/></svg>Edit</button><div class="setting-slot" id="st-school-edit"></div></div>
+            <div class="setting"><div class="setting-main"><p class="setting-label">Class, board and city</p><p class="setting-value" id="st-class">Loading…</p></div><button class="btn btn-ghost btn-sm" type="button" onclick="stEditClass()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-pencil"/></svg>Edit</button><div class="setting-slot" id="st-class-edit"></div></div>
+          </section>
+          <section class="card-flat settings-card" aria-labelledby="st-plan-title">
+            <h2 class="card-title" id="st-plan-title">Plan</h2>
+            <div class="setting"><div class="setting-main"><p class="setting-label">Your plan</p><p class="setting-value" id="st-plan">Loading…</p></div><span class="badge fit-strong" id="st-plan-badge"></span></div>
+          </section>
+          <section class="card-flat settings-card" aria-labelledby="st-quiz-title">
+            <h2 class="card-title" id="st-quiz-title">Quiz and interests</h2>
+            <div class="setting"><div class="setting-main"><p class="setting-value">Career quiz</p><p class="small muted">Retaking replaces your matches with new ones.</p></div><button class="btn btn-secondary btn-sm" type="button" onclick="cqStart()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-refresh-cw"/></svg>Retake quiz</button></div>
+            <div class="setting"><div class="setting-main"><p class="setting-value">Subjects, hobbies and preferences</p><p class="small muted">Updating them changes your career scores.</p></div><button class="btn btn-secondary btn-sm" type="button" onclick="show('onboarding')"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-pencil"/></svg>Edit interests</button></div>
+            <div class="setting"><div class="setting-main"><p class="setting-value">How matching works</p><p class="small muted">Your results are scored on this device from your quiz answers. Only your top career match is sent to Crackeer, to place you on the career leaderboard.</p></div><span class="badge badge-outline">On this device</span></div>
+          </section>
+          <div><button class="btn btn-danger" type="button" onclick="logout()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-log-out"/></svg>Log out</button></div>
         </div>
 
-      </div><!-- /main-content -->
-    </div><!-- /app-layout -->
+        </main>
   </div><!-- /app -->
 
   <!-- ── EXPLORER FILTER DRAWER ── -->
-  <div class="ex-drawer-overlay" id="ex-drawer-overlay" onclick="exCloseFilters()"></div>
-  <aside class="ex-drawer" id="ex-drawer" role="dialog" aria-modal="true" aria-hidden="true"
-    aria-labelledby="ex-drawer-title">
-    <div class="ex-drawer-head">
-      <div>
-        <div class="ex-drawer-title" id="ex-drawer-title">Filters</div>
-        <div class="ex-drawer-sub" id="ex-drawer-sub"></div>
-      </div>
-      <button class="ex-drawer-close" id="ex-drawer-close" onclick="exCloseFilters()"
-        aria-label="Close filters">✕</button>
+  <div class="scrim ex-drawer-overlay" id="ex-drawer-overlay" onclick="exCloseFilters()"></div>
+  <aside class="drawer ex-drawer" id="ex-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="ex-drawer-title">
+    <div class="sheet-handle ex-handle"></div>
+    <div class="drawer-head">
+      <div><h2 class="drawer-title" id="ex-drawer-title">Filters</h2><p class="small muted" id="ex-drawer-sub"></p></div>
+      <button class="btn btn-icon btn-sm" id="ex-drawer-close" type="button" onclick="exCloseFilters()" aria-label="Close filters"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-x"/></svg></button>
     </div>
-    <div class="ex-drawer-body" id="ex-drawer-body"></div>
-    <div class="ex-drawer-foot">
-      <button class="btn btn-secondary" id="ex-drawer-clear" onclick="exClear()">Clear all</button>
-      <button class="btn btn-primary" id="ex-drawer-apply" onclick="exCloseFilters()">Show results</button>
+    <div class="drawer-body" id="ex-drawer-body"></div>
+    <div class="drawer-foot">
+      <button class="btn btn-secondary" id="ex-drawer-clear" type="button" onclick="exClear()">Clear all</button>
+      <button class="btn btn-primary" id="ex-drawer-apply" type="button" onclick="exCloseFilters()">Show results</button>
     </div>
   </aside>
 
@@ -521,6 +209,7 @@
   <script src="../scripts/contest_api.js"></script>
   <script src="../scripts/contest.js"></script>
   <script src="../scripts/careerapi_mock.js"></script>
+  <script src="/scripts/shell.js"></script>
   <script src="../scripts/script.js"></script>
 
 </body>

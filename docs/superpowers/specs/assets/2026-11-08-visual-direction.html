@@ -1,0 +1,100 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  .mx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:22px;margin-top:16px}
+  .mx-shot{overflow:hidden;border-radius:10px}
+  .m{background:#f6f1e7;color:#1d1b18;font-family:Inter,sans-serif;padding:20px;box-sizing:border-box}
+  .m .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7a7266}
+  .m .muted{color:#7a7266;font-size:13px}
+  .m .row{display:flex;justify-content:space-between;align-items:center}
+  .m .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px;color:#7a7266}
+
+  /* A-led: notebook base, B energy as accents */
+  .m1 h4{font-family:Fraunces,serif;font-weight:800;font-size:27px;line-height:1.05;margin:6px 0 14px}
+  .m1 h4 span{background:linear-gradient(transparent 62%,#ffb59e 62%)}
+  .m1 .card{background:#fffdf8;border:1.5px solid #1d1b18;border-radius:8px;padding:14px;margin-bottom:12px;box-shadow:3px 3px 0 #1d1b18}
+  .m1 .t{font-family:Fraunces,serif;font-weight:600;font-size:18px}
+  .m1 .pct{font-weight:700;color:#e0482b}
+  .m1 .bar{height:6px;background:#e9e1d2;border-radius:3px;margin-top:8px}.m1 .bar i{display:block;height:100%;width:86%;background:#e0482b;border-radius:3px}
+  .m1 .tiles{display:flex;gap:6px;margin-top:10px}.m1 .tiles b{width:34px;height:34px;border:1.5px solid #1d1b18;display:grid;place-items:center;font-family:Fraunces,serif;border-radius:6px}
+  .m1 .tiles b:nth-child(1){background:#9ad1f5}.m1 .tiles b:nth-child(2){background:#ffc48a}.m1 .tiles b:nth-child(3){background:#d6c4ff}
+  .m1 .btn{display:inline-block;background:#1d1b18;color:#f6f1e7;padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px}
+  .m1 .contest{background:#1d1b18;color:#f6f1e7;border-radius:8px;padding:14px;box-shadow:3px 3px 0 #e0482b}
+  .m1 .contest .t{color:#f6f1e7}
+  .m1 .live{display:inline-block;background:#e0482b;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.06em}
+  .m1 .cd{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px}
+  .m1 .rank{display:flex;gap:8px;margin-top:10px}.m1 .rank div{flex:1;background:#2b2824;border-radius:6px;padding:8px;font-size:12px}.m1 .rank b{display:block;font-family:'Space Grotesk';font-size:18px}
+
+  /* B-led: playful structure on paper, serif headlines */
+  .m2{background:#fbf3df}
+  .m2 h4{font-family:Fraunces,serif;font-weight:800;font-size:29px;line-height:1;margin:0 0 14px;letter-spacing:-.01em}
+  .m2 .card{background:#fff;border:2.5px solid #1d1b18;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:4px 4px 0 #1d1b18}
+  .m2 .hero{background:#ff7a59}
+  .m2 .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px}
+  .m2 .pct{background:#c6f432;border:2px solid #1d1b18;border-radius:999px;padding:2px 10px;font-weight:700;font-family:'Space Grotesk'}
+  .m2 .tag{display:inline-block;background:#1d1b18;color:#fbf3df;font-size:11px;padding:3px 8px;border-radius:6px;margin-bottom:8px;letter-spacing:.06em;font-family:'Space Grotesk'}
+  .m2 .tiles{display:flex;gap:6px;margin-top:10px}.m2 .tiles b{width:36px;height:36px;border:2.5px solid #1d1b18;border-radius:10px;display:grid;place-items:center;font-weight:700;font-family:'Space Grotesk'}
+  .m2 .tiles b:nth-child(1){background:#4cc9f0}.m2 .tiles b:nth-child(2){background:#ffb13d}.m2 .tiles b:nth-child(3){background:#b69cff}
+  .m2 .btn{display:inline-block;background:#1d1b18;color:#fff;padding:11px 18px;border-radius:12px;font-weight:700;font-size:15px;box-shadow:3px 3px 0 #ff7a59;font-family:'Space Grotesk'}
+  .m2 .contest{background:#b69cff}
+  .m2 .live{display:inline-block;background:#1d1b18;color:#c6f432;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.06em;font-family:'Space Grotesk'}
+  .m2 .cd{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px}
+  .m2 .rank{display:flex;gap:8px;margin-top:10px}.m2 .rank div{flex:1;background:#fff;border:2px solid #1d1b18;border-radius:10px;padding:8px;font-size:12px}.m2 .rank b{display:block;font-family:'Space Grotesk';font-size:18px}
+</style>
+
+<h2>Two ways to mix A and B</h2>
+<p class="subtitle">Each card shows the dashboard snippet, then a weekly contest card, so you can see how far the "playful" energy goes. Both keep A's paper background and serif headlines. They differ in how loud the B elements get.</p>
+
+<div class="cards mx-grid">
+  <div class="card" data-choice="a-led" onclick="toggleSelect(this)">
+    <div class="card-image mx-shot"><div class="m m1">
+      <div class="k">Saturday · Week 12</div>
+      <h4>Hey Aarav, <span>your path</span> is taking shape.</h4>
+      <div class="card">
+        <div class="muted">Top match</div>
+        <div class="row"><span class="t">Software Engineer</span><span class="pct">86% fit</span></div>
+        <div class="bar"><i></i></div>
+      </div>
+      <div class="card">
+        <div class="muted">Your interest code</div>
+        <div class="tiles"><b>I</b><b>R</b><b>A</b></div>
+      </div>
+      <span class="btn">Open my roadmap →</span>
+      <div class="lbl">Weekly contest</div>
+      <div class="contest">
+        <div class="row"><span class="t" style="font-family:Fraunces,serif;font-size:17px">Tech Thinkers · Week 12</span><span class="live">LIVE</span></div>
+        <div class="row" style="margin-top:6px"><span class="muted" style="color:#bdb4a6">Closes in</span><span class="cd">02:14:37</span></div>
+        <div class="rank"><div>Your rank<b>#14</b></div><div>Score<b>4/5</b></div><div>Streak<b>3 wks</b></div></div>
+      </div>
+    </div></div>
+    <div class="card-body">
+      <h3>1 · Notebook first, playful accents</h3>
+      <p>A is the base: calm paper and ink, serif headings, a single coral accent. B adds thin hard shadows, colour-coded RIASEC tiles and a punchy mono-ish number style. The loud moments are kept for contests, ranks and streaks.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b-led" onclick="toggleSelect(this)">
+    <div class="card-image mx-shot"><div class="m m2">
+      <h4>Hey Aarav 👋<br>Let's level up.</h4>
+      <div class="card hero">
+        <span class="tag">TOP MATCH</span>
+        <div class="row"><span class="t">Software Engineer</span><span class="pct">86%</span></div>
+      </div>
+      <div class="card">
+        <div class="muted">Your interest code</div>
+        <div class="tiles"><b>I</b><b>R</b><b>A</b></div>
+      </div>
+      <span class="btn">Open my roadmap →</span>
+      <div class="lbl">Weekly contest</div>
+      <div class="card contest">
+        <div class="row"><span class="t">Tech Thinkers · Wk 12</span><span class="live">LIVE</span></div>
+        <div class="row" style="margin-top:6px"><span class="muted" style="color:#1d1b18">Closes in</span><span class="cd">02:14:37</span></div>
+        <div class="rank"><div>Rank<b>#14</b></div><div>Score<b>4/5</b></div><div>Streak<b>3 wks</b></div></div>
+      </div>
+    </div></div>
+    <div class="card-body">
+      <h3>2 · Playful first, notebook warmth</h3>
+      <p>B is the structure: thick outlines, chunky offset shadows and bright colour blocks on every screen. A contributes the warm paper background and the serif headlines, so it feels less like a generic sticker UI.</p>
+    </div>
+  </div>
+</div>

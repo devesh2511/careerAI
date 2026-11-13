@@ -7,8 +7,23 @@
        chat composer stays above it instead of being covered -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
   <title>Crackeer · AI Chat</title>
-  <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
-  <link rel="icon" href="data:," />
+  <meta name="description" content="A 25-question quiz, honest career matches and a step-by-step roadmap from Class 9 to your first job. Built for school students in India." />
+  <!-- Link previews (WhatsApp, LinkedIn, X). Crawlers need absolute URLs, so these point at production. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Crackeer" />
+  <meta property="og:title" content="Crackeer · AI Chat" />
+  <meta property="og:description" content="A 25-question quiz, honest career matches and a step-by-step roadmap from Class 9 to your first job. Built for school students in India." />
+  <meta property="og:image" content="https://career-ai-six-plum.vercel.app/assets/brand/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Crackeer: Find the career that fits how you think." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="/assets/brand/favicon-16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon.ico" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/brand/site.webmanifest" />
   <!-- Resolve the theme before first paint: a deferred script would let a
        dark-mode user see a white flash on every navigation. -->
   <script>
@@ -20,7 +35,10 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="chat">
@@ -31,143 +49,60 @@
      child of .main-content, under the mobile top bar.
 ════════════════════════════════════════ -->
   <div id="app" class="screen active">
-    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div data-shell="app" data-active="chat" data-live="false"></div>
 
-    <div class="app-layout">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <div class="sidebar-logo">
-          <div class="logo-text">Crack<span>eer</span></div>
-        </div>
-        <nav class="nav">
-          <button class="nav-item" data-page="dashboard" onclick="navTo('dashboard',this)"><span
-              class="icon">🏠</span>Dashboard</button>
-          <button class="nav-item" data-page="results" onclick="navTo('results',this)"><span
-              class="icon">📊</span>Career Matches</button>
-          <button class="nav-item" data-page="explorer" onclick="navTo('explorer',this)"><span
-              class="icon">🌍</span>Explore Careers</button>
-          <div class="nav-divider"></div>
-          <button class="nav-item" data-page="roadmap" onclick="navTo('roadmap',this)"><span
-              class="icon">🗺️</span>Roadmap</button>
-          <div class="nav-divider"></div>
-          <button class="nav-item active" data-page="chat" onclick="closeSidebar()" aria-current="page"><span
-              class="icon">💬</span>AI Chat</button>
-          <button class="nav-item" data-page="contests" onclick="navTo('contests',this)"><span
-              class="icon">🏆</span>Contests</button>
-          <button class="nav-item" data-page="space" onclick="navTo('space',this)"><span
-              class="icon">📰</span>My Career Space</button>
-        </nav>
-        <div class="sidebar-user">
-          <div class="user-row">
-            <button class="user-profile" data-page="settings" onclick="navTo('settings')" title="Settings"
-              aria-label="Open settings">
-              <div class="user-avatar">A</div>
-              <div class="user-info">
-                <div class="user-name"></div>
-                <div class="user-class" id="user-class"></div>
-              </div>
-            </button>
-            <div class="user-actions">
-              <button class="theme-toggle sidebar-theme" onclick="toggleTheme()" aria-label="Switch theme"
-                aria-pressed="false">
-                <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
-                <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
-              </button>
-              <button class="logout-btn" onclick="logout()" title="Logout" aria-label="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg></button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Main content -->
-      <div class="main-content">
-        <!-- Mobile header — CSS hides this above 640px -->
-        <div class="mobile-topbar">
-          <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
-          <div class="mobile-topbar-logo">Crack<span>eer</span></div>
-          <button class="theme-toggle mobile-theme" onclick="toggleTheme()" aria-label="Switch theme"
-            aria-pressed="false">
-            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
-            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
-          </button>
-        </div>
-
+      <main class="app-main">
         <!-- ── AI CHAT ── -->
         <div id="chat" class="page active">
-          <div class="chat-col">
-            <div class="chat-head">
-              <div class="chat-head-avatar" aria-hidden="true">✦</div>
-              <div class="chat-head-text">
-                <div class="chat-head-title">AI Career Counsellor</div>
-                <div class="chat-head-sub"><span class="chat-dot"></span>Knows your profile and quiz results</div>
+          <div class="chat">
+            <header class="chat-top">
+              <button class="btn btn-icon chat-back" type="button" onclick="navTo('dashboard')" aria-label="Back to home"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg></button>
+              <div class="chat-top-title"><h1>AI Chat</h1><p class="small muted">Knows your profile and quiz results</p></div>
+              <div class="cluster">
+                <button class="btn btn-secondary btn-sm chat-mem-btn" id="chat-mem-btn" type="button" onclick="chatMemOpen(true)" aria-controls="chat-mem" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-brain"/></svg><span class="chat-btn-label">What I know</span></button>
+                <button class="btn btn-ghost btn-sm chat-new" id="chat-new" type="button" onclick="newChat()" hidden><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-plus"/></svg><span class="chat-btn-label">New chat</span></button>
               </div>
-              <button class="btn btn-ghost btn-sm chat-new" id="chat-new" onclick="newChat()" aria-label="New chat" hidden><span aria-hidden="true">＋</span><span class="chat-new-label">New chat</span></button>
-              <button class="btn btn-ghost btn-sm chat-mem-btn" id="chat-mem-btn" onclick="chatMemOpen(true)" aria-label="What I know about you" title="What I know about you" aria-controls="chat-mem" aria-expanded="false"><span aria-hidden="true">🧠</span></button>
-            </div>
+            </header>
             <div class="chat-scroll" id="chat-scroll">
-              <div class="chat-welcome" id="chat-welcome">
-                <div class="chat-orb" aria-hidden="true">
-                  <span class="chat-orb-ring"></span>
-                  <span class="chat-orb-core">✦</span>
-                </div>
-                <div class="chat-welcome-title">Hi<span class="chat-hello" id="chat-hello-name"></span> 👋</div>
-                <div class="chat-welcome-ask">What should we figure out today?</div>
-                <!-- chatRenderWelcome() swaps this for one sentence built from
-                     the profile and top match -->
-                <p class="chat-insight" id="chat-insight">Ask me anything — careers, streams, colleges, or what a day in a job actually looks like.</p>
-                <!-- Replaced by prompts built from the same data; these are the
-                     fallback for a student with no profile or quiz yet -->
-                <div class="chat-sugs" id="chat-sugs">
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🎓</span><span class="chat-sug-text">Which colleges are best for me?</span></button>
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🧭</span><span class="chat-sug-text">Which stream should I choose?</span></button>
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🧬</span><span class="chat-sug-text">What careers fit my personality?</span></button>
-                  <button class="chat-sug" onclick="sendSug(this)"><span class="chat-sug-icon">🗓️</span><span class="chat-sug-text">What should I start doing this year?</span></button>
-                </div>
+              <div class="chat-inner">
+                <section class="chat-welcome stack-lg stack" id="chat-welcome" aria-labelledby="chat-hello">
+                  <div class="stack-sm stack"><h2 class="chat-hello" id="chat-hello">Hi<span id="chat-hello-name"></span>, what's on your mind?</h2><p class="muted">Ask about careers, streams, exams or colleges. I'll answer with your results in mind.</p></div>
+                  <div class="card-sunk chat-insight-card">
+                    <span class="icon-tile icon-tile-ink"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-brain"/></svg></span>
+                    <p class="chat-insight-text" id="chat-insight">Ask me anything: careers, streams, colleges, or what a day in a job actually looks like.</p>
+                  </div>
+                  <div class="chat-sugs" id="chat-sugs" aria-label="Suggested questions"><button class="chat-sug" type="button" onclick="sendSug(this)"><span class="icon-tile chat-sug-icon"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-graduation-cap"/></svg></span><span class="chat-sug-text">Which colleges are best for me?</span></button><button class="chat-sug" type="button" onclick="sendSug(this)"><span class="icon-tile chat-sug-icon"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-compass"/></svg></span><span class="chat-sug-text">Which stream should I choose?</span></button><button class="chat-sug" type="button" onclick="sendSug(this)"><span class="icon-tile chat-sug-icon"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sparkles"/></svg></span><span class="chat-sug-text">What careers fit my personality?</span></button><button class="chat-sug" type="button" onclick="sendSug(this)"><span class="icon-tile chat-sug-icon"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-calendar"/></svg></span><span class="chat-sug-text">What should I start doing this year?</span></button></div>
+                </section>
+                <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
               </div>
-              <div class="chat-messages" id="chat-messages"></div>
             </div>
             <div class="chat-composer">
-              <div class="chat-input-wrap">
-                <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask about your career…"
-                  maxlength="2000" aria-label="Message" oninput="chatAutosize(this)" onkeydown="chatKey(event)"></textarea>
-                <button class="chat-send idle" id="chat-send" onclick="chatSendOrStop()" aria-label="Send message">
-                  <svg class="chat-ico-send" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <svg class="chat-ico-stop" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
-                </button>
+              <div class="chat-composer-inner">
+                <textarea class="textarea chat-input" id="chat-input" rows="1" maxlength="2000" placeholder="Ask about careers, exams or colleges" aria-label="Message AI Chat" oninput="chatAutosize(this)" onkeydown="chatKey(event)"></textarea>
+                <button class="btn btn-primary btn-icon chat-send idle" id="chat-send" type="button" onclick="chatSendOrStop()" aria-label="Send message"><span class="ico-send"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-send"/></svg></span><span class="ico-stop"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-square"/></svg></span></button>
               </div>
-              <div class="chat-foot">Enter to send · Shift + Enter for a new line · AI can make mistakes, so double-check
-                admissions and fees.</div>
+              <p class="chat-hint small muted">Enter to send, Shift and Enter for a new line. AI Chat can make mistakes, so double-check admissions and fees.</p>
             </div>
           </div>
 
-          <!-- What the counsellor is given about the student: a drawer behind
-               the header's brain button (a bottom sheet on phones). -->
-          <div class="chat-mem-scrim" onclick="chatMemOpen(false)"></div>
-          <aside class="chat-mem" id="chat-mem" aria-labelledby="chat-mem-title">
-            <div class="chat-mem-grip" aria-hidden="true"></div>
-            <div class="chat-mem-head">
-              <div class="chat-mem-heading">
-                <span class="chat-mem-head-icon" aria-hidden="true">🧠</span>
-                <span class="chat-mem-head-text">
-                  <span class="chat-mem-title" id="chat-mem-title">What I know about you</span>
-                  <span class="chat-mem-sub" id="chat-mem-sub">Shared with me at the start of each chat</span>
-                </span>
-              </div>
-              <button class="chat-mem-close" onclick="chatMemOpen(false)" aria-label="Close">✕</button>
+          <!-- What AI Chat is given about the student: a side drawer, a bottom sheet on phones. -->
+          <div class="scrim chat-mem-scrim" onclick="chatMemOpen(false)"></div>
+          <aside class="drawer chat-mem" id="chat-mem" aria-labelledby="chat-mem-title">
+            <div class="sheet-handle chat-mem-handle"></div>
+            <div class="drawer-head">
+              <div><h2 class="drawer-title" id="chat-mem-title">What I know about you</h2><p class="small muted" id="chat-mem-sub">Shared with me at the start of each chat</p></div>
+              <button class="btn btn-icon btn-sm chat-mem-close" type="button" onclick="chatMemOpen(false)" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-x"/></svg></button>
             </div>
-            <div class="chat-mem-body" id="chat-mem-body">
-              <div class="chat-mem-loading"><span></span><span></span><span></span></div>
-            </div>
-            <button class="chat-mem-edit" onclick="navTo('settings')">✏️ Something wrong? Edit your profile</button>
+            <div class="drawer-body" id="chat-mem-body"><div class="chat-mem-loading" aria-hidden="true"><span></span><span></span><span></span></div></div>
+            <div class="chat-mem-foot"><button class="btn btn-secondary btn-sm" type="button" onclick="navTo('settings')"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-pencil"/></svg>Something wrong? Edit your profile</button></div>
           </aside>
         </div>
-
-      </div><!-- /main-content -->
-    </div><!-- /app-layout -->
+      </main>
   </div><!-- /app -->
 
   <script src="../scripts/riasec_engine.js"></script>
   <script src="../scripts/careerapi_mock.js"></script>
+  <script src="/scripts/shell.js"></script>
   <script src="../scripts/script.js"></script>
 
 </body>

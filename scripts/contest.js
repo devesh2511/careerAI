@@ -76,26 +76,36 @@
       const el = document.getElementById('ct-label');
       if (el) el.textContent = text;
     }
+    // Markup helpers (the design system lives in /css; icons in the sprite).
+    function ctIcon(n) { return '<svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-' + n + '"/></svg>'; }
+    function ctIllo(n, size) { return '<div class="illo' + (size ? ' illo-' + size : '') + '"><img src="/assets/illustrations/' + n + '-' + (size === 'lg' ? 400 : 200) + '.webp" alt=""></div>'; }
+    function ctEmpty(art, title, text, actions) {
+      return '<section class="card-flat"><div class="empty">' + ctIllo(art, 'lg') + '<h1 class="empty-title">' + title + '</h1>' +
+        (text ? '<p class="empty-text">' + text + '</p>' : '') + '<div class="cluster">' + (actions || '') + '</div></div></section>';
+    }
+    function ctLoading(text) {
+      return '<div class="card-flat skeleton-card" aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div>' +
+        '<p class="visually-hidden" role="status">' + text + '</p>';
+    }
+
     function ctError(err) {
-      ctLabel('Weekly Aptitude Contest');
-      ctSet('<div class="quiz-card ct-center">' + ctErrorBody(err, 'ctInit()') + '</div>');
+      ctLabel('Weekly contest');
+      ctSet(ctErrorBody(err, 'ctInit()'));
     }
 
     // The server checks the session and the plan on every contest call, so
     // a 401 or 402 can arrive even after the page's own access check passed.
     function ctErrorBody(err, retry) {
-      const msg = '<p class="ct-p">' + ctEsc(err && err.message || 'Please try again.') + '</p>';
       if (err && err.code === 'payment_required') {
-        return '<div class="ct-emoji">🔒</div><h2 class="ct-h">The contest needs an active plan</h2>' + msg +
-          '<button class="btn btn-primary" onclick="show(\'paywall\')">See plans</button>';
+        return ctEmpty('lock', 'Contests come with the full plan', ctEsc(err.message || 'Get a plan to play every Saturday.'),
+          '<button class="btn btn-primary" onclick="show(\'paywall\')">See plans</button>');
       }
       if (err && err.code === 'unauthenticated') {
-        return '<div class="ct-emoji">👋</div><h2 class="ct-h">Please log in again</h2>' +
-          '<p class="ct-p">Your session has ended.</p>' +
-          '<button class="btn btn-primary" onclick="show(\'auth\')">Log in</button>';
+        return ctEmpty('lock', 'Log in to play', 'Your session has ended. Your answers, rank and streak are saved to your account.',
+          '<button class="btn btn-primary" onclick="show(\'auth\')">Log in</button>');
       }
-      return '<div class="ct-emoji">⚠️</div><h2 class="ct-h">Something went wrong</h2>' + msg +
-        '<button class="btn btn-primary" onclick="' + retry + '">Try again</button>';
+      return '<section class="card-flat stack" role="alert"><h1>Something went wrong</h1><p class="muted">' + ctEsc(err && err.message || 'Please try again.') + '</p>' +
+        '<div><button class="btn btn-primary" onclick="' + retry + '">' + ctIcon('refresh-cw') + 'Try again</button></div></section>';
     }
 
     // Entry point for quiz.html. ?review=N shows a closed contest's answers.
@@ -107,7 +117,7 @@
       stepInit(ctStepBack);
       const review = new URLSearchParams(location.search).get('review');
       if (review) { ctShowReview(review); return; }
-      ctSet('<div class="ct-loading">Loading this week’s contest…</div>');
+      ctSet(ctLoading('Loading this week’s contest'));
       ContestAPI.getState().then(st => {
         const c = st.contest, a = st.attempt;
         if (!c) ctNoContest(st);
@@ -120,26 +130,25 @@
 
     function ctLastLink(st) {
       const p = st.latest_published;
-      return p ? '<a class="ct-link" href="?review=' + p.id + '">Review Contest #' + p.number + ' answers →</a>' : '';
+      return p ? '<a class="btn btn-ghost" href="?review=' + p.id + '">See contest #' + p.number + ' answers</a>' : '';
     }
 
     function ctIntro(st) {
       const c = st.contest;
       ctLabel('Contest #' + c.number);
       ctSet(
-        '<div class="quiz-card">' +
-        '<span class="badge badge-green">● Live now</span>' +
-        '<h2 class="ct-h">Weekly Aptitude Contest #' + c.number + '</h2>' +
-        '<p class="ct-p">Closes <strong>' + ctWhen(c.closes_at) + '</strong> · <span data-until="' + c.closes_at + '"></span> left</p>' +
-        '<ul class="ct-rules">' +
-        '<li><span>📝</span>5 questions, ' + c.points_per_question + ' points each</li>' +
-        '<li><span>⏱️</span>No time limit — but time taken breaks ties, so the clock starts when you press Start</li>' +
-        '<li><span>☝️</span>One attempt only. You can change answers until you submit</li>' +
-        '<li><span>🔒</span>Score, correct answers and leaderboards unlock when the contest closes</li>' +
+        '<section class="card stack-lg stack contest-hero" aria-labelledby="ct-intro-title">' + ctIllo('trophy', 'lg') +
+        '<div class="stack-sm stack"><span class="live-badge"><span class="live-dot"></span>LIVE</span>' +
+        '<h1 id="ct-intro-title">Weekly contest #' + c.number + '</h1>' +
+        '<p class="muted">Closes ' + ctWhen(c.closes_at) + '. <span class="countdown-inline num" data-until="' + c.closes_at + '"></span> left.</p></div>' +
+        '<ul class="rules">' +
+        '<li>' + ctIcon('list-checks') + '<span>5 questions, ' + c.points_per_question + ' points each</span></li>' +
+        '<li>' + ctIcon('clock') + '<span>No time limit, but time taken breaks ties, so the clock starts when you press Start</span></li>' +
+        '<li>' + ctIcon('lock') + '<span>One attempt. You can change answers until you submit</span></li>' +
+        '<li>' + ctIcon('trophy') + '<span>Score, correct answers and leaderboards unlock when the contest closes</span></li>' +
         '</ul>' +
-        '<button class="btn btn-primary btn-lg ct-wide" onclick="ctBegin(' + c.id + ')">Start contest →</button>' +
-        ctLastLink(st) +
-        '</div>');
+        '<div class="cluster cluster-lg"><button class="btn btn-primary" onclick="ctBegin(' + c.id + ')">Start the contest' + ctIcon('arrow-right') + '</button>' + ctLastLink(st) + '</div>' +
+        '</section>');
       ctStartTicker(ctInit);
     }
 
@@ -147,35 +156,27 @@
       const c = st.contest;
       ctLabel('Next contest');
       ctSet(
-        '<div class="quiz-card ct-center">' +
-        '<div class="ct-emoji">🗓️</div>' +
-        '<h2 class="ct-h">Contest #' + c.number + ' opens soon</h2>' +
-        '<p class="ct-p">A new 5-question contest opens every <strong>Saturday 7:00 AM</strong> and closes <strong>Sunday 7:00 PM IST</strong>.</p>' +
-        '<div class="ct-count" data-until="' + c.opens_at + '"></div>' +
-        '<p class="ct-p ct-small">Opens ' + ctWhen(c.opens_at) + '</p>' +
-        '<div class="ct-actions">' +
-        (st.latest_published ? '<a class="btn btn-primary" href="?review=' + st.latest_published.id + '">See Contest #' + st.latest_published.number + ' results</a>' : '') +
-        '<button class="btn btn-ghost" onclick="show(\'contests\')">View leaderboards</button>' +
-        '</div></div>');
+        '<section class="card stack contest-hero" aria-labelledby="ct-up-title">' + ctIllo('calendar', 'lg') +
+        '<h1 id="ct-up-title">Contest #' + c.number + ' opens soon</h1>' +
+        '<p class="muted">A new 5-question contest opens every Saturday at 7 am and closes on Sunday at 7 pm IST. This one opens ' + ctWhen(c.opens_at) + '.</p>' +
+        '<p class="countdown" data-until="' + c.opens_at + '"></p>' +
+        '<div class="cluster">' +
+        (st.latest_published ? '<a class="btn btn-primary" href="?review=' + st.latest_published.id + '">See contest #' + st.latest_published.number + ' results</a>' : '') +
+        '<button class="btn btn-ghost" onclick="show(\'contests\')">View leaderboards</button></div></section>');
       ctStartTicker(ctInit);
     }
 
     // No contest is scheduled yet (the admins add each week's).
     function ctNoContest(st) {
-      ctLabel('Weekly Aptitude Contest');
-      ctSet(
-        '<div class="quiz-card ct-center">' +
-        '<div class="ct-emoji">🗓️</div>' +
-        '<h2 class="ct-h">The next contest isn’t scheduled yet</h2>' +
-        '<p class="ct-p">A new 5-question contest opens every <strong>Saturday 7:00 AM</strong> and closes <strong>Sunday 7:00 PM IST</strong>. Check back soon.</p>' +
-        '<div class="ct-actions">' +
-        (st.latest_published ? '<a class="btn btn-primary" href="?review=' + st.latest_published.id + '">See Contest #' + st.latest_published.number + ' results</a>' : '') +
-        '<button class="btn btn-ghost" onclick="show(\'contests\')">View leaderboards</button>' +
-        '</div></div>');
+      ctLabel('Weekly contest');
+      ctSet(ctEmpty('calendar', 'No contest this week',
+        'A new 5-question contest opens every Saturday at 7 am and closes on Sunday at 7 pm IST. Check back soon.',
+        (st.latest_published ? '<a class="btn btn-primary" href="?review=' + st.latest_published.id + '">See contest #' + st.latest_published.number + ' results</a>' : '') +
+        '<button class="btn btn-ghost" onclick="show(\'contests\')">View leaderboards</button>'));
     }
 
     function ctBegin(id) {
-      ctSet('<div class="ct-loading">Getting your questions…</div>');
+      ctSet(ctLoading('Getting your questions'));
       ContestAPI.startAttempt(id).then(run => {
         ctRun = run;
         const firstOpen = run.questions.findIndex(q => run.answers[q.id] === undefined);
@@ -191,10 +192,11 @@
     }
 
     function ctDots() {
-      return '<div class="ct-dots" role="tablist" aria-label="Questions">' + ctRun.questions.map((q, i) =>
+      return '<nav class="ct-dots" aria-label="Questions">' + ctRun.questions.map((q, i) =>
         '<button class="ct-dot' + (ctRun.answers[q.id] !== undefined ? ' answered' : '') + (i === ctIdx ? ' current' : '') +
-        '" role="tab" aria-selected="' + (i === ctIdx) + '" aria-label="Question ' + (i + 1) + '" onclick="ctGo(' + i + ')">' + (i + 1) + '</button>'
-      ).join('') + '</div>';
+        '" type="button"' + (i === ctIdx ? ' aria-current="step"' : '') + ' aria-label="Question ' + (i + 1) + (ctRun.answers[q.id] !== undefined ? ', answered' : '') +
+        '" onclick="ctGo(' + i + ')">' + (i + 1) + '</button>'
+      ).join('') + '</nav>';
     }
 
     function ctQuestion() {
@@ -202,22 +204,23 @@
       ctOnReview = false;
       const qs = ctRun.questions, q = qs[ctIdx], chosen = ctRun.answers[q.id];
       const last = ctIdx === qs.length - 1;
-      ctLabel('Contest #' + ctRun.contest.number + ' · Question ' + (ctIdx + 1) + ' of ' + qs.length);
+      const answered = qs.filter(x => ctRun.answers[x.id] !== undefined).length;
+      ctLabel('Contest #' + ctRun.contest.number + ', question ' + (ctIdx + 1) + ' of ' + qs.length);
       ctSet(
-        '<div class="ct-qhead">' + ctDots() + '<span class="quiz-area">' + ctEsc(q.area) + '</span></div>' +
-        '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + ((ctIdx + 1) / qs.length * 100) + '%"></div></div>' +
-        '<div class="quiz-card">' +
-        '<div class="quiz-q">' + ctEsc(q.text) + '</div>' +
-        '<div class="quiz-options" role="radiogroup">' + q.options.map((o, i) =>
-          '<button class="quiz-option' + (chosen === i ? ' selected' : '') + '" role="radio" aria-checked="' + (chosen === i) +
-          '" onclick="ctPick(' + i + ')"><span class="opt-letter">' + 'ABCD'[i] + '</span>' + ctEsc(o) + '</button>'
-        ).join('') + '</div>' +
-        '<div class="ct-footer">' +
-        '<button class="btn btn-ghost btn-sm" onclick="ctGo(' + (ctIdx - 1) + ')"' + (ctIdx === 0 ? ' disabled' : '') + '>← Back</button>' +
+        '<progress class="progress" max="' + qs.length + '" value="' + answered + '" aria-label="' + answered + ' of ' + qs.length + ' answered">' + answered + '</progress>' +
+        ctDots() +
+        '<section class="stack" aria-labelledby="ct-q"><p class="badge badge-outline">' + ctEsc(q.area) + '</p>' +
+        '<h1 class="question-text" id="ct-q">' + ctEsc(q.text) + '</h1>' +
+        '<div class="option-list" role="radiogroup" aria-labelledby="ct-q">' + q.options.map((o, i) =>
+          '<button class="option quiz-option' + (chosen === i ? ' selected' : '') + '" type="button" role="radio" aria-checked="' + (chosen === i) +
+          '" onclick="ctPick(' + i + ')"><span class="option-letter opt-letter">' + 'ABCD'[i] + '</span><span>' + ctEsc(o) + '</span></button>'
+        ).join('') + '</div></section>' +
+        '<div class="cluster cluster-between ct-footer">' +
+        '<button class="btn btn-secondary" onclick="ctGo(' + (ctIdx - 1) + ')"' + (ctIdx === 0 ? ' disabled' : '') + '>' + ctIcon('arrow-left') + 'Previous</button>' +
         (last
-          ? '<button class="btn btn-primary btn-sm" onclick="ctConfirm()">Review &amp; submit →</button>'
-          : '<button class="btn btn-primary btn-sm" onclick="ctGo(' + (ctIdx + 1) + ')">Next →</button>') +
-        '</div></div>');
+          ? '<button class="btn btn-primary" onclick="ctConfirm()">Review and submit' + ctIcon('arrow-right') + '</button>'
+          : '<button class="btn btn-primary" onclick="ctGo(' + (ctIdx + 1) + ')">Next question' + ctIcon('arrow-right') + '</button>') +
+        '</div>');
       stepSync(ctIdx > 0, '#/q/' + (ctIdx + 1));
     }
 
@@ -258,37 +261,34 @@
       stepSync(true, '#/review');
       const qs = ctRun.questions;
       const open = qs.filter(q => ctRun.answers[q.id] === undefined).length;
-      ctLabel('Contest #' + ctRun.contest.number + ' · Review');
+      ctLabel('Contest #' + ctRun.contest.number + ', review');
       ctSet(
-        '<div class="quiz-card">' +
-        '<h2 class="ct-h">Ready to submit?</h2>' +
-        '<p class="ct-p">Submitting is final — you can’t change answers afterwards.</p>' +
-        '<div class="ct-summary">' + qs.map((q, i) => {
+        '<section class="stack" aria-labelledby="ct-ready-title"><h1 id="ct-ready-title">Ready to submit?</h1>' +
+        '<p class="muted">Submitting is final. You can still change any answer before you submit.</p>' +
+        (open ? '<div class="alert alert-warn">' + ctIcon('info') + '<span>' + open + ' question' + (open > 1 ? 's have' : ' has') + ' no answer yet and will score 0.</span></div>' : '') +
+        '<div class="card-flat list">' + qs.map((q, i) => {
           const a = ctRun.answers[q.id];
-          return '<button class="ct-sum-row" onclick="ctGo(' + i + ')">' +
-            '<span class="ct-sum-n">Q' + (i + 1) + '</span>' +
-            '<span class="ct-sum-q">' + ctEsc(q.text) + '</span>' +
-            (a === undefined
-              ? '<span class="badge badge-orange">Not answered</span>'
-              : '<span class="badge badge-purple">' + 'ABCD'[a] + '</span>') +
+          return '<button class="list-row ct-sum-row" type="button" onclick="ctGo(' + i + ')">' +
+            '<span class="ct-dot' + (a === undefined ? ' current' : ' answered') + '">' + (i + 1) + '</span>' +
+            '<span class="grow ct-sum-q">' + ctEsc(q.text) + '</span>' +
+            (a === undefined ? '<span class="badge badge-accent">No answer</span>' : '<span class="badge badge-outline">' + 'ABCD'[a] + '</span>') +
             '</button>';
         }).join('') + '</div>' +
-        (open ? '<p class="ct-warn">⚠️ ' + open + ' question' + (open > 1 ? 's are' : ' is') + ' unanswered and will score 0.</p>' : '') +
-        '<div class="ct-footer">' +
-        '<button class="btn btn-ghost btn-sm" onclick="ctGo(' + (qs.length - 1) + ')">← Back to questions</button>' +
-        '<button class="btn btn-primary" id="ct-submit" onclick="ctSubmit()">Submit contest</button>' +
-        '</div></div>');
+        '<div class="cluster cluster-between ct-footer">' +
+        '<button class="btn btn-secondary" onclick="ctGo(' + (qs.length - 1) + ')">' + ctIcon('arrow-left') + 'Back to questions</button>' +
+        '<button class="btn btn-primary" id="ct-submit" onclick="ctSubmit()">' + ctIcon('send') + 'Submit answers</button>' +
+        '</div></section>');
     }
 
     function ctSubmit() {
       const btn = document.getElementById('ct-submit');
-      if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+      if (btn) { btn.disabled = true; btn.classList.add('busy'); btn.textContent = 'Submitting'; }
       ctSubmitting = true;
       ContestAPI.submitAttempt(ctRun.contest.id).then(res => {
         ctSubmitted(ctRun.contest, { submitted_at: res.submitted_at, time_taken_s: res.time_taken_s });
       }).catch(err => {
         if (err.code === 'not_open') { ctEnd(); ctInit(); }
-        else { ctSubmitting = false; alert(err.message); if (btn) { btn.disabled = false; btn.textContent = 'Submit contest'; } }
+        else { ctSubmitting = false; alert(err.message); if (btn) { btn.disabled = false; btn.classList.remove('busy'); btn.textContent = 'Submit answers'; } }
       });
     }
 
@@ -307,65 +307,48 @@
       const took = a.time_taken_s != null ? a.time_taken_s
         : Math.round((Date.parse(a.submitted_at) - Date.parse(a.started_at)) / 1000);
       ctSet(
-        '<div class="quiz-card ct-center">' +
-        '<div class="ct-emoji">✅</div>' +
-        '<h2 class="ct-h">You’re in for Contest #' + c.number + '!</h2>' +
-        '<p class="ct-p">' + (a.auto_submitted ? 'Auto-submitted when the contest closed' : 'Submitted ' + ctWhen(a.submitted_at)) +
-        ' · time taken <strong>' + ctDuration(took) + '</strong></p>' +
-        '<div class="ct-locked-box">' +
-        '<div class="ct-small">Score, correct answers &amp; leaderboards unlock in</div>' +
-        '<div class="ct-count" data-until="' + c.closes_at + '"></div>' +
-        '<div class="ct-small">' + ctWhen(c.closes_at) + '</div>' +
-        '</div>' +
-        '<div class="ct-actions"><button class="btn btn-primary" onclick="show(\'contests\')">Go to leaderboards</button></div>' +
-        '</div>');
+        '<section class="card stack contest-hero" aria-labelledby="ct-done-title">' + ctIllo('thumb-up', 'lg') +
+        '<h1 id="ct-done-title">Answers submitted</h1>' +
+        '<p class="muted">' + (a.auto_submitted ? 'Submitted automatically when the contest closed' : 'Submitted ' + ctWhen(a.submitted_at)) +
+        '. Time taken: <b>' + ctDuration(took) + '</b>.</p>' +
+        '<p class="small muted">Score, correct answers and leaderboards unlock in</p>' +
+        '<p class="countdown" data-until="' + c.closes_at + '"></p>' +
+        '<div><button class="btn btn-primary" onclick="show(\'contests\')">Go to leaderboards</button></div></section>');
       ctStartTicker(() => { location.replace('?review=' + c.id); });
     }
 
     function ctShowReview(id) {
-      ctSet('<div class="ct-loading">Loading results…</div>');
+      ctSet(ctLoading('Loading results'));
       ContestAPI.getReview(id).then(r => {
         const c = r.contest;
-        ctLabel('Contest #' + c.number + ' · Results');
-        const stat = (val, label) => '<div class="ct-stat"><div class="ct-stat-val">' + val + '</div><div class="ct-stat-label">' + label + '</div></div>';
+        ctLabel('Contest #' + c.number + ', results');
+        const metric = (val, label) => '<div class="metric"><span class="metric-value">' + val + '</span><span class="metric-label">' + label + '</span></div>';
         const head = r.attempted
-          ? '<div class="ct-stats">' +
-            stat(r.score, 'Points') +
-            stat(r.correct + '/' + r.total_questions, 'Correct') +
-            stat(ctDuration(r.time_taken_s), 'Time') +
-            stat(r.global ? '#' + r.global.rank + '<small> / ' + r.global.total + '</small>' : '—', 'Global') +
-            stat(r.career ? '#' + r.career.rank + '<small> / ' + r.career.total + '</small>' : '—', r.career ? ctEsc(r.career.name) : 'Career rank') +
-            '</div>'
-          : '<p class="ct-warn">You didn’t take this contest — here are the answers so you can practise.</p>';
-        ctSet(
-          '<div class="quiz-card">' +
-          '<h2 class="ct-h">Contest #' + c.number + ' results</h2>' +
-          '<p class="ct-p ct-small">' + ctDates(c) + ' · closed ' + ctWhen(c.closes_at) + '</p>' + head + '</div>' +
+          ? '<section class="card-ink stack" aria-labelledby="ct-res-title"><div class="cluster cluster-lg">' + ctIllo('medal', 'sm') +
+            '<div><p class="muted small">Contest #' + c.number + ', ' + ctDates(c) + '</p><h1 class="card-title-lg" id="ct-res-title">' + r.correct + ' out of ' + r.total_questions + '</h1></div></div>' +
+            '<div class="metric-row">' + metric(r.score, 'Points') + metric(ctDuration(r.time_taken_s), 'Time taken') +
+            metric(r.global ? '#' + r.global.rank : '—', r.global ? 'Global, of ' + r.global.total : 'Global rank') + '</div>' +
+            (r.career ? '<p class="small muted">Career rank #' + r.career.rank + ' of ' + r.career.total + ' (' + ctEsc(r.career.name) + ')</p>' : '') + '</section>'
+          : '<section class="stack"><h1>Contest #' + c.number + ' answers</h1><div class="alert alert-info">' + ctIcon('info') + '<span>You didn’t take this contest. Here are the answers so you can practise.</span></div></section>';
+        ctSet(head +
           r.questions.map((q, i) => {
             const right = q.your_index === q.correct_index;
-            const tag = q.your_index == null ? '<span class="badge badge-orange">Skipped</span>'
-              : right ? '<span class="badge badge-green">Correct</span>' : '<span class="badge badge-red">Wrong</span>';
-            return '<div class="quiz-card ct-rq">' +
-              '<div class="ct-rq-head"><span class="quiz-area">Q' + (i + 1) + ' · ' + ctEsc(q.area) + '</span>' + (r.attempted ? tag : '') + '</div>' +
-              '<div class="ct-rq-text">' + ctEsc(q.text) + '</div>' +
-              '<div class="ct-rq-opts">' + q.options.map((o, oi) => {
-                const cls = oi === q.correct_index ? ' is-correct' : oi === q.your_index ? ' is-wrong' : '';
-                const note = oi === q.correct_index ? 'Correct answer' : oi === q.your_index ? 'Your answer' : '';
-                return '<div class="ct-rq-opt' + cls + '"><span class="opt-letter">' + 'ABCD'[oi] + '</span>' +
-                  '<span>' + ctEsc(o) + '</span>' +
-                  (note ? '<span class="ct-rq-note">' + (oi === q.correct_index && oi === q.your_index ? 'Your answer ✓' : note) + '</span>' : '') + '</div>';
-              }).join('') + '</div>' +
-              '<div class="ct-expl"><strong>Why:</strong> ' + ctEsc(q.explanation) + '</div>' +
-              '</div>';
+            const tag = q.your_index == null ? '<span class="badge badge-outline">Skipped</span>'
+              : right ? '<span class="badge fit-strong">' + ctIcon('check') + 'Correct</span>' : '<span class="badge badge-wrong">' + ctIcon('x') + 'Wrong</span>';
+            const yours = q.your_index != null ? '<p class="answer-row ' + (right ? 'answer-right' : 'answer-wrong') + '">' + ctIcon(right ? 'check' : 'x') +
+              '<span><b>Your answer:</b> ' + ctEsc(q.options[q.your_index]) + '</span></p>' : '';
+            const correct = !right ? '<p class="answer-row answer-right">' + ctIcon('check') + '<span><b>Correct answer:</b> ' + ctEsc(q.options[q.correct_index]) + '</span></p>' : '';
+            return '<article class="card-flat stack-sm stack review-q ct-rq">' +
+              '<div class="card-head"><p class="small muted">Question ' + (i + 1) + ', ' + ctEsc(q.area) + '</p>' + (r.attempted ? tag : '') + '</div>' +
+              '<h2 class="card-title ct-rq-text">' + ctEsc(q.text) + '</h2>' + yours + correct +
+              (q.explanation ? '<p class="small muted ct-expl"><b>Why:</b> ' + ctEsc(q.explanation) + '</p>' : '') + '</article>';
           }).join('') +
-          '<div class="ct-actions"><button class="btn btn-primary" onclick="show(\'contests\')">View leaderboards</button>' +
+          '<div class="cluster"><button class="btn btn-primary" onclick="show(\'contests\')">View leaderboards</button>' +
           '<a class="btn btn-ghost" href="quiz.html">This week’s contest</a></div>');
       }).catch(err => {
         if (err.code === 'not_published' || err.code === 'not_found') {
-          ctLabel('Weekly Aptitude Contest');
-          ctSet('<div class="quiz-card ct-center"><div class="ct-emoji">🔒</div>' +
-            '<h2 class="ct-h">Results aren’t out yet</h2><p class="ct-p">' + ctEsc(err.message) + '</p>' +
-            '<a class="btn btn-primary" href="quiz.html">Back to the contest</a></div>');
+          ctLabel('Weekly contest');
+          ctSet(ctEmpty('calendar', 'Results aren’t out yet', ctEsc(err.message), '<a class="btn btn-secondary" href="quiz.html">Back to the contest</a>'));
         } else ctError(err);
       });
     }
@@ -383,7 +366,7 @@
       const root = document.getElementById('lb-root');
       if (!root || typeof ContestAPI === 'undefined') return;
       const seq = ++lbSeq, scope = lbScope, career = lbCareer;
-      if (!lbData) root.innerHTML = '<div class="ct-loading">Loading leaderboards…</div>';
+      if (!lbData) root.innerHTML = ctLoading('Loading leaderboards');
       Promise.all([
         ContestAPI.getState(),
         ContestAPI.getLeaderboard({ scope: lbScope, period: 'week', career: lbCareer }),
@@ -393,14 +376,15 @@
         if (seq !== lbSeq) return;
         lbData = { state, week, live, history, scope, career };
         lbDraw();
+        if (typeof syncLiveBadge === 'function') syncLiveBadge(state);
       }).catch(err => {
         if (seq !== lbSeq) return;
         // A retaken quiz can drop the career this board was on: start over on the current one.
         if (err.code === 'invalid' && lbCareer) { lbCareer = null; lbRender(); return; }
-        root.innerHTML = '<div class="card lb-empty">' + (err.code === 'payment_required' || err.code === 'unauthenticated'
+        root.innerHTML = err.code === 'payment_required' || err.code === 'unauthenticated'
           ? ctErrorBody(err, 'lbRender()')
-          : '<p>Couldn’t load the leaderboards: ' + ctEsc(err.message) +
-            '</p><button class="btn btn-primary btn-sm" onclick="lbRender()">Retry</button>') + '</div>';
+          : '<div class="alert alert-error" role="alert">' + ctIcon('circle-alert') + '<div class="stack-sm stack"><span>Couldn’t load the leaderboards: ' + ctEsc(err.message) +
+            '</span><div><button class="btn btn-secondary btn-sm" onclick="lbRender()">Try again</button></div></div></div>';
       });
     }
 
@@ -420,17 +404,15 @@
       // One chip per suggested career (GET /contest/state → careers), current career first.
       const careers = state.careers && state.careers.length ? state.careers : state.career ? [state.career] : [];
       const shown = lbScope === 'career' ? week.career : null;
-      const chip = (on, label, click, attr) => '<button class="filter-chip' + (on ? ' active' : '') + '" role="tab" aria-selected="' + on + '"' +
+      const chip = (on, label, click, attr) => '<button class="tab-btn filter-chip' + (on ? ' active' : '') + '" type="button" role="tab" aria-selected="' + on + '"' +
         (attr || '') + ' onclick="' + click + '">' + label + '</button>';
       root.innerHTML =
         lbStatus(state) +
-        '<div class="lb-bar">' +
-        '<div class="lb-tabs" role="tablist" aria-label="Leaderboard">' +
-        chip(lbScope === 'global', '🌍 Global', 'lbSetScope(\'global\')') +
+        '<div class="tabs lb-tabs" role="tablist" aria-label="Leaderboard">' +
+        chip(lbScope === 'global', 'Global', 'lbSetScope(\'global\')') +
         (careers.length
-          ? careers.map(c => chip(c === shown, ctEsc(lbEmoji(c) + ' ' + c), 'lbSetCareer(this.dataset.career)', ' data-career="' + ctEsc(c) + '"')).join('')
-          : chip(lbScope === 'career', '🎯 My career', 'lbSetScope(\'career\')')) +
-        '</div>' +
+          ? careers.map(c => chip(c === shown, ctEsc(c), 'lbSetCareer(this.dataset.career)', ' data-career="' + ctEsc(c) + '" title="' + ctEsc(c) + '"')).join('')
+          : chip(lbScope === 'career', 'My career', 'lbSetScope(\'career\')')) +
         '</div>' +
         lbBody() +
         lbHistory();
@@ -439,126 +421,115 @@
       ctStartTicker(() => { if (root.closest('.page.active')) lbRender(); });
     }
 
-    // The career list is RIASEC_CAREERS (GET /careers); the server's emoji is the
-    // fallback for a career that isn't in it.
-    function lbEmoji(title, fallback) {
-      const c = (typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : []).find(x => x.title === title);
-      return c ? c.emoji : fallback || '🎯';
-    }
-
     function lbStatus(st) {
       const c = st.contest, a = st.attempt;
-      let cls, icon, title, sub, btn;
+      let cls, art, title, sub, btn, live = false;
       if (!c) {
-        cls = 'is-soon'; icon = '🗓️';
-        title = 'The next contest isn’t scheduled yet';
-        sub = 'A new contest runs every Saturday 7 AM – Sunday 7 PM IST';
+        cls = 'is-soon'; art = 'calendar';
+        title = 'No contest this week';
+        sub = 'A new contest runs every Saturday 7 am to Sunday 7 pm IST.';
         btn = '';
       } else if (c.status === 'upcoming') {
-        cls = 'is-soon'; icon = '🗓️';
+        cls = 'is-soon'; art = 'calendar';
         title = 'Contest #' + c.number + ' opens ' + ctWhen(c.opens_at);
-        sub = 'Starts in <strong data-until="' + c.opens_at + '"></strong> · new contest every Saturday 7 AM – Sunday 7 PM IST';
+        sub = 'Starts in <span class="countdown-inline num" data-until="' + c.opens_at + '"></span>.';
         btn = '';
       } else if (a.status === 'submitted') {
-        cls = 'is-done'; icon = '✅';
+        cls = 'is-done'; art = 'thumb-up';
         title = 'Contest #' + c.number + ' submitted';
-        sub = 'Your score and this week’s leaderboard unlock in <strong data-until="' + c.closes_at + '"></strong> (' + ctWhen(c.closes_at) + ')';
+        sub = 'Your score and this week’s leaderboard unlock in <span class="countdown-inline num" data-until="' + c.closes_at + '"></span> (' + ctWhen(c.closes_at) + ').';
         btn = '';
       } else if (a.status === 'in_progress') {
-        cls = 'is-live'; icon = '✏️';
-        title = 'Contest #' + c.number + ' in progress · ' + a.answered_count + ' of ' + c.question_count + ' answered';
-        sub = 'Submit before ' + ctWhen(c.closes_at) + ' · <strong data-until="' + c.closes_at + '"></strong> left';
-        btn = '<button class="btn btn-primary btn-sm" onclick="show(\'quiz\')">Continue →</button>';
+        cls = 'is-live'; art = 'trophy'; live = true;
+        title = 'Contest #' + c.number + ' in progress';
+        sub = a.answered_count + ' of ' + c.question_count + ' answered. Submit before ' + ctWhen(c.closes_at) + ', <span class="countdown-inline num" data-until="' + c.closes_at + '"></span> left.';
+        btn = '<button class="btn btn-primary" onclick="show(\'quiz\')">Continue</button>';
       } else {
-        cls = 'is-live'; icon = '🟢';
+        cls = 'is-live'; art = 'trophy'; live = true;
         title = 'Contest #' + c.number + ' is live';
-        sub = '5 questions · closes ' + ctWhen(c.closes_at) + ' · <strong data-until="' + c.closes_at + '"></strong> left';
-        btn = '<button class="btn btn-primary btn-sm" onclick="show(\'quiz\')">Take the contest →</button>';
+        sub = '5 questions. Closes ' + ctWhen(c.closes_at) + ', <span class="countdown-inline num" data-until="' + c.closes_at + '"></span> left.';
+        btn = '<button class="btn btn-primary" onclick="show(\'quiz\')">Play now</button>';
       }
-      return '<div class="lb-status ' + cls + '"><div class="lb-status-icon">' + icon + '</div>' +
-        '<div class="lb-status-text"><div class="lb-status-title">' + title + '</div><div class="lb-status-sub">' + sub + '</div></div>' +
-        btn + '</div>';
+      return '<section class="' + (live ? 'card-ink' : 'card') + ' lb-status ' + cls + '" aria-label="This week’s contest">' + ctIllo(art, 'sm') +
+        '<div class="stack-sm stack">' + (live ? '<span class="live-badge"><span class="live-dot"></span>LIVE</span>' : '') +
+        '<h2 class="card-title-lg lb-status-title">' + title + '</h2><p class="muted lb-status-sub">' + sub + '</p></div>' + btn + '</section>';
     }
 
     function lbBody() {
       const { week, live, state } = lbData;
       if (week.locked === 'no_career') {
-        return '<div class="card lb-empty"><div class="ct-emoji">🧭</div>' +
-          '<h3>Find your career to unlock this leaderboard</h3>' +
-          '<p>The career leaderboard ranks you against students aiming for the same career as you — your future competition. Take the career quiz to get your top career match.</p>' +
-          '<button class="btn btn-primary" onclick="cqStart()">Take the career quiz →</button></div>';
+        return ctEmpty('target', 'Find your career to unlock this leaderboard',
+          'The career leaderboard ranks you against students aiming for the same career as you. Take the career quiz to get your top match.',
+          '<button class="btn btn-primary" onclick="cqStart()">Take the career quiz</button>').replace('<h1 class="empty-title">', '<h2 class="empty-title">').replace('</h1>', '</h2>');
       }
       if (!state.published_count) {
-        return '<div class="card lb-empty"><div class="ct-emoji">🏁</div>' +
-          '<h3>No results yet</h3><p>The first leaderboard appears when the first contest closes on Sunday at 7:00 PM IST.</p></div>';
+        return ctEmpty('calendar', 'No results yet', 'The first leaderboard appears when the first contest closes on Sunday at 7 pm IST.', '')
+          .replace('<h1 class="empty-title">', '<h2 class="empty-title">').replace('</h1>', '</h2>');
       }
       const active = lbPeriod === 'live' ? live : week;
       const scopeName = lbScope === 'career' ? ctEsc(week.career) : 'all students';
-      return '<div class="lb-summary">' +
+      return '<div class="grid-2 lb-summary">' +
         lbCard('week', week, 'Contest #' + week.contest.number, ctDates(week.contest)) +
-        lbCard('live', live, 'Live ranking', 'All ' + live.contests_count + ' contest' + (live.contests_count > 1 ? 's' : '') + ' combined') +
+        lbCard('live', live, 'All contests', (live.contests_count || 0) + ' contest' + (live.contests_count === 1 ? '' : 's') + ' combined') +
         '</div>' +
-        '<div class="card lb-table-card">' +
-        '<div class="lb-table-head"><div>' +
-        '<div class="lb-table-title">' + (lbPeriod === 'live' ? 'Live ranking' : 'Contest #' + week.contest.number) + ' · ' + scopeName + '</div>' +
-        '<div class="lb-table-sub">' + active.total_participants + ' student' + (active.total_participants === 1 ? '' : 's') +
-        ' · ranked by score, then time taken' +
-        (lbScope === 'career' && week.career !== state.career ? ' · you’re ranked against students aiming for this career' : '') +
-        '</div></div>' +
-        '<div class="lb-seg" role="tablist">' +
-        '<button class="' + (lbPeriod === 'week' ? 'active' : '') + '" role="tab" aria-selected="' + (lbPeriod === 'week') + '" onclick="lbSetPeriod(\'week\')">This week</button>' +
-        '<button class="' + (lbPeriod === 'live' ? 'active' : '') + '" role="tab" aria-selected="' + (lbPeriod === 'live') + '" onclick="lbSetPeriod(\'live\')">Live</button>' +
+        '<section class="card-flat stack lb-table-card" aria-labelledby="lb-board-title">' +
+        '<div class="section-head"><div class="stack-xs stack"><h2 class="card-title lb-table-title" id="lb-board-title">' + (lbPeriod === 'live' ? 'All contests' : 'Contest #' + week.contest.number) + ', ' + scopeName + '</h2>' +
+        '<p class="small muted lb-table-sub">' + active.total_participants + ' student' + (active.total_participants === 1 ? '' : 's') +
+        ', ranked by score, then time taken' +
+        (lbScope === 'career' && week.career !== state.career ? '. You’re ranked against students aiming for this career' : '') + '.</p></div>' +
+        '<div class="seg lb-seg" role="tablist" aria-label="Period">' +
+        '<button class="seg-btn' + (lbPeriod === 'week' ? ' active' : '') + '" type="button" role="tab" aria-selected="' + (lbPeriod === 'week') + '" onclick="lbSetPeriod(\'week\')">This week</button>' +
+        '<button class="seg-btn' + (lbPeriod === 'live' ? ' active' : '') + '" type="button" role="tab" aria-selected="' + (lbPeriod === 'live') + '" onclick="lbSetPeriod(\'live\')">All time</button>' +
         '</div></div>' +
         lbTable(active) +
-        '</div>';
+        '</section>';
     }
 
     function lbCard(period, b, title, sub) {
       const me = b.me;
       const body = me
-        ? '<div class="lb-rank">#' + me.rank + '<span> of ' + b.total_participants + '</span></div>' +
-          '<span class="badge badge-green">Top ' + ctTopPct(me.rank, b.total_participants) + '%</span>' +
-          '<div class="lb-card-line"><strong>' + me.score + ' pts</strong> · ' + me.correct + '/' + me.total_questions + ' correct · ' + ctDuration(me.time_taken_s) + '</div>'
-        : '<div class="lb-rank lb-rank-none">Not ranked</div>' +
-          '<div class="lb-card-line">' + (period === 'week' ? 'You didn’t take this contest.' : 'Take a contest to get on the board.') + '</div>';
-      return '<button class="lb-card' + (lbPeriod === period ? ' active' : '') + '" onclick="lbSetPeriod(\'' + period + '\')">' +
-        '<div class="lb-card-title">' + title + '</div><div class="lb-card-sub">' + sub + '</div>' + body + '</button>';
+        ? '<div class="cluster cluster-lg"><span class="rank-big">#' + me.rank + '</span><span class="muted small">of ' + b.total_participants + ' students<br>' +
+          me.correct + '/' + me.total_questions + ' correct, ' + ctDuration(me.time_taken_s) + '</span></div>' +
+          '<span class="badge fit-strong">Top ' + ctTopPct(me.rank, b.total_participants) + '%</span>'
+        : '<p class="card-title">Not ranked</p><p class="small muted">' + (period === 'week' ? 'You didn’t take this contest.' : 'Take a contest to get on the board.') + '</p>';
+      return '<button class="card-flat card-link lb-card stack-sm stack' + (lbPeriod === period ? ' active' : '') + '" type="button" aria-pressed="' + (lbPeriod === period) + '" onclick="lbSetPeriod(\'' + period + '\')">' +
+        '<span class="small muted lb-card-title">' + title + ', ' + sub + '</span>' + body + '</button>';
     }
 
     function lbTable(b) {
       const showCareer = lbScope === 'global';
       const row = r => '<tr class="' + (r.is_me ? 'is-me' : '') + '">' +
-        '<td class="lb-pos">' + (['🥇', '🥈', '🥉'][r.rank - 1] || r.rank) + '</td>' +
-        '<td><div class="lb-name">' + ctEsc(r.name) + (r.is_me ? ' <span class="badge badge-purple">You</span>' : '') + '</div>' +
-        (showCareer ? '<div class="lb-career">' + ctEsc((r.career ? lbEmoji(r.career, r.career_emoji) : '🎯') + ' ' + (r.career || 'Career not set')) + '</div>' : '') + '</td>' +
-        '<td class="lb-num"><strong>' + r.score + '</strong></td>' +
-        '<td class="lb-num lb-hide-sm">' + r.correct + '/' + r.total_questions + '</td>' +
-        '<td class="lb-num">' + ctDuration(r.time_taken_s) + '</td></tr>';
+        '<td class="num lb-pos">#' + r.rank + '</td>' +
+        '<td><span class="lb-name">' + ctEsc(r.name) + (r.is_me ? ' (you)' : '') + '</span>' +
+        (showCareer ? '<br><span class="small muted lb-career">' + ctEsc(r.career || 'Career not set') + '</span>' : '') + '</td>' +
+        '<td class="col-num"><b>' + r.score + '</b></td>' +
+        '<td class="col-num lb-hide-sm">' + r.correct + '/' + r.total_questions + '</td>' +
+        '<td class="col-num lb-hide-sm">' + ctDuration(r.time_taken_s) + '</td></tr>';
       const meShown = b.rows.some(r => r.is_me);
-      return '<div class="lb-scroll"><table class="lb-table">' +
-        '<thead><tr><th>Rank</th><th>Student</th><th class="lb-num">Score</th><th class="lb-num lb-hide-sm">Correct</th><th class="lb-num">Time</th></tr></thead>' +
+      return '<div class="table-wrap"><table class="table lb-table">' +
+        '<thead><tr><th scope="col">Rank</th><th scope="col">Student</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num lb-hide-sm">Correct</th><th scope="col" class="col-num lb-hide-sm">Time</th></tr></thead>' +
         '<tbody>' + b.rows.map(row).join('') +
-        (b.me && !meShown ? '<tr class="lb-gap"><td colspan="5">⋯</td></tr>' + row(b.me) : '') +
+        (b.me && !meShown ? '<tr class="lb-gap"><td colspan="5" class="muted">…</td></tr>' + row(b.me) : '') +
         '</tbody></table></div>';
     }
 
     function lbHistory() {
       const h = lbData.history;
       if (!h.rows.length) return '';
-      const rank = x => x ? '#' + x.rank + '<span class="lb-of"> / ' + x.total + '</span>' : '—';
-      return '<div class="card lb-table-card">' +
-        '<div class="lb-table-head"><div><div class="lb-table-title">Your contest history</div>' +
-        '<div class="lb-table-sub">Career ranks use your current career' + (h.career ? ' (' + ctEsc(h.career) + ')' : '') + '</div></div></div>' +
-        '<div class="lb-scroll"><table class="lb-table">' +
-        '<thead><tr><th>Contest</th><th class="lb-num">Score</th><th class="lb-num">Correct</th><th class="lb-num">Time</th>' +
-        '<th class="lb-num">Global</th><th class="lb-num">Career</th><th></th></tr></thead><tbody>' +
+      const rank = x => x ? '#' + x.rank + '<span class="muted lb-of"> of ' + x.total + '</span>' : '—';
+      return '<section class="card-flat stack lb-table-card" aria-labelledby="lb-hist-title">' +
+        '<div class="stack-xs stack"><h2 class="card-title" id="lb-hist-title">Your past contests</h2>' +
+        '<p class="small muted">Career ranks use your current career' + (h.career ? ' (' + ctEsc(h.career) + ')' : '') + '.</p></div>' +
+        '<div class="table-wrap"><table class="table lb-table">' +
+        '<thead><tr><th scope="col">Contest</th><th scope="col" class="col-num">Score</th><th scope="col" class="col-num lb-hide-sm">Time</th>' +
+        '<th scope="col" class="col-num">Global</th><th scope="col" class="col-num lb-hide-sm">Career</th><th scope="col"><span class="visually-hidden">Answers</span></th></tr></thead><tbody>' +
         h.rows.map(r => '<tr>' +
-          '<td><div class="lb-name">Contest #' + r.contest.number + '</div><div class="lb-career">' + ctDates(r.contest) + '</div></td>' +
+          '<td><span class="lb-name">Contest #' + r.contest.number + '</span><br><span class="small muted">' + ctDates(r.contest) + '</span></td>' +
           (r.attempted
-            ? '<td class="lb-num"><strong>' + r.score + '</strong></td><td class="lb-num">' + r.correct + '/' + r.total_questions + '</td>' +
-              '<td class="lb-num">' + ctDuration(r.time_taken_s) + '</td><td class="lb-num">' + rank(r.global) + '</td><td class="lb-num">' + rank(r.career) + '</td>'
-            : '<td colspan="5" class="lb-skipped">Not attempted</td>') +
-          '<td class="lb-num"><a class="ct-link" href="quiz.html?review=' + r.contest.id + '">Answers →</a></td></tr>'
+            ? '<td class="col-num"><b>' + r.score + '</b></td><td class="col-num lb-hide-sm">' + ctDuration(r.time_taken_s) + '</td>' +
+              '<td class="col-num">' + rank(r.global) + '</td><td class="col-num lb-hide-sm">' + rank(r.career) + '</td>'
+            : '<td colspan="4" class="muted lb-skipped">Not attempted</td>') +
+          '<td><a class="ct-link" href="quiz.html?review=' + r.contest.id + '">Answers</a></td></tr>'
         ).join('') +
-        '</tbody></table></div></div>';
+        '</tbody></table></div></section>';
     }

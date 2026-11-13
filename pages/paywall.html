@@ -3,10 +3,25 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crackeer · Unlock</title>
-  <!-- No icon file yet; an empty one stops the /favicon.ico request (a 404). -->
-  <link rel="icon" href="data:," />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Crackeer · Unlock Crackeer</title>
+  <meta name="description" content="A 25-question quiz, honest career matches and a step-by-step roadmap from Class 9 to your first job. Built for school students in India." />
+  <!-- Link previews (WhatsApp, LinkedIn, X). Crawlers need absolute URLs, so these point at production. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Crackeer" />
+  <meta property="og:title" content="Crackeer · Unlock Crackeer" />
+  <meta property="og:description" content="A 25-question quiz, honest career matches and a step-by-step roadmap from Class 9 to your first job. Built for school students in India." />
+  <meta property="og:image" content="https://career-ai-six-plum.vercel.app/assets/brand/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Crackeer: Find the career that fits how you think." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="/assets/brand/favicon-16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/assets/brand/favicon.ico" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/brand/site.webmanifest" />
   <!-- Resolve the theme before first paint: a deferred script would let a
        dark-mode user see a white flash on every navigation. -->
   <script>
@@ -18,33 +33,21 @@
       } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/layouts.css" />
 </head>
 
 <body data-page="paywall">
-
-  <!-- ════════════════════════════════════════
-     PAYWALL
-     Where every paid page sends a student without access. Everything
-     inside #pw-root is drawn by pw* functions in scripts/script.js: why
-     they aren't covered, a School ID box, the plans and how to pay
-     (outside the website; an admin records the payment ID).
-     ?next=onboarding sends a brand-new student to onboarding once they have access.
-════════════════════════════════════════ -->
   <div id="paywall" class="screen active">
-    <div class="pw-page">
-      <div class="pw-top">
-        <div class="auth-logo" style="margin:0;">Crack<span>eer</span></div>
-        <div class="pw-top-actions">
-          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Switch theme" aria-pressed="false">
-            <span class="ti ti-moon" aria-hidden="true">&#127769;</span>
-            <span class="ti ti-sun" aria-hidden="true">&#9728;&#65039;</span>
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="logout()">Log out</button>
-        </div>
-      </div>
-      <div class="pw-wrap" id="pw-root" aria-live="polite"></div>
-    </div>
+  <header class="public-header">
+    <a class="logo" href="../index.html"><svg class="logo-mark" viewBox="0 0 660 222" role="img" aria-label="Crackeer"><use href="/assets/brand/logo.svg#logo-horizontal"/></svg></a>
+    <div class="cluster"><button class="theme-toggle btn btn-icon" type="button" onclick="toggleTheme()" aria-label="Dark theme" aria-pressed="false"><span class="theme-icon-light"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-moon"/></svg></span><span class="theme-icon-dark"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-sun"/></svg></span></button><button class="btn btn-secondary btn-sm" type="button" onclick="logout()"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-log-out"/></svg>Log out</button></div>
+  </header>
+  <main class="public-main">
+    <div class="pw-wrap stack-lg stack" id="pw-root"></div>
+  </main>
   </div>
 
   <script src="../scripts/riasec_engine.js"></script>

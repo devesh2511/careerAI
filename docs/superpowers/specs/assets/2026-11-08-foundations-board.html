@@ -1,0 +1,113 @@
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+  .fd-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:20px;margin-top:14px}
+  .fd{
+    --paper:#f6f1e7;--surface:#fffdf8;--sunk:#efe8da;--ink:#1d1b18;--muted:#6f675b;--line:#1d1b18;--line-soft:#e2d9c8;
+    --accent:#e0482b;--accent-text:#b8361c;--accent-weak:#ffe3d8;--hl:#ffb59e;--on-accent:#fff;
+    --ok:#2f7d4f;--ok-weak:#dcefe2;--warn:#a5670f;--warn-weak:#fbecd0;--bad:#b42318;--bad-weak:#fbe0dc;
+    --r:#ffc48a;--i:#9ad1f5;--a:#d6c4ff;--s:#a8e6b8;--e:#ffe08a;--c:#f5b8cf;
+    --shadow:#1d1b18;--contest:#1d1b18;--contest-ink:#f6f1e7;
+    background:var(--paper);color:var(--ink);font-family:Inter,sans-serif;padding:20px;border-radius:10px;border:1px solid #ccc}
+  .fd.dark{
+    --paper:#1b1916;--surface:#25221e;--sunk:#141210;--ink:#f3ecdf;--muted:#a99f90;--line:#cfc4b2;--line-soft:#3a352f;
+    --accent:#ff6f4f;--accent-text:#ff8e74;--accent-weak:#3d231c;--hl:#7a3424;--on-accent:#1b1916;
+    --ok:#6fcf97;--ok-weak:#1e3427;--warn:#f2b55a;--warn-weak:#3a2c16;--bad:#ff8577;--bad-weak:#3d1f1b;
+    --shadow:#000;--contest:#f3ecdf;--contest-ink:#1b1916}
+  .fd .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600}
+  .fd .lbl:first-child{margin-top:0}
+  .fd .sw{display:flex;flex-wrap:wrap;gap:6px}
+  .fd .sw div{width:58px;font-size:10px;color:var(--muted)}
+  .fd .sw i{display:block;height:34px;border-radius:6px;border:1.5px solid var(--line);margin-bottom:3px}
+  .fd .d1{font-family:Fraunces,serif;font-weight:800;font-size:34px;line-height:1.05;letter-spacing:-.01em}
+  .fd .d1 span{background:linear-gradient(transparent 62%,var(--hl) 62%)}
+  .fd .h2{font-family:Fraunces,serif;font-weight:600;font-size:21px}
+  .fd .body{font-size:15px;line-height:1.55}
+  .fd .small{font-size:13px;color:var(--muted)}
+  .fd .num{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px}
+  .fd .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .fd .btn{font:600 14px Inter,sans-serif;padding:10px 16px;border-radius:999px;border:1.5px solid var(--line);cursor:pointer}
+  .fd .btn.p{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .fd .btn.s{background:var(--surface);color:var(--ink);box-shadow:2px 2px 0 var(--shadow)}
+  .fd .btn.g{background:transparent;color:var(--accent-text);border-color:transparent;padding-left:4px}
+  .fd .chip{font-size:13px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line-soft);background:var(--surface)}
+  .fd .chip.on{border-color:var(--line);background:var(--accent-weak);color:var(--accent-text);font-weight:600}
+  .fd .input{display:block;width:100%;box-sizing:border-box;font:15px Inter;padding:10px 12px;border-radius:8px;border:1.5px solid var(--line-soft);background:var(--surface);color:var(--ink)}
+  .fd .input.f{border-color:var(--line);box-shadow:0 0 0 3px var(--accent-weak)}
+  .fd .card{background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:14px;box-shadow:3px 3px 0 var(--shadow)}
+  .fd .fit{font-weight:700;font-size:12px;padding:3px 9px;border-radius:999px}
+  .fd .fit.st{background:var(--ok-weak);color:var(--ok)}.fd .fit.gd{background:var(--warn-weak);color:var(--warn)}.fd .fit.lo{background:var(--sunk);color:var(--muted)}
+  .fd .tiles{display:flex;gap:6px}.fd .tiles b{width:34px;height:34px;border:1.5px solid #1d1b18;border-radius:6px;display:grid;place-items:center;font-family:Fraunces,serif;color:#1d1b18}
+  .fd .bar{height:8px;background:var(--sunk);border-radius:4px;flex:1;min-width:120px}.fd .bar i{display:block;height:100%;width:72%;background:var(--accent);border-radius:4px}
+  .fd .alert{font-size:13px;padding:10px 12px;border-radius:8px;border:1.5px solid}
+  .fd .alert.e{background:var(--bad-weak);color:var(--bad);border-color:var(--bad)}
+  .fd .alert.o{background:var(--ok-weak);color:var(--ok);border-color:var(--ok)}
+  .fd .contest{background:var(--contest);color:var(--contest-ink);border-radius:8px;padding:12px 14px;box-shadow:3px 3px 0 var(--accent);display:flex;justify-content:space-between;align-items:center}
+  .fd .live{background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.06em}
+  .fd .tab{display:flex;gap:16px;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 14px;font-size:11px;color:var(--muted)}
+  .fd .tab span{display:flex;flex-direction:column;align-items:center;gap:2px}.fd .tab .on{color:var(--accent-text);font-weight:600}
+  .fd svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .fd-notes{margin-top:18px;font-size:14px;line-height:1.6}
+  .fd-notes code{font-size:12px}
+</style>
+
+<h2>Section 1 · Visual foundations</h2>
+<p class="subtitle">The same tokens and components, shown in light ("paper notebook") and dark ("night notebook"). Every screen will be built only from these. Notes on the decisions are below the boards.</p>
+
+<div class="fd-wrap">
+<script>/* both boards share markup */</script>
+<template id="fd-board">
+  <div class="lbl">Colour · surfaces &amp; ink</div>
+  <div class="sw">
+    <div><i style="background:var(--paper)"></i>paper</div><div><i style="background:var(--surface)"></i>surface</div><div><i style="background:var(--sunk)"></i>sunk</div><div><i style="background:var(--ink)"></i>ink</div><div><i style="background:var(--muted)"></i>muted</div><div><i style="background:var(--accent)"></i>coral</div><div><i style="background:var(--hl)"></i>highlight</div>
+  </div>
+  <div class="lbl">Colour · RIASEC (interest areas)</div>
+  <div class="sw">
+    <div><i style="background:var(--r)"></i>R · Doer</div><div><i style="background:var(--i)"></i>I · Thinker</div><div><i style="background:var(--a)"></i>A · Creator</div><div><i style="background:var(--s)"></i>S · Helper</div><div><i style="background:var(--e)"></i>E · Leader</div><div><i style="background:var(--c)"></i>C · Organiser</div>
+  </div>
+  <div class="lbl">Type</div>
+  <div class="d1">Your <span>path</span> is taking shape.</div>
+  <div class="h2" style="margin-top:6px">Section heading · Fraunces 600</div>
+  <p class="body" style="margin:6px 0">Body text is Inter at 15–16px with relaxed line height, for long reads like career details and roadmaps.</p>
+  <div class="row"><span class="small">Small / meta · 13px</span><span class="num">02:14:37</span><span class="small">← numbers in Space Grotesk</span></div>
+  <div class="lbl">Controls</div>
+  <div class="row"><button class="btn p">Continue →</button><button class="btn s">Save as PDF</button><button class="btn g">Retake quiz</button></div>
+  <div class="row" style="margin-top:10px"><span class="chip on">Science</span><span class="chip">Commerce</span><span class="chip">Arts</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><input class="input" placeholder="Email address"><input class="input f" value="aarav@school.in"></div>
+  <div class="lbl">Content</div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><span class="h2" style="font-size:18px">Software Engineer</span><span class="fit st">Strong fit · 86%</span></div>
+    <div class="row" style="margin-top:10px"><div class="tiles"><b style="background:var(--i)">I</b><b style="background:var(--r)">R</b><b style="background:var(--a)">A</b></div><div class="bar"><i></i></div></div>
+    <div class="row" style="margin-top:10px"><span class="fit gd">Good fit</span><span class="fit lo">Low fit</span></div>
+  </div>
+  <div style="display:grid;gap:8px;margin-top:10px"><div class="alert e">That email isn't registered. Check it or create an account.</div><div class="alert o">Saved. Your profile is up to date.</div></div>
+  <div class="lbl">Playful moments</div>
+  <div class="contest"><div><div style="font-family:Fraunces,serif;font-weight:600">Tech Thinkers · Week 12</div><div class="num" style="font-size:20px">02:14:37</div></div><span class="live">LIVE</span></div>
+  <div class="lbl">Navigation</div>
+  <div class="tab">
+    <span class="on"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</span>
+    <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Matches</span>
+    <span><svg viewBox="0 0 24 24"><path d="M5 19c3 0 3-6 7-6s4-6 7-6"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="7" r="2"/></svg>Roadmap</span>
+    <span><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Chat</span>
+    <span><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>More</span>
+  </div>
+</template>
+<div class="fd" id="fd-light"></div>
+<div class="fd dark" id="fd-dark"></div>
+<script>
+  const t=document.getElementById('fd-board');
+  document.getElementById('fd-light').appendChild(t.content.cloneNode(true));
+  document.getElementById('fd-dark').appendChild(t.content.cloneNode(true));
+</script>
+</div>
+
+<div class="fd-notes">
+  <h3>Decisions behind it</h3>
+  <ul>
+    <li><b>Fonts:</b> Fraunces (headings), Inter (all UI and body) and Space Grotesk (numbers only: countdowns, ranks, scores, fit %). All are open-licensed (OFL) and self-hosted as woff2 in <code>assets/fonts/</code>, so there's still no CDN. Space Grotesk is subset to digits and a few symbols, so it's tiny.</li>
+    <li><b>One accent:</b> coral. Small coral text uses a darker shade (<code>--accent-text</code>) so it passes WCAG AA contrast on paper. The highlighter underline is used only in display headlines.</li>
+    <li><b>The notebook signature:</b> 1.5px ink outlines with a 3px hard offset shadow, used on cards and secondary buttons only. Inputs and chips get soft outlines so forms stay calm.</li>
+    <li><b>RIASEC colours:</b> six fixed pastels, each always paired with its letter so colour is never the only signal. The same colours are used everywhere a dimension appears (results, matches, explore, career detail).</li>
+    <li><b>Fit levels</b> use status colours (green / amber / grey) instead of today's 6-step ramp.</li>
+    <li><b>Dark mode:</b> the same token names with charcoal paper and cream ink. Shadows go true black, the coral gets lighter, and the contest card flips to cream so it still pops.</li>
+  </ul>
+</div>

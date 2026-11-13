@@ -1,0 +1,202 @@
+/* Crackeer design tokens — the ONLY file allowed to contain raw colour values.
+   Light ("paper notebook") is the default; dark ("night notebook") swaps the
+   same names. Spec: docs/superpowers/specs/2026-11-08-ui-redesign-design.md §3. */
+
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --paper: #f6f1e7;
+  --surface: #fffdf8;
+  --sunk: #efe8da;
+  --ink: #1d1b18;
+  --muted: #675f53;
+  --line: #1d1b18;
+  --line-soft: #ddd3c1;
+  --accent: #e0482b;
+  --accent-text: #b2341a;
+  --accent-weak: #ffe3d8;
+  --hl: #ffb59e;
+  --ok: #236640;
+  --ok-weak: #dcefe2;
+  --warn: #84500a;
+  --warn-weak: #fbecd0;
+  --bad: #a91f15;
+  --bad-weak: #fbe0dc;
+  --shadow: #1d1b18;
+  --r: #ffc48a;
+  --i: #9ad1f5;
+  --a: #d6c4ff;
+  --s: #a8e6b8;
+  --e: #ffe08a;
+  --c: #f5b8cf;
+  --on-pastel: #1d1b18;
+  --live-bg: #b2341a;
+  --live-ink: #ffffff;
+  --contest-bg: #1d1b18;
+  --contest-ink: #f6f1e7;
+  --contest-muted: #c9bfae;
+  --contest-well: #2e2a25;
+  --contest-shadow: #e0482b;
+  --scrim: #1d1b1866;
+  --skeleton: #e9e1d2;
+  --skeleton-shine: #f4eee3;
+  --print-ink: #000000;
+  --print-paper: #ffffff;
+  --illo-bg: #ffffff;
+  /* Career Space categories: text/dot colour + its tint (always shown with a label). */
+  --cat-news: #1f5fa8;
+  --cat-news-weak: #dde9f7;
+  --cat-jobs: #23663f;
+  --cat-jobs-weak: #dcefe2;
+  --cat-exams: #b2341a;
+  --cat-exams-weak: #ffe3d8;
+  --cat-scholarships: #6b3fa0;
+  --cat-scholarships-weak: #ebe1fa;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1b1916;
+  --surface: #25221e;
+  --sunk: #141210;
+  --ink: #f3ecdf;
+  --muted: #b0a696;
+  --line: #cfc4b2;
+  --line-soft: #423c35;
+  --accent: #ff6f4f;
+  --accent-text: #ff9479;
+  --accent-weak: #45261e;
+  --hl: #7a3424;
+  --ok: #74d39c;
+  --ok-weak: #1e3427;
+  --warn: #f2b55a;
+  --warn-weak: #3a2c16;
+  --bad: #ff8b7e;
+  --bad-weak: #3d1f1b;
+  --shadow: #000000;
+  --r: #ffc48a;
+  --i: #9ad1f5;
+  --a: #d6c4ff;
+  --s: #a8e6b8;
+  --e: #ffe08a;
+  --c: #f5b8cf;
+  --on-pastel: #1d1b18;
+  --live-bg: #ff9479;
+  --live-ink: #1b1916;
+  --contest-bg: #f3ecdf;
+  --contest-ink: #1b1916;
+  --contest-muted: #5d554a;
+  --contest-well: #e2d8c6;
+  --contest-shadow: #ff6f4f;
+  --scrim: #000000a6;
+  --skeleton: #2f2b26;
+  --skeleton-shine: #3a352f;
+  --print-ink: #000000;
+  --print-paper: #ffffff;
+  --illo-bg: #ffffff;
+  --cat-news: #8cbcf0;
+  --cat-news-weak: #1c2a3b;
+  --cat-jobs: #74d39c;
+  --cat-jobs-weak: #1e3427;
+  --cat-exams: #ff9479;
+  --cat-exams-weak: #45261e;
+  --cat-scholarships: #c7a8f5;
+  --cat-scholarships-weak: #2d2340;
+}
+
+/* Printing (Save as PDF) always uses the light palette, whatever the screen theme. */
+@media print {
+  :root, [data-theme] {
+    color-scheme: light;
+    --paper: #f6f1e7;
+    --surface: #fffdf8;
+    --sunk: #efe8da;
+    --ink: #1d1b18;
+    --muted: #675f53;
+    --line: #1d1b18;
+    --line-soft: #ddd3c1;
+    --accent: #e0482b;
+    --accent-text: #b2341a;
+    --accent-weak: #ffe3d8;
+    --hl: #ffb59e;
+    --ok: #236640;
+    --ok-weak: #dcefe2;
+    --warn: #84500a;
+    --warn-weak: #fbecd0;
+    --bad: #a91f15;
+    --bad-weak: #fbe0dc;
+    --shadow: #1d1b18;
+    --r: #ffc48a;
+    --i: #9ad1f5;
+    --a: #d6c4ff;
+    --s: #a8e6b8;
+    --e: #ffe08a;
+    --c: #f5b8cf;
+    --on-pastel: #1d1b18;
+    --live-bg: #b2341a;
+    --live-ink: #ffffff;
+    --contest-bg: #1d1b18;
+    --contest-ink: #f6f1e7;
+    --contest-muted: #c9bfae;
+    --contest-well: #2e2a25;
+    --contest-shadow: #e0482b;
+    --scrim: #1d1b1866;
+    --skeleton: #e9e1d2;
+    --skeleton-shine: #f4eee3;
+    --print-ink: #000000;
+    --print-paper: #ffffff;
+    --illo-bg: #ffffff;
+    /* Career Space categories: text/dot colour + its tint (always shown with a label). */
+    --cat-news: #1f5fa8;
+    --cat-news-weak: #dde9f7;
+    --cat-jobs: #23663f;
+    --cat-jobs-weak: #dcefe2;
+    --cat-exams: #b2341a;
+    --cat-exams-weak: #ffe3d8;
+    --cat-scholarships: #6b3fa0;
+    --cat-scholarships-weak: #ebe1fa;
+  }
+}
+
+/* Non-colour tokens (theme-independent). */
+:root {
+  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --font-ui: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-num: 'Space Grotesk', 'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  --fs-display: 2.125rem;     /* 34px desktop */
+  --fs-display-sm: 1.75rem;   /* 28px phone */
+  --fs-h2: 1.3125rem;         /* 21px */
+  --fs-h3: 1.125rem;          /* 18px */
+  --fs-body: 0.9375rem;       /* 15px */
+  --fs-body-lg: 1rem;         /* 16px long reads */
+  --fs-small: 0.8125rem;      /* 13px */
+  --fs-label: 0.6875rem;      /* 11px caps */
+  --lh-body: 1.55;
+  --lh-tight: 1.1;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-7: 28px; --sp-8: 32px; --sp-9: 40px; --sp-10: 48px;
+
+  --r-sm: 6px;
+  --r-card: 8px;
+  --r-input: 10px;
+  --r-tab: 14px;
+  --r-nav: 20px;
+  --r-pill: 999px;
+
+  --outline-w: 1.5px;
+  --outline: var(--outline-w) solid var(--line);
+  --outline-soft: var(--outline-w) solid var(--line-soft);
+  --shadow-hard: 3px 3px 0 var(--shadow);
+  --shadow-hard-sm: 2px 2px 0 var(--shadow);
+  --focus-ring: 0 0 0 3px var(--accent-weak);
+
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --dur-fast: 150ms;
+  --dur: 220ms;
+
+  --sidebar-w: 216px;
+  --tabbar-h: 64px;
+  --content-max: 1200px;
+}
