@@ -65,6 +65,11 @@
             </header>
             <div class="chat-scroll" id="chat-scroll">
               <div class="chat-inner">
+                <!-- Shown instead of the welcome while required onboarding answers are missing -->
+                <section class="chat-welcome stack-lg stack" id="chat-gate" hidden aria-labelledby="chat-gate-title">
+                  <div class="stack-sm stack"><h2 class="chat-hello" id="chat-gate-title">Complete your profile to start chatting</h2><p class="muted" id="chat-gate-text"></p></div>
+                  <div><a class="btn btn-primary" id="chat-gate-btn" href="../pages/onboarding.html?next=chat">Complete my profile</a></div>
+                </section>
                 <section class="chat-welcome stack-lg stack" id="chat-welcome" aria-labelledby="chat-hello">
                   <div class="stack-sm stack"><h2 class="chat-hello" id="chat-hello">Hi<span id="chat-hello-name"></span>, what's on your mind?</h2><p class="muted">Ask about careers, streams, exams or colleges. I'll answer with your results in mind.</p></div>
                   <div class="card-sunk chat-insight-card">

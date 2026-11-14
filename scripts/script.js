@@ -1045,7 +1045,12 @@
       setBusy(btn, true);
       CareerAPI.me.saveProfile(obFields(step)).then(() => {
         setBusy(btn, false);
-        if (step === 4) { stepLeave(() => show('evaluation')); return; }
+        // Sent here by AI Chat's profile gate: go back to the chat, not on to the quiz
+        if (step === 4) {
+          const next = new URLSearchParams(location.search).get('next') === 'chat' ? 'chat' : 'evaluation';
+          stepLeave(() => show(next));
+          return;
+        }
         // Browser Back during the save already moved the student elsewhere.
         if (obCurrent === step) obShow(step + 1);
       }, err => {
@@ -1067,7 +1072,11 @@
       ['input', 'change', 'click'].forEach(t => root.addEventListener(t, e => {
         if (e.target.closest('input, select, textarea, .chip')) touched = true;
       }, true));
-      CareerAPI.me.profile().then(r => { if (!touched) obFill(r.profile); }, () => { });
+      // Next waits for it: AI Chat's profile gate links straight to a later
+      // step, and saving that step before the fill would blank saved answers.
+      if (next) next.disabled = true;
+      CareerAPI.me.profile().then(r => { if (!touched) obFill(r.profile); }, () => { })
+        .finally(() => { if (next) next.disabled = false; });
     }
 
     // ── Chip single-select helper ──
@@ -1138,6 +1147,8 @@
     let chatId = newChatId();
     let chatHistory = [];
     let chatAbort = null;
+    // True once the student is told to finish their profile; nothing sends until they do.
+    let chatGated = false;
 
     function resetChat() {
       if (chatAbort) chatAbort.abort();
@@ -1156,7 +1167,7 @@
     }
     function chatSyncSend() {
       const send = document.getElementById('chat-send'), inp = document.getElementById('chat-input');
-      if (send && inp) send.classList.toggle('idle', !chatAbort && !inp.value.trim());
+      if (send && inp) send.classList.toggle('idle', chatGated || (!chatAbort && !inp.value.trim()));
     }
     // The backend takes at most six exchanges, 2,000 characters per turn and
     // 12,000 in total, and rejects anything larger rather than truncating.
@@ -1165,9 +1176,10 @@
       while (turns.length && turns.reduce((n, t) => n + t.content.length, 0) > 12000) turns.splice(0, 2);
       return turns;
     }
-    function chatError(status, code, message) {
+    function chatError(status, code, message, missing) {
       const e = new Error(message);
       e.status = status; e.code = code;
+      if (Array.isArray(missing)) e.missing = missing;
       return e;
     }
 
@@ -1186,7 +1198,7 @@
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
         const err = data.error || {};
-        throw chatError(res.status, err.code || 'server_error', err.message || 'Something went wrong. Please try again.');
+        throw chatError(res.status, err.code || 'server_error', err.message || 'Something went wrong. Please try again.', err.missing);
       }
       const reader = res.body.getReader(), decoder = new TextDecoder();
       let buffer = '', finished = false;
@@ -1304,8 +1316,8 @@
       if (sc) sc.scrollTop = sc.scrollHeight;
     }
     function chatShowWelcome(show) {
-      document.getElementById('chat-welcome').hidden = !show;
-      document.getElementById('chat-new').hidden = show;
+      document.getElementById('chat-welcome').hidden = !show || chatGated;
+      document.getElementById('chat-new').hidden = show || chatGated;
     }
 
     // retry = { text, failed }: resend text and swap out the failed reply,
@@ -1313,7 +1325,7 @@
     async function sendChat(retry) {
       const inp = document.getElementById('chat-input');
       const msg = retry ? retry.text : inp.value.trim();
-      if (!msg || chatAbort) return;
+      if (!msg || chatAbort || chatGated) return;
       if (!retry) {
         inp.value = '';
         chatAutosize(inp);
@@ -1364,6 +1376,17 @@
           redirect('auth'); return;
         }
         if (err.status === 402) { redirect('paywall'); return; }
+        if (err.code === 'profile_incomplete') {
+          // The page's own check missed it (profile not loaded yet, or the
+          // rules drifted): drop this exchange, keep the question, show the gate.
+          const ai = bubble.closest('.msg'), question = ai.previousElementSibling;
+          ai.remove();
+          if (question && question.classList.contains('user')) question.remove();
+          inp.value = msg;
+          chatAutosize(inp);
+          chatShowGate(err.missing || []);
+          return;
+        }
         bubble.innerHTML = reply ? renderReply(reply) : '';
         const failed = bubble.closest('.msg');
         const onRetry = chatRetryable(err) ? () => sendChat({ text: msg, failed: failed }) : null;
@@ -1721,15 +1744,56 @@
     function chatLoadContext() {
       if (!window.CareerAPI) return;
       Promise.all([
-        CareerAPI.me.profile().then(r => r.profile, () => null),
+        // undefined = the fetch failed, which says nothing about the profile
+        CareerAPI.me.profile().then(r => r.profile || null, () => undefined),
         CareerAPI.me.latestCareerQuiz().then(r => r.result, () => null)
-      ]).then(([p, run]) => {
+      ]).then(([fetched, run]) => {
+        const p = fetched || null;
         const careers = run && run.results && Array.isArray(run.results.top_careers)
           ? run.results.top_careers.slice(0, 5) : [];
         chatFacts = chatBuildFacts(p, careers);
         chatRenderWelcome(p, careers);
         chatRenderMem(p, careers);
+        // On a failed fetch the chatBot's own check still stands guard.
+        const missing = fetched === undefined ? [] : chatProfileMissing(p);
+        if (missing.length) chatShowGate(missing);
       });
+    }
+
+    // ── Profile gate ──
+    // AI Chat needs every onboarding answer except dream job and career
+    // preference. The chatBot enforces the same rule (profile_incomplete,
+    // with the same keys); this copy lets the page say so before the
+    // student types. [key, label, onboarding step]
+    const CHAT_PROFILE_FIELDS = [
+      ['class', 'class', 1], ['board', 'board', 1], ['medium', 'medium', 1], ['city', 'city', 1],
+      ['marks', 'marks', 2], ['favourite_subjects', 'favourite subjects', 3], ['hobbies', 'hobbies', 3],
+      ['study_location', 'study location preference', 4]
+    ];
+    function chatProfileMissing(p) {
+      const empty = v => v == null || (typeof v === 'string' && !v.trim()) ||
+        (typeof v === 'object' && !(Array.isArray(v) ? v.length : Object.keys(v).length));
+      return CHAT_PROFILE_FIELDS.map(f => f[0]).filter(k => !p || empty(p[k]));
+    }
+    function chatShowGate(missing) {
+      const fields = CHAT_PROFILE_FIELDS.filter(f => missing.includes(f[0]));
+      const labels = fields.map(f => f[1]);
+      const list = labels.length > 1 ? labels.slice(0, -1).join(', ') + ' and ' + labels[labels.length - 1] : labels[0];
+      chatGated = true;
+      // Naming all eight would read as a form dump; a bare profile just gets asked for
+      document.getElementById('chat-gate-text').textContent =
+        !list || fields.length === CHAT_PROFILE_FIELDS.length
+          ? 'Fill in your profile so I can give you advice that fits you.'
+          : 'I need a few more details to give you advice that fits you. Add your ' + list + '.';
+      // Start at the first step with a gap; onboarding comes back here when done
+      document.getElementById('chat-gate-btn').href =
+        routeTo('onboarding') + '?next=chat#/step/' + (fields.length ? fields[0][2] : 1);
+      document.getElementById('chat-gate').hidden = false;
+      chatShowWelcome(false);
+      const inp = document.getElementById('chat-input');
+      inp.disabled = true;
+      inp.placeholder = 'Complete your profile to start chatting';
+      chatSyncSend();
     }
 
     function chatBuildFacts(p, careers) {
