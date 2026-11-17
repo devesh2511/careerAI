@@ -10,11 +10,6 @@
     const ADM_PAGE = (document.body && document.body.dataset.page) || '';
     const ADM_TZ = 'Asia/Kolkata';
     const ADM_AREAS = ['Logical Reasoning', 'Numerical Ability', 'Verbal Ability', 'Spatial Reasoning'];
-    const ADM_REASON = {
-      no_school: 'No school',
-      not_on_roster: 'Not on school list',
-      school_not_subscribed: 'School not paying'
-    };
 
     // ── Shared formatting ──
     function admEsc(s) {
@@ -36,9 +31,6 @@
     }
     // Plan end dates are exclusive (1 Apr 00:00 IST), so show the last day covered.
     function admLastDay(iso) { return iso ? admDay(new Date(Date.parse(iso) - 1).toISOString()) : '—'; }
-    function admRupees(paise) {
-      return '₹' + (Number(paise || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-    }
     // 'YYYY-MM-DD' of an instant, in IST
     function admIstDate(t) {
       const d = new Date(t + 5.5 * 3600e3);
@@ -417,9 +409,8 @@
           '<div class="adm-stats">' +
           stat(o.students, 'Students') +
           stat(o.students_with_access, 'With access', pct + '% of students') +
-          stat(o.students_via_school, 'Via school', 'covered by a paying school') +
-          stat(o.schools, 'Schools') +
-          stat(o.schools_paying, 'Paying schools', 'with an active plan') +
+          stat(o.institutes, 'Schools and institutes') +
+          stat(o.institutes_paying, 'Subscribed', 'with a current subscription') +
           '</div>' +
           '<div class="adm-section-title">Next contests</div>' +
           admTable([{ label: 'Contest' }, { label: 'Opens' }, { label: 'Status' }, { label: 'Questions', cls: 'adm-num' }], next,
@@ -911,17 +902,29 @@
     window.addEventListener('beforeunload', e => { if (admRmDirty || admDirty.size) { e.preventDefault(); e.returnValue = ''; } });
 
     // ══════════════════════════════════════════════════════════════
-    // SCHOOLS
+    // SCHOOLS AND INSTITUTES (#/schools)
+    // An institute (school, tuition…) sends its list of student names and
+    // phone numbers. Uploading it, with the headcount and dates, creates a
+    // subscription: that is what gives those students access. Their payment
+    // is recorded afterwards, on the Subscriptions tab.
     // ══════════════════════════════════════════════════════════════
     let admSchoolTab = 'active';
     let admSchoolQuery = '';
     let admSearchTimer = null;
     let admListSeq = 0;             // drops search results a newer search has replaced
+    const ADM_INST_TYPES = [
+      { value: 'school', label: 'School' }, { value: 'tuition', label: 'Tuition' },
+      { value: 'coaching', label: 'Coaching' }, { value: 'other', label: 'Other' }
+    ];
+    const admTypeLabel = t => (ADM_INST_TYPES.find(x => x.value === t) || { label: t }).label;
 
     function admPlanBadge(s) {
-      if (!s.subscription) return '<span class="badge badge-orange">No plan</span>';
-      if (s.subscription.active) return '<span class="badge badge-green">Paid until ' + admEsc(admLastDay(s.subscription.ends_at)) + '</span>';
-      return '<span class="badge badge-red">Expired ' + admEsc(admLastDay(s.subscription.ends_at)) + '</span>';
+      const sub = s.subscription;
+      if (!sub) return '<span class="badge badge-orange">No subscription</span>';
+      const paid = sub.paid ? '' : ' <span class="badge badge-blue">Payment not recorded</span>';
+      if (sub.active) return '<span class="badge badge-green">Until ' + admEsc(admLastDay(sub.ends_at)) + '</span>' + paid;
+      if (Date.parse(sub.starts_at) > admNow()) return '<span class="badge badge-blue">From ' + admEsc(admDay(sub.starts_at)) + '</span>' + paid;
+      return '<span class="badge badge-red">Expired ' + admEsc(admLastDay(sub.ends_at)) + '</span>';
     }
     function admStatusBadge(s) {
       return (s.status === 'active' ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Suspended</span>') +
@@ -948,94 +951,91 @@
     }
 
     function admSchoolRows() {
-      return CareerAPI.admin.schools.list({ deleted: admSchoolTab === 'deleted', q: admSchoolQuery }).then(list => {
+      return CareerAPI.admin.institutes.list({ deleted: admSchoolTab === 'deleted', q: admSchoolQuery }).then(list => {
         const rows = list.map(s => {
           const actions = admSchoolTab === 'deleted'
-            ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admRestore(\'schools\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ',this)">Restore</button>' +
+            ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admRestore(\'institutes\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ',this)">Restore</button>' +
               '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();admDeleteSchool(' + s.id + ',true)">Hard delete</button>'
             : '';
-          return '<tr class="adm-click" onclick="admGo(\'schools/' + s.id + '\')"><td><b>' + admEsc(s.name) + '</b><div class="adm-sub">' + admEsc(s.board || '—') + '</div></td>' +
-            '<td><span class="adm-mono">' + admEsc(s.school_code) + '</span></td>' +
-            '<td>' + admEsc(s.city) + '<div class="adm-sub">' + admEsc(s.state) + '</div></td>' +
+          return '<tr class="adm-click" onclick="admGo(\'schools/' + s.id + '\')"><td><b>' + admEsc(s.name) + '</b><div class="adm-sub">' + admEsc(admTypeLabel(s.type)) + '</div></td>' +
+            '<td><span class="adm-mono">' + admEsc(s.institute_code) + '</span></td>' +
+            '<td>' + admEsc(s.city) + '</td>' +
             '<td>' + admStatusBadge(s) + '</td><td>' + admPlanBadge(s) + '</td>' +
-            '<td class="adm-num">' + s.roster_count + '</td><td class="adm-num">' + s.student_count + '</td>' +
+            '<td class="adm-num">' + s.list_count + '</td><td class="adm-num">' + s.registered_count + '</td>' +
             (admSchoolTab === 'deleted' ? '<td class="adm-row-actions">' + actions + '</td>' : '') + '</tr>';
         });
-        const head = [{ label: 'School' }, { label: 'School ID' }, { label: 'City' }, { label: 'Status' }, { label: 'Plan' },
+        const head = [{ label: 'Institute' }, { label: 'Institute ID' }, { label: 'City' }, { label: 'Status' }, { label: 'Subscription' },
           { label: 'On list', cls: 'adm-num' }, { label: 'Registered', cls: 'adm-num' }];
         if (admSchoolTab === 'deleted') head.push({ label: '', cls: 'adm-row-actions' });
-        return admTable(head, rows, admSchoolQuery ? 'No schools match “' + admEsc(admSchoolQuery) + '”.'
-          : admSchoolTab === 'deleted' ? 'No deleted schools.' : 'No schools yet. Add the first one.');
+        return admTable(head, rows, admSchoolQuery ? 'No institutes match “' + admEsc(admSchoolQuery) + '”.'
+          : admSchoolTab === 'deleted' ? 'No deleted institutes.' : 'No schools or institutes yet. Add the first one.');
       });
     }
 
     function admSchools(r, seq) {
       admSchoolRows().then(table => {
         admPaint(seq,
-          admTopbar('Schools', 'Schools registered with Crackeer. A school\'s students get access when it pays and their email is on its list.',
-            admSchoolTab === 'active' ? '<button class="btn btn-primary btn-sm" onclick="admSchoolModal()">+ Add school</button>' : '') +
+          admTopbar('Schools and institutes', 'Students can register only if they\'re on an institute\'s list, and use the app while that list\'s subscription is current.',
+            admSchoolTab === 'active' ? '<button class="btn btn-primary btn-sm" onclick="admSchoolModal()">+ Add institute</button>' : '') +
           '<div class="adm-toolbar">' + admTabs([{ key: 'active', label: 'Active' }, { key: 'deleted', label: 'Deleted' }], admSchoolTab, 'admSchoolTabSet') +
-          '<input class="form-input adm-search" type="search" placeholder="Search name, School ID or city" value="' + admEsc(admSchoolQuery) + '" oninput="admSearch(\'schools\',this.value)" /></div>' +
+          '<input class="form-input adm-search" type="search" placeholder="Search name, institute ID or city" value="' + admEsc(admSchoolQuery) + '" oninput="admSearch(\'schools\',this.value)" /></div>' +
           '<div id="adm-list">' + table + '</div>');
       }).catch(err => admFail(seq, err));
     }
 
     function admSchoolFields(s) {
-      s = s || { board: 'CBSE', status: 'active' };
+      s = s || { type: 'school', status: 'active' };
       return '<div class="adm-form-grid">' +
-        admField('School name', 'name', s.name, { span: true, placeholder: 'e.g. Delhi Public School, R.K. Puram' }) +
-        admField('School ID', 'school_code', s.school_code, { mono: true, maxlength: 20, placeholder: 'e.g. DPS-RKP',
+        admField('Name', 'name', s.name, { span: true, placeholder: 'e.g. Delhi Public School, R.K. Puram' }) +
+        admField('Institute ID', 'institute_code', s.institute_code, { mono: true, maxlength: 20, placeholder: 'e.g. DPS-RKP',
           attrs: ' style="text-transform:uppercase;" autocapitalize="characters"', hint: 'Students type this when they register. 3–20 letters, digits or dashes.' }) +
-        admField('UDISE+ code', 'udise_code', s.udise_code, { optional: true, mono: true, maxlength: 11, placeholder: '11 digits' }) +
-        admField('Board', 'board', s.board, { select: ['CBSE', 'ICSE', 'State Board'] }) +
-        admField('Status', 'status', s.status, { select: [{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended (students lose school access)' }] }) +
+        admField('Type', 'type', s.type, { select: ADM_INST_TYPES, hint: 'A student on a school\'s list and another list sees the school on their account.' }) +
+        admField('Status', 'status', s.status, { select: [{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended (its students lose access)' }] }) +
         admField('City', 'city', s.city) +
-        admField('State', 'state', s.state) +
-        admField('Contact name', 'contact_name', s.contact_name, { placeholder: 'Principal or coordinator' }) +
-        admField('Contact email', 'contact_email', s.contact_email, { type: 'email' }) +
-        admField('Contact phone', 'contact_phone', s.contact_phone, { optional: true, type: 'tel' }) +
+        admField('Address', 'address', s.address, { optional: true, span: true }) +
+        admField('Contact details', 'contact_details', s.contact_details, { optional: true, span: true, placeholder: 'Name, phone or email of the coordinator' }) +
         '</div>';
     }
     function admSchoolModal() {
       admModal({
-        title: 'Add school', submit: 'Add school', wide: true, body: admSchoolFields(),
-        onSubmit: form => CareerAPI.admin.schools.create(admFormData(form)).then(s => {
-          admToast(s.name + ' added.');
-          admGo('schools/' + s.id + '/roster');
+        title: 'Add school or institute', submit: 'Add', wide: true, body: admSchoolFields(),
+        onSubmit: form => CareerAPI.admin.institutes.create(admFormData(form)).then(s => {
+          admToast(s.name + ' added. Upload its student list next.');
+          admGo('schools/' + s.id + '/students');
         })
       });
     }
 
     function admDeleteSchool(id, hardOnly, name) {
       admConfirmDelete({
-        kind: 'school', name: name || 'this school', hardOnly: hardOnly,
-        run: mode => CareerAPI.admin.schools.remove(id, mode),
+        kind: 'school', name: name || 'this institute', hardOnly: hardOnly,
+        run: mode => CareerAPI.admin.institutes.remove(id, mode),
         done: mode => { if (admParse().id && mode === 'hard') admGo('schools'); else admRoute(); }
       });
     }
 
-    // ── School detail: Details / Roster / Subscriptions ──
+    // ── Institute detail: Details / Students list / Subscriptions ──
     function admSchoolDetail(r, seq) {
-      const tab = ['details', 'roster', 'subscriptions'].includes(r.sub) ? r.sub : 'details';
-      return CareerAPI.admin.schools.get(r.id).then(s => {
+      const tab = ['details', 'students', 'subscriptions'].includes(r.sub) ? r.sub : 'details';
+      return CareerAPI.admin.institutes.get(r.id).then(s => {
         const actions = s.is_deleted
-          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'schools\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ',this)">Restore</button>' +
+          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'institutes\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ',this)">Restore</button>' +
             '<button class="btn btn-danger btn-sm" onclick="admDeleteSchool(' + s.id + ',true,' + admEsc(JSON.stringify(s.name)) + ')">Hard delete</button>'
-          : '<button class="btn btn-danger btn-sm" onclick="admDeleteSchool(' + s.id + ',false,' + admEsc(JSON.stringify(s.name)) + ')">Delete school</button>';
+          : '<button class="btn btn-danger btn-sm" onclick="admDeleteSchool(' + s.id + ',false,' + admEsc(JSON.stringify(s.name)) + ')">Delete</button>';
         const head = admTopbar(admEsc(s.name),
-          'School ID <span class="adm-mono"><b>' + admEsc(s.school_code) + '</b></span> · ' + admEsc(s.city) + ', ' + admEsc(s.state) +
-          ' &nbsp;' + admStatusBadge(s) + ' ' + admPlanBadge(s), actions, '<a href="#/schools">Schools</a> / ' + admEsc(s.school_code)) +
-          (s.is_deleted ? '<div class="adm-note adm-banner-lock">This school is <b>soft-deleted</b>. Its plan doesn\'t count, so its students have lost school access. The roster is kept.</div>' : '') +
+          admEsc(admTypeLabel(s.type)) + ' · Institute ID <span class="adm-mono"><b>' + admEsc(s.institute_code) + '</b></span> · ' + admEsc(s.city) +
+          ' &nbsp;' + admStatusBadge(s) + ' ' + admPlanBadge(s), actions, '<a href="#/schools">Schools</a> / ' + admEsc(s.institute_code)) +
+          (s.is_deleted ? '<div class="adm-note adm-banner-lock">This institute is <b>soft-deleted</b>. Its subscriptions don\'t count and nobody can register through it. The list is kept.</div>' : '') +
           '<div class="lb-tabs adm-tabs" role="tablist">' +
-          [['details', 'Details'], ['roster', 'Student list (' + s.roster_count + ')'], ['subscriptions', 'Payments']].map(t =>
+          [['details', 'Details'], ['students', 'Students list (' + s.list_count + ')'], ['subscriptions', 'Subscriptions and payments']].map(t =>
             '<button class="filter-chip' + (t[0] === tab ? ' active' : '') + '" role="tab" aria-selected="' + (t[0] === tab) + '" onclick="admGo(\'schools/' + s.id + '/' + t[0] + '\')">' + admEsc(t[1]) + '</button>').join('') +
           '</div>';
         if (tab === 'details') {
           return admPaint(seq, head + '<form class="adm-panel adm-panel-pad" id="adm-school-form" novalidate onsubmit="admSaveSchool(event,' + s.id + ')">' +
             '<div class="adm-error-box" style="display:none;"></div>' + admSchoolFields(s) +
             '<div class="adm-q-foot"><button class="btn btn-primary btn-sm" type="submit">Save changes</button></div></form>');
-        } else if (tab === 'roster') {
-          return CareerAPI.admin.roster.list(s.id).then(rows => admPaint(seq, head + admRosterHtml(s, rows)));
+        } else if (tab === 'students') {
+          return CareerAPI.admin.studentList.list(s.id).then(rows => admPaint(seq, head + admRosterHtml(s, rows)));
         } else {
           return CareerAPI.admin.subscriptions.list(s.id).then(rows => admPaint(seq, head + admSubsHtml(s, rows)));
         }
@@ -1047,82 +1047,96 @@
       const form = e.target, btn = form.querySelector('button[type=submit]');
       admClearErrors(form);
       admBusy(btn, true);
-      CareerAPI.admin.schools.update(id, admFormData(form)).then(s => {
+      CareerAPI.admin.institutes.update(id, admFormData(form)).then(() => {
         admToast('Saved.');
         admRoute();
       }).catch(err => { admBusy(btn, false); admFormError(form, err); });
     }
 
+    // The academic year (1 Apr → 31 Mar) today falls in, as IST days.
+    function admAcademicYear() {
+      const today = admIstDate(admNow()).split('-').map(Number);
+      const y = today[1] >= 4 ? today[0] : today[0] - 1;
+      return { start: y + '-04-01', last: (y + 1) + '-03-31' };
+    }
+
     function admRosterHtml(s, rows) {
       const list = rows.map(r => {
-        let st;
-        if (!r.student) st = '<span class="badge badge-blue">Not registered yet</span>';
-        else if (r.student.linked) st = '<span class="badge badge-green">Registered</span><div class="adm-sub">' + admEsc(r.student.full_name) + '</div>';
-        else st = '<span class="badge badge-orange">Registered, no School ID</span><div class="adm-sub">' + admEsc(r.student.full_name) +
-          ' hasn\'t entered ' + admEsc(s.school_code) + ' yet</div>';
-        return '<tr><td>' + admEsc(r.email) + '</td><td>' + st + '</td><td>' + admEsc(admDay(r.created_at)) + '</td>' +
-          '<td class="adm-row-actions"><button class="btn btn-ghost btn-sm" onclick="admRosterRemove(' + s.id + ',' + admEsc(JSON.stringify(r.email)) + ')">Remove</button></td></tr>';
+        const st = r.student
+          ? '<span class="badge badge-green">Registered</span><div class="adm-sub">as <button class="adm-link" onclick="admGo(\'students/' + r.student.id + '\')">' + admEsc(r.student.username) + '</button></div>'
+          : '<span class="badge badge-blue">Not registered yet</span>';
+        const sub = !r.subscription ? '<span class="badge badge-orange">None</span>'
+          : r.subscription.active ? '<span class="badge badge-green">Until ' + admEsc(admLastDay(r.subscription.ends_at)) + '</span>'
+            : '<span class="badge badge-red">Ended ' + admEsc(admLastDay(r.subscription.ends_at)) + '</span>';
+        return '<tr><td><b>' + admEsc(r.full_name) + '</b></td><td><span class="adm-mono">' + admEsc(r.phone_no) + '</span></td><td>' + st + '</td><td>' + sub + '</td>' +
+          '<td>' + admEsc(admDay(r.created_at)) + '</td>' +
+          '<td class="adm-row-actions"><button class="btn btn-ghost btn-sm" onclick="admRosterRemove(' + s.id + ',' + admEsc(JSON.stringify(r.full_name)) + ',' + admEsc(JSON.stringify(r.phone_no)) + ')">Remove</button></td></tr>';
       });
-      return '<div class="adm-note">A student gets school access when <b>all three</b> are true: they registered with School ID <span class="adm-mono"><b>' +
-        admEsc(s.school_code) + '</b></span>, their email is on this list, and the school has a current plan. Removing an email takes access away straight away.</div>' +
+      const yr = admAcademicYear();
+      const upload = s.is_deleted ? '' :
         '<form class="adm-panel adm-panel-pad" id="adm-roster-form" novalidate onsubmit="admRosterUpload(event,' + s.id + ')">' +
-        '<div class="form-group"><label class="form-label" for="adm-roster-text">Add student emails</label>' +
-        '<textarea class="form-input" id="adm-roster-text" rows="4" placeholder="One email per line, or paste a CSV column. A header row like “email” is skipped."></textarea></div>' +
-        '<div class="adm-actions"><label class="btn btn-ghost btn-sm" style="cursor:pointer;">📄 Choose CSV file' +
-        '<input type="file" accept=".csv,.txt,text/csv,text/plain" style="display:none;" onchange="admRosterFile(this)" /></label>' +
-        '<span class="adm-hint" id="adm-roster-file" style="margin:0;"></span><span style="flex:1;"></span>' +
-        '<button class="btn btn-primary btn-sm" type="submit">Upload list</button></div>' +
-        '<div id="adm-roster-result"></div></form>' +
-        admTable([{ label: 'Email' }, { label: 'Status' }, { label: 'Added' }, { label: '', cls: 'adm-row-actions' }], list,
-          'No emails yet. Paste the list the school sent you above.');
+        '<div class="adm-error-box" style="display:none;" role="alert"></div>' +
+        '<div class="adm-section-title" style="margin-top:0;">Upload a student list</div>' +
+        '<div class="adm-hint" style="margin-top:0;">An .xlsx or .csv file with a <b>Name</b> column and a <b>Phone no.</b> column. ' +
+        'All or nothing: if any row has a problem, or there are more students than the headcount, nobody is added. ' +
+        'Uploading creates a subscription for these dates. Students already on the list move to it (a renewal).</div>' +
+        '<div class="adm-form-grid">' +
+        '<div class="form-group adm-span"><label class="form-label" for="adm-roster-file-input">File</label>' +
+        '<input class="form-input" id="adm-roster-file-input" name="file" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />' +
+        '<div class="adm-field-err" data-err="file"></div></div>' +
+        admField('Headcount', 'head_count', '', { type: 'number', attrs: ' min="1" step="1" inputmode="numeric"', placeholder: 'e.g. 120', hint: 'How many students the institute paid for.' }) +
+        admField('Access starts', 'starts_at', yr.start, { type: 'date' }) +
+        admField('Last day covered', 'ends_at', yr.last, { type: 'date' }) +
+        '</div>' +
+        '<div class="adm-actions"><span style="flex:1;"></span><button class="btn btn-primary btn-sm" type="submit">Upload list</button></div>' +
+        '<div id="adm-roster-result"></div></form>';
+      return '<div class="adm-note">Students register with their <b>name and phone number exactly as on this list</b> and Institute ID <span class="adm-mono"><b>' +
+        admEsc(s.institute_code) + '</b></span>. Removing someone takes this institute\'s access away; their account stays.</div>' + upload +
+        admTable([{ label: 'Name' }, { label: 'Phone' }, { label: 'Status' }, { label: 'Subscription' }, { label: 'Added' }, { label: '', cls: 'adm-row-actions' }], list,
+          'Nobody on the list yet. Upload the file the institute sent you above.');
     }
 
-    function admRosterFile(input) {
-      const f = input.files && input.files[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        document.getElementById('adm-roster-text').value = String(reader.result || '');
-        document.getElementById('adm-roster-file').textContent = f.name + ' loaded. Check it, then upload.';
-      };
-      reader.readAsText(f);
-    }
-
-    function admRosterUpload(e, schoolId) {
+    function admRosterUpload(e, instituteId) {
       e.preventDefault();
-      const text = document.getElementById('adm-roster-text').value;
-      const btn = e.target.querySelector('button[type=submit]');
-      if (!text.trim()) { document.getElementById('adm-roster-text').focus(); return; }
+      const form = e.target, btn = form.querySelector('button[type=submit]');
+      admClearErrors(form);
+      document.getElementById('adm-roster-result').innerHTML = '';
+      const file = form.querySelector('[name=file]').files[0];
+      const d = admFormData(form);
+      if (!file) return admFormError(form, { field: 'file', message: 'Choose the .xlsx or .csv file.' });
       const seq = admRenderSeq;     // the page the upload started on; don't paint over another
       admBusy(btn, true, 'Uploading…');
-      CareerAPI.admin.roster.upload(schoolId, text).then(res => {
+      // Dates are IST days; access ends at the start of the day after the last day covered.
+      CareerAPI.admin.studentList.upload(instituteId, file, {
+        head_count: d.head_count, starts_at: admIstDayIso(d.starts_at), ends_at: admIstDayIso(d.ends_at, 1)
+      }).then(res => {
+        admToast(res.rows + ' student' + (res.rows === 1 ? '' : 's') + ' uploaded.');
         // Re-draw the list, then show what happened under the upload box.
-        admSchoolDetail({ id: schoolId, sub: 'roster' }, seq).then(painted => {
+        admSchoolDetail({ id: instituteId, sub: 'students' }, seq).then(painted => {
           const slot = painted && document.getElementById('adm-roster-result');
           if (slot) slot.innerHTML = admRosterResult(res);
-        }).catch(err => {
-          // The upload itself worked: keep this page and its summary rather than an error page.
-          if (admAuthGuard(err) || seq !== admRenderSeq) return;
-          admBusy(btn, false);
-          const slot = document.getElementById('adm-roster-result');
-          if (slot) slot.innerHTML = admRosterResult(res);
-        });
-        admToast(res.added.length + ' email' + (res.added.length === 1 ? '' : 's') + ' added.');
-      }).catch(err => { admBusy(btn, false); admFormError(e.target, err); });
+        }).catch(err => { if (!admAuthGuard(err) && seq === admRenderSeq) admBusy(btn, false); });
+      }).catch(err => {
+        admBusy(btn, false);
+        admFormError(form, err);
+        // Every bad row, so the admin can fix the file (or tell the institute).
+        const bad = err.details && err.details.errors;
+        if (bad && bad.length) {
+          document.getElementById('adm-roster-result').innerHTML = '<div class="adm-result" style="color:var(--accent3);"><b>Rows with a problem</b><ul>' +
+            bad.slice(0, 50).map(x => '<li>Row ' + x.line + ': ' + admEsc(x.reason) + (x.value ? ' <span class="adm-mono">(' + admEsc(x.value) + ')</span>' : '') + '</li>').join('') +
+            (bad.length > 50 ? '<li>…and ' + (bad.length - 50) + ' more</li>' : '') + '</ul></div>';
+        }
+      });
     }
     function admRosterResult(res) {
-      const li = a => '<ul>' + a.slice(0, 20).map(x => '<li>' + x + '</li>').join('') + (a.length > 20 ? '<li>…and ' + (a.length - 20) + ' more</li>' : '') + '</ul>';
-      let h = '<div class="adm-result">';
-      h += '<div>✅ <b>' + res.added.length + '</b> added</div>';
-      if (res.already.length) h += '<div>↺ <b>' + res.already.length + '</b> already on this list</div>';
-      if (res.conflicts.length) h += '<div style="color:var(--orange-text);">⚠️ <b>' + res.conflicts.length + '</b> already on another school\'s list (not moved)' +
-        li(res.conflicts.map(c => admEsc(c.email) + ' — ' + admEsc(c.school))) + '</div>';
-      if (res.invalid.length) h += '<div style="color:var(--accent3);">✗ <b>' + res.invalid.length + '</b> not valid emails' + li(res.invalid.map(admEsc)) + '</div>';
-      return h + '</div>';
+      return '<div class="adm-result"><div>✅ <b>' + res.added + '</b> added to the list</div>' +
+        (res.renewed ? '<div>↺ <b>' + res.renewed + '</b> already on it, moved to the new subscription</div>' : '') +
+        '<div>Subscription #' + res.subscription.id + ': ' + res.subscription.head_count + ' students, ' + admEsc(admDay(res.subscription.starts_at)) +
+        ' – ' + admEsc(admLastDay(res.subscription.ends_at)) + '. Record the payment on the Subscriptions tab.</div></div>';
     }
-    function admRosterRemove(schoolId, email) {
-      if (!confirm('Remove ' + email + ' from this school\'s list? They lose school access straight away.')) return;
-      CareerAPI.admin.roster.remove(schoolId, email).then(() => { admToast('Removed ' + email + '.'); admRoute(); })
+    function admRosterRemove(instituteId, fullName, phoneNo) {
+      if (!confirm('Remove ' + fullName + ' (' + phoneNo + ') from this list? They lose this institute\'s access straight away.')) return;
+      CareerAPI.admin.studentList.remove(instituteId, fullName, phoneNo).then(() => { admToast('Removed ' + fullName + '.'); admRoute(); })
         .catch(err => { if (!admAuthGuard(err)) alert(err.message); });
     }
 
@@ -1131,51 +1145,47 @@
       const list = rows.map(x => {
         const badge = x.current ? '<span class="badge badge-green">Current</span>'
           : Date.parse(x.starts_at) > t ? '<span class="badge badge-blue">Upcoming</span>' : '<span class="badge badge-purple">Past</span>';
-        return '<tr><td>' + admEsc(admDay(x.starts_at)) + ' – ' + admEsc(admLastDay(x.ends_at)) + '</td>' +
-          '<td class="adm-num">' + admEsc(admRupees(x.amount_paise)) + '</td><td>' + admEsc(x.payment_provider === 'razorpay' ? 'Razorpay' : 'Invoice / bank transfer') + '</td>' +
-          '<td><span class="adm-mono">' + admEsc(x.payment_ref) + '</span></td><td>' + badge + '</td></tr>';
+        const p = x.payment;
+        const pay = p
+          ? admEsc('₹' + p.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })) + '<div class="adm-sub">' + admEsc(p.mode_of_payment) + ', ' + admEsc(admDay(p.date_of_payment)) +
+            (p.transaction_id ? ' · <span class="adm-mono">' + admEsc(p.transaction_id) + '</span>' : '') + '</div>'
+          : (s.is_deleted ? '<span class="badge badge-orange">Not recorded</span>'
+            : '<button class="btn btn-primary btn-sm" onclick="admPaymentModal(' + s.id + ',' + x.id + ')">+ Record payment</button>');
+        return '<tr><td><b>#' + x.id + '</b></td><td>' + admEsc(admDay(x.starts_at)) + ' – ' + admEsc(admLastDay(x.ends_at)) + '</td>' +
+          '<td class="adm-num">' + x.students + ' / ' + x.head_count + '</td><td>' + badge + '</td><td>' + pay + '</td></tr>';
       });
-      return '<div class="adm-toolbar"><div class="adm-hint" style="margin:0;">Payments are kept for tax (GST) records, even if this school is hard-deleted. No refunds.</div>' +
-        (s.is_deleted ? '' : '<button class="btn btn-primary btn-sm" onclick="admPaymentModal(' + s.id + ')">+ Record payment</button>') + '</div>' +
-        admTable([{ label: 'Covers' }, { label: 'Amount', cls: 'adm-num' }, { label: 'Paid by' }, { label: 'Reference' }, { label: '' }], list,
-          'No payments recorded. Record one when the school pays, and its students get access.');
+      return '<div class="adm-hint">Each list upload creates a subscription. Payments are kept for tax (GST) records, even if this institute is hard-deleted. No refunds.</div>' +
+        admTable([{ label: 'Subscription' }, { label: 'Covers' }, { label: 'Students / headcount', cls: 'adm-num' }, { label: '' }, { label: 'Payment' }], list,
+          'No subscriptions yet. Upload a student list to create one.');
     }
 
-    // Default to the academic year (1 Apr → 31 Mar) that today falls in.
-    function admPaymentModal(schoolId) {
-      const today = admIstDate(admNow()).split('-').map(Number);
-      const y = today[1] >= 4 ? today[0] : today[0] - 1;
+    function admPaymentModal(instituteId, subscriptionId) {
       admModal({
-        title: 'Record school payment', submit: 'Record payment',
+        title: 'Record payment for subscription #' + subscriptionId, submit: 'Record payment',
         body: '<div class="adm-form-grid">' +
-          admField('Access starts', 'starts_at', y + '-04-01', { type: 'date' }) +
-          admField('Last day covered', 'ends_at', (y + 1) + '-03-31', { type: 'date' }) +
-          admField('Amount paid (₹)', 'amount_rupees', '', { type: 'number', attrs: ' min="0" step="1" inputmode="numeric"', placeholder: 'e.g. 150000' }) +
-          admField('Paid by', 'payment_provider', 'invoice', { select: [{ value: 'invoice', label: 'Invoice / bank transfer' }, { value: 'razorpay', label: 'Razorpay' }] }) +
-          admField('Invoice or payment reference', 'payment_ref', '', { span: true, mono: true, placeholder: 'e.g. INV-2026-0042' }) +
-          '</div><div class="adm-hint">Students on this school\'s list get access for these dates.</div>',
+          admField('Amount paid (₹)', 'amount', '', { type: 'number', attrs: ' min="0" step="0.01" inputmode="decimal"', placeholder: 'e.g. 150000' }) +
+          admField('Mode of payment', 'mode_of_payment', 'Bank transfer', { select: ['Bank transfer', 'UPI', 'Cheque', 'Cash', 'Razorpay', 'Other'] }) +
+          admField('Date of payment', 'date_of_payment', admIstDate(admNow()), { type: 'date' }) +
+          admField('Transaction ID', 'transaction_id', '', { optional: true, mono: true, placeholder: 'UTR / UPI reference / cheque no.' }) +
+          '</div>',
         onSubmit: form => {
           const d = admFormData(form);
-          // Dates are IST days; the plan ends at the start of the day after the last day covered.
-          const start = admIstDayIso(d.starts_at);
-          const end = admIstDayIso(d.ends_at, 1);
-          return CareerAPI.admin.subscriptions.create(schoolId, {
-            starts_at: start, ends_at: end, amount_rupees: d.amount_rupees === '' ? NaN : d.amount_rupees,
-            payment_provider: d.payment_provider, payment_ref: d.payment_ref
+          return CareerAPI.admin.payments.create(instituteId, {
+            subscription_id: subscriptionId, amount: d.amount === '' ? null : Number(d.amount),
+            mode_of_payment: d.mode_of_payment, date_of_payment: d.date_of_payment, transaction_id: d.transaction_id
           }).then(() => { admToast('Payment recorded.'); admRoute(); });
         }
       });
     }
 
     // ══════════════════════════════════════════════════════════════
-    // STUDENTS
+    // STUDENTS (accounts)
     // ══════════════════════════════════════════════════════════════
     let admStudentTab = 'active';
     let admStudentQuery = '';
 
     function admAccessBadge(a) {
-      if (a.has_access) return a.source === 'school' ? '<span class="badge badge-green">School</span>' : '<span class="badge badge-purple">Individual</span>';
-      return '<span class="badge badge-orange">' + admEsc(ADM_REASON[a.reason] || 'No access') + '</span>';
+      return a.has_access ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-orange">Inactive</span>';
     }
     function admStudentTabSet(t) { admStudentTab = t; admRoute(); }
 
@@ -1184,19 +1194,18 @@
         const rows = list.map(s => {
           const n = admEsc(JSON.stringify(s.full_name));
           const actions = admStudentTab === 'deleted'
-            ? '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ',this)">Restore</button>' +
-              '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',true)">Hard delete</button>'
-            : '<button class="btn btn-ghost btn-sm" onclick="admGo(\'students/' + s.id + '\')">Payments</button>' +
-              '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',false)">Delete</button>';
+            ? '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'students\',' + s.id + ',' + n + ',this)">Restore</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',true)">Hard delete</button>'
+            : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',false)">Delete</button>';
           return '<tr><td><button class="adm-link" onclick="admGo(\'students/' + s.id + '\')">' + admEsc(s.full_name) + '</button>' +
-            '<div class="adm-sub">Leaderboard: ' + admEsc(s.leaderboard_name) + '</div></td>' +
-            '<td>' + admEsc(s.email) + '</td>' +
-            '<td>' + (s.school ? admEsc(s.school.name) + '<div class="adm-sub adm-mono">' + admEsc(s.school.school_code) + '</div>' : '<span style="color:var(--muted);">—</span>') + '</td>' +
+            '<div class="adm-sub">' + admEsc(s.username) + '</div></td>' +
+            '<td><span class="adm-mono">' + admEsc(s.phone_no) + '</span>' + (s.email ? '<div class="adm-sub">' + admEsc(s.email) + '</div>' : '') + '</td>' +
+            '<td>' + (s.institute ? admEsc(s.institute.name) + '<div class="adm-sub adm-mono">' + admEsc(s.institute.institute_code) + '</div>' : '<span style="color:var(--muted);">—</span>') + '</td>' +
             '<td>' + (admStudentTab === 'deleted' ? '<span class="badge badge-red">Deleted ' + admEsc(admDay(s.deleted_at)) + '</span>' : admAccessBadge(s.access)) + '</td>' +
             '<td class="adm-row-actions">' + actions + '</td></tr>';
         });
-        return admTable([{ label: 'Student' }, { label: 'Email' }, { label: 'School' }, { label: 'Access' }, { label: '', cls: 'adm-row-actions' }], rows,
-          admStudentQuery ? 'No students match “' + admEsc(admStudentQuery) + '”.' : admStudentTab === 'deleted' ? 'No deleted students.' : 'No students yet.');
+        return admTable([{ label: 'Student' }, { label: 'Phone / email' }, { label: 'Institute' }, { label: 'Access' }, { label: '', cls: 'adm-row-actions' }], rows,
+          admStudentQuery ? 'No students match “' + admEsc(admStudentQuery) + '”.' : admStudentTab === 'deleted' ? 'No deleted students.' : 'Nobody has registered yet.');
       });
     }
 
@@ -1205,7 +1214,7 @@
         admPaint(seq,
           admTopbar('Students', 'Everyone who has registered. Deleting here is a soft delete unless you choose otherwise.', '') +
           '<div class="adm-toolbar">' + admTabs([{ key: 'active', label: 'Active' }, { key: 'deleted', label: 'Deleted' }], admStudentTab, 'admStudentTabSet') +
-          '<input class="form-input adm-search" type="search" placeholder="Search name or email" value="' + admEsc(admStudentQuery) + '" oninput="admSearch(\'students\',this.value)" /></div>' +
+          '<input class="form-input adm-search" type="search" placeholder="Search name, username, phone or email" value="' + admEsc(admStudentQuery) + '" oninput="admSearch(\'students\',this.value)" /></div>' +
           '<div id="adm-list">' + table + '</div>');
       }).catch(err => admFail(seq, err));
     }
@@ -1219,93 +1228,53 @@
       });
     }
 
-    // ── One student: access and individual payments (#/students/:id) ──
-    // Students pay outside the website; recording the payment ID here is
-    // what gives them access.
-    const ADM_PAID_VIA = [
-      { value: 'upi', label: 'UPI' }, { value: 'bank_transfer', label: 'Bank transfer' },
-      { value: 'razorpay', label: 'Razorpay' }, { value: 'cash', label: 'Cash' }, { value: 'other', label: 'Other' }
-    ];
-    const ADM_STUDENT_PLANS = [{ value: 'student_annual', label: 'Annual', months: 12 }, { value: 'student_monthly', label: 'Monthly', months: 1 }];
-
+    // ── One student: access, institutes and password (#/students/:id) ──
     function admStudentAccess(s) {
       const a = s.access;
       if (s.is_deleted) return 'This student is <b>soft-deleted</b>: they can\'t log in until restored.';
-      if (a.has_access && a.source === 'school') return 'Covered by <b>' + admEsc(a.school.name) + '</b> until ' + admEsc(admLastDay(a.ends_at)) + '.';
-      if (a.has_access) return 'Individual plan active until <b>' + admEsc(admLastDay(a.ends_at)) + '</b>.';
-      return 'No access (' + admEsc(ADM_REASON[a.reason] || a.reason) + '). Record their payment below to give them access.';
+      if (a.has_access) return 'Covered by <b>' + admEsc(a.institute ? a.institute.name : 'an institute') + '</b> until ' + admEsc(admLastDay(a.ends_at)) + '.';
+      return 'Inactive: none of their institutes has a current subscription. They see “' + admEsc(a.message) + '”.';
     }
 
     function admStudentDetail(r, seq) {
-      return Promise.all([CareerAPI.admin.students.get(r.id), CareerAPI.admin.students.payments(r.id)]).then(([s, rows]) => {
+      return CareerAPI.admin.students.get(r.id).then(s => {
         const n = admEsc(JSON.stringify(s.full_name));
-        const actions = s.is_deleted
-          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'students\',\'' + s.id + '\',' + n + ',this)">Restore</button>' +
-            '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',true)">Hard delete</button>'
-          : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(\'' + s.id + '\',' + n + ',false)">Delete student</button>';
-        const t = admNow();
-        const list = rows.map(x => {
-          const badge = x.current ? '<span class="badge badge-green">Current</span>'
-            : Date.parse(x.starts_at) > t ? '<span class="badge badge-blue">Upcoming</span>' : '<span class="badge badge-purple">Past</span>';
-          const plan = ADM_STUDENT_PLANS.find(p => p.value === x.plan);
-          const via = ADM_PAID_VIA.find(p => p.value === x.payment_provider);
-          return '<tr><td>' + admEsc(admDay(x.starts_at)) + ' – ' + admEsc(admLastDay(x.ends_at)) + '</td>' +
-            '<td>' + admEsc(plan ? plan.label : x.plan) + '</td>' +
-            '<td class="adm-num">' + admEsc(admRupees(x.amount_paise)) + '</td><td>' + admEsc(via ? via.label : x.payment_provider) + '</td>' +
-            '<td><span class="adm-mono">' + admEsc(x.payment_ref) + '</span></td><td>' + badge + '</td></tr>';
-        });
+        const actions = (s.is_deleted
+          ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'students\',' + s.id + ',' + n + ',this)">Restore</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',true)">Hard delete</button>'
+          : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',false)">Delete student</button>') +
+          '<button class="btn btn-ghost btn-sm" onclick="admStudentPasswordModal(' + s.id + ',' + n + ')">Set new password</button>';
+        const list = (s.institutes || []).map(i =>
+          '<tr><td><button class="adm-link" onclick="admGo(\'schools/' + i.id + '/students\')">' + admEsc(i.name) + '</button>' +
+          (i.is_deleted ? ' <span class="badge badge-red">Deleted</span>' : '') + '<div class="adm-sub">' + admEsc(admTypeLabel(i.type)) + '</div></td>' +
+          '<td><span class="adm-mono">' + admEsc(i.institute_code) + '</span></td>' +
+          '<td>' + (!i.subscription ? '<span class="badge badge-orange">None</span>'
+            : i.subscription.active ? '<span class="badge badge-green">Until ' + admEsc(admLastDay(i.subscription.ends_at)) + '</span>'
+              : '<span class="badge badge-red">Ended ' + admEsc(admLastDay(i.subscription.ends_at)) + '</span>') + '</td>' +
+          '<td>' + admEsc(admDay(i.registered_at)) + '</td></tr>');
+        const kv = (k, v) => '<div><div class="adm-sub">' + k + '</div><div>' + v + '</div></div>';
         admPaint(seq,
           admTopbar(admEsc(s.full_name),
-            admEsc(s.email) + ' · ' + (s.school ? admEsc(s.school.name) + ' <span class="adm-mono">' + admEsc(s.school.school_code) + '</span>' : 'no school') +
-            ' &nbsp;' + admAccessBadge(s.access), actions, '<a href="#/students">Students</a> / ' + admEsc(s.full_name)) +
+            'Username <span class="adm-mono"><b>' + admEsc(s.username) + '</b></span> · ' + admEsc(s.phone_no) +
+            ' &nbsp;' + admAccessBadge(s.access), actions, '<a href="#/students">Students</a> / ' + admEsc(s.username)) +
           '<div class="adm-note' + (s.is_deleted || !s.access.has_access ? ' adm-banner-lock' : '') + '">' + admStudentAccess(s) + '</div>' +
-          '<div class="adm-toolbar"><div class="adm-hint" style="margin:0;">Payments made outside the website. They\'re kept for tax (GST) records, even if this student is hard-deleted. No refunds.</div>' +
-          (s.is_deleted ? '' : '<button class="btn btn-primary btn-sm" onclick="admStudentPaymentModal(\'' + s.id + '\')">+ Record payment</button>') + '</div>' +
-          admTable([{ label: 'Covers' }, { label: 'Plan' }, { label: 'Amount', cls: 'adm-num' }, { label: 'Paid via' }, { label: 'Payment ID' }, { label: '' }], list,
-            'No payments recorded. When this student pays, record the payment ID here and they get access.'));
+          '<div class="adm-panel adm-panel-pad"><div class="adm-form-grid">' +
+          kv('Email', s.email ? admEsc(s.email) + (s.email_verified ? ' ✓' : ' <span class="adm-sub">(not confirmed)</span>') : '—') +
+          kv('Class, board, city', admEsc('Class ' + s.class + ', ' + s.board + ', ' + s.city)) +
+          kv('Last login', s.last_login_at ? admEsc(admWhen(s.last_login_at)) : 'Never') +
+          kv('Registered', admEsc(admDay(s.created_at))) + '</div></div>' +
+          '<div class="adm-section-title">Institute lists they\'re on</div>' +
+          admTable([{ label: 'Institute' }, { label: 'Institute ID' }, { label: 'Subscription' }, { label: 'Registered' }], list,
+            'Not on any institute\'s list any more.'));
       });
     }
 
-    // 'YYYY-MM-DD' + months → the last day covered, e.g. 2026-10-10 + 12 → 2027-10-09.
-    function admLastDayAfter(start, months) {
-      const p = String(start || '').split('-').map(Number);
-      if (p.length !== 3 || p.some(isNaN)) return '';
-      const d = new Date(Date.UTC(p[0], p[1] - 1 + months, p[2] - 1));
-      return isNaN(d) ? '' : d.toISOString().slice(0, 10);
-    }
-
-    function admStudentPaymentModal(studentId) {
-      const today = admIstDate(admNow());
+    // For a student who can't reset it themselves (no email, or no access to it).
+    function admStudentPasswordModal(id, name) {
       admModal({
-        title: 'Record student payment', submit: 'Record payment',
-        body: '<div class="adm-form-grid">' +
-          admField('Plan', 'plan', 'student_annual', { select: ADM_STUDENT_PLANS }) +
-          admField('Paid via', 'payment_provider', 'upi', { select: ADM_PAID_VIA }) +
-          admField('Access starts', 'starts_at', today, { type: 'date' }) +
-          admField('Last day covered', 'ends_at', admLastDayAfter(today, 12), { type: 'date' }) +
-          admField('Amount paid (₹)', 'amount_rupees', '', { type: 'number', attrs: ' min="0" step="1" inputmode="numeric"', placeholder: 'e.g. 1499' }) +
-          admField('Payment ID', 'payment_ref', '', { mono: true, placeholder: 'UPI reference / UTR / receipt no.' }) +
-          '</div><div class="adm-hint">The student gets access for these dates as soon as you record it. The same payment ID can\'t be recorded twice.</div>',
-        // Changing the plan or the start date moves the last day to match.
-        onOpen: form => {
-          const sync = () => {
-            const d = admFormData(form);
-            const plan = ADM_STUDENT_PLANS.find(p => p.value === d.plan);
-            form.querySelector('[name=ends_at]').value = admLastDayAfter(d.starts_at, plan.months);
-          };
-          form.querySelector('[name=plan]').addEventListener('change', sync);
-          form.querySelector('[name=starts_at]').addEventListener('change', sync);
-        },
-        onSubmit: form => {
-          const d = admFormData(form);
-          // Dates are IST days; the plan ends at the start of the day after the last day covered.
-          const start = admIstDayIso(d.starts_at);
-          const end = admIstDayIso(d.ends_at, 1);
-          return CareerAPI.admin.students.recordPayment(studentId, {
-            plan: d.plan, starts_at: start, ends_at: end, amount_rupees: d.amount_rupees,
-            payment_provider: d.payment_provider, payment_ref: d.payment_ref
-          }).then(() => { admToast('Payment recorded. The student now has access.'); admRoute(); });
-        }
+        title: 'Set a new password for ' + name, submit: 'Set password',
+        body: admField('New password', 'password', '', { type: 'password', attrs: ' autocomplete="new-password"', hint: 'At least 8 characters. Share it with the student securely; they\'re signed out everywhere.' }),
+        onSubmit: form => CareerAPI.admin.students.setPassword(id, admFormData(form).password).then(() => { admToast('Password changed.'); })
       });
     }
 
@@ -1359,12 +1328,12 @@
       student: {
         soft: 'They can\'t log in and disappear from leaderboards and lists. You can restore them.',
         removes: ['Account and login', 'Onboarding profile and career quiz results', 'Contest attempts and answers (past leaderboards are recomputed)'],
-        keeps: ['Payment records, kept for tax without the student\'s name']
+        keeps: ['Their rows on institute lists, back to “not registered”, so they can register again']
       },
       school: {
-        soft: 'Its plan stops counting, so its students lose school access. The student list is kept, so restoring brings everything back.',
-        removes: ['School details', 'Its student email list'],
-        keeps: ['Payment records, kept for tax without the school\'s name', 'Student accounts, no longer linked to a school']
+        soft: 'Its subscriptions stop counting, so its students lose its access, and nobody can register through it. The list is kept, so restoring brings everything back.',
+        removes: ['Institute details', 'Its student list and subscriptions'],
+        keeps: ['Payment records, kept for tax without the institute\'s name', 'Student accounts, without this institute']
       },
       contest: {
         soft: 'Hidden from students and from this list, and its week becomes free for a new contest.',
@@ -1374,7 +1343,7 @@
       admin: {
         soft: 'They can\'t log in. You can restore them.',
         removes: ['Admin account and sessions'],
-        keeps: ['Contests and schools they created']
+        keeps: ['Contests, institutes and payments they created or recorded']
       }
     };
 

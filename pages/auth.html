@@ -50,49 +50,89 @@
       <div class="card auth-card stack">
         <div class="tabs auth-tabs" id="auth-tabs" role="tablist" aria-label="Account">
           <button class="tab-btn auth-tab active" type="button" role="tab" onclick="authTab('login')">Log in</button>
-          <button class="tab-btn auth-tab" type="button" role="tab" onclick="authTab('register')">Create account</button>
+          <button class="tab-btn auth-tab" type="button" role="tab" onclick="authTab('register')">Register</button>
         </div>
 
         <form class="stack" id="auth-login" novalidate onsubmit="authSubmitLogin(event)">
           <div class="stack-xs stack"><h1 class="auth-title">Welcome back</h1><p class="muted">Log in to see your matches, roadmap and contests.</p></div>
           <div class="alert alert-ok form-alert" id="login-ok" role="status"></div>
           <div class="alert alert-error form-alert" id="login-alert" role="alert"></div>
-          <div class="field"><label class="field-label" for="login-email">Email</label><input class="input" id="login-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="login-email-error" /><div class="form-error" id="login-email-error" aria-live="polite"></div></div>
+          <div class="field"><label class="field-label" for="login-username">Username</label><input class="input" id="login-username" type="text" placeholder="e.g. aarav.m" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="login-username-error" /><div class="form-error" id="login-username-error" aria-live="polite"></div></div>
           <div class="field"><label class="field-label" for="login-password">Password</label><div class="password-field"><input class="input" id="login-password" type="password" autocomplete="current-password" aria-describedby="login-password-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><div class="form-error" id="login-password-error" aria-live="polite"></div></div>
           <div class="auth-row"><a class="small" href="#forgot" onclick="authShow('forgot'); return false;">Forgot password?</a></div>
           <button class="btn btn-primary btn-block" id="login-btn" type="submit">Log in</button>
-          <p class="small muted auth-switch">New here? <a href="#register" onclick="authTab('register'); return false;">Create an account</a></p>
+          <p class="small muted auth-switch">First time here? <a href="#register" onclick="authTab('register'); return false;">Register</a></p>
         </form>
 
-        <form class="stack" id="auth-register" novalidate hidden onsubmit="authSubmitRegister(event)">
-          <div class="stack-xs stack"><h1 class="auth-title">Create your account</h1><p class="muted">Takes a minute. Your quiz results are saved to this account.</p></div>
+        <!-- Registration step 1: is this student on their institute's list? -->
+        <form class="stack" id="auth-register" novalidate hidden onsubmit="authSubmitCheck(event)">
+          <div class="stack-xs stack"><h1 class="auth-title">Register</h1><p class="muted">Use the name and phone number your school or institute gave us, and the institute ID they shared with you.</p></div>
           <div class="alert alert-error form-alert" id="reg-alert" role="alert"></div>
-          <div class="field"><label class="field-label" for="reg-full_name">Full name</label><input class="input" id="reg-full_name" type="text" placeholder="Aarav Mehta" autocomplete="name" maxlength="80" aria-describedby="reg-full_name-error" /><p class="field-hint">Leaderboards show your first name and last initial, like Aarav M.</p><div class="form-error" id="reg-full_name-error" aria-live="polite"></div></div>
-          <div class="field"><label class="field-label" for="reg-school_code">School ID <span class="optional">(optional)</span></label><input class="input" id="reg-school_code" type="text" placeholder="e.g. DPS-RKP" maxlength="20" autocapitalize="characters" aria-describedby="reg-school_code-error" /><p class="field-hint">From your school. Leave it blank if your school isn't on Crackeer.</p><div class="form-error" id="reg-school_code-error" aria-live="polite"></div></div>
-          <div class="field"><label class="field-label" for="reg-email">Email</label><input class="input" id="reg-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="reg-email-error" /><p class="field-hint">Got a School ID? Use the email your school has on its list.</p><div class="form-error" id="reg-email-error" aria-live="polite"></div></div>
-          <div class="field"><label class="field-label" for="reg-password">Password</label><div class="password-field"><input class="input" id="reg-password" type="password" autocomplete="new-password" aria-describedby="reg-password-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><p class="field-hint">At least 8 characters.</p><div class="form-error" id="reg-password-error" aria-live="polite"></div></div>
-          <div class="field"><label class="field-label" for="reg-confirm">Confirm password</label><div class="password-field"><input class="input" id="reg-confirm" type="password" autocomplete="new-password" aria-describedby="reg-confirm-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><div class="form-error" id="reg-confirm-error" aria-live="polite"></div></div>
-          <button class="btn btn-primary btn-block" id="reg-btn" type="submit">Create account</button>
-          <p class="small muted auth-switch">Already have an account? <a href="auth.html" onclick="authTab('login'); return false;">Log in</a></p>
+          <div class="field"><label class="field-label" for="reg-full_name">Full name</label><input class="input" id="reg-full_name" type="text" placeholder="Aarav Mehta" autocomplete="name" maxlength="80" aria-describedby="reg-full_name-error" /><p class="field-hint">Spelled the way your institute has it.</p><div class="form-error" id="reg-full_name-error" aria-live="polite"></div></div>
+          <div class="field"><label class="field-label" for="reg-phone_no">Phone number</label><input class="input" id="reg-phone_no" type="tel" placeholder="98765 43210" autocomplete="tel-national" inputmode="tel" maxlength="16" aria-describedby="reg-phone_no-error" /><p class="field-hint">The number your institute has on its list.</p><div class="form-error" id="reg-phone_no-error" aria-live="polite"></div></div>
+          <div class="field"><label class="field-label" for="reg-institute_code">Institute ID</label><input class="input" id="reg-institute_code" type="text" placeholder="e.g. DPS-RKP" maxlength="20" autocapitalize="characters" spellcheck="false" aria-describedby="reg-institute_code-error" /><p class="field-hint">Your school or institute gives you this.</p><div class="form-error" id="reg-institute_code-error" aria-live="polite"></div></div>
+          <button class="btn btn-primary btn-block" id="reg-btn" type="submit">Continue</button>
+          <p class="small muted auth-switch">Already registered? <a href="auth.html" onclick="authTab('login'); return false;">Log in</a></p>
+        </form>
+
+        <!-- Registration step 2 (already has an account from another institute): its password. -->
+        <form class="stack" id="auth-link" novalidate hidden onsubmit="authSubmitLink(event)">
+          <a class="btn btn-ghost btn-sm auth-back" href="#register" onclick="authShow('register'); return false;"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Back</a>
+          <div class="stack-xs stack"><h1 class="auth-title">You already have an account</h1><p class="muted">You registered with Crackeer through another institute as <b id="link-username"></b>. Enter that account's password to add <b id="link-institute"></b> to it.</p></div>
+          <div class="alert alert-error form-alert" id="link-alert" role="alert"></div>
+          <div class="field"><label class="field-label" for="link-password">Password</label><div class="password-field"><input class="input" id="link-password" type="password" autocomplete="current-password" aria-describedby="link-password-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><div class="form-error" id="link-password-error" aria-live="polite"></div></div>
+          <button class="btn btn-primary btn-block" id="link-btn" type="submit">Continue</button>
+          <p class="small muted auth-switch">Forgot it? <a href="#forgot" onclick="authShow('forgot'); return false;">Reset your password</a></p>
+        </form>
+
+        <!-- Registration step 2 (new account), or step 3 after linking (filled in, username fixed). -->
+        <form class="stack" id="auth-details" novalidate hidden onsubmit="authSubmitDetails(event)">
+          <div class="stack-xs stack"><h1 class="auth-title" id="det-title">Set up your account</h1><p class="muted" id="det-sub"></p></div>
+          <div class="alert alert-ok form-alert" id="det-ok" role="status"></div>
+          <div class="alert alert-error form-alert" id="det-alert" role="alert"></div>
+          <div class="field"><label class="field-label" for="det-username">Username</label><input class="input" id="det-username" type="text" placeholder="e.g. aarav.m" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" aria-describedby="det-username-error" /><p class="field-hint" id="det-username-hint">You'll log in with this. 3–30 letters, digits, dots or underscores.</p><div class="form-error" id="det-username-error" aria-live="polite"></div></div>
+          <div class="stack" id="det-passwords">
+            <div class="field"><label class="field-label" for="det-password">Password</label><div class="password-field"><input class="input" id="det-password" type="password" autocomplete="new-password" aria-describedby="det-password-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><p class="field-hint">At least 8 characters.</p><div class="form-error" id="det-password-error" aria-live="polite"></div></div>
+            <div class="field"><label class="field-label" for="det-confirm">Confirm password</label><div class="password-field"><input class="input" id="det-confirm" type="password" autocomplete="new-password" aria-describedby="det-confirm-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><div class="form-error" id="det-confirm-error" aria-live="polite"></div></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label class="field-label" for="det-class">Class</label><div class="select-wrap"><select class="select" id="det-class" aria-describedby="det-class-error"><option value="">Choose</option><option value="10">Class 10</option><option value="9">Class 9</option></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div><div class="form-error" id="det-class-error" aria-live="polite"></div></div>
+            <div class="field"><label class="field-label" for="det-board">Board</label><div class="select-wrap"><select class="select" id="det-board" aria-describedby="det-board-error"><option value="">Choose</option><option>CBSE</option><option>ICSE</option><option>State Board</option></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div><div class="form-error" id="det-board-error" aria-live="polite"></div></div>
+          </div>
+          <div class="field"><label class="field-label" for="det-city">City</label><input class="input" id="det-city" type="text" placeholder="e.g. Pune" autocomplete="address-level2" maxlength="80" aria-describedby="det-city-error" /><div class="form-error" id="det-city-error" aria-live="polite"></div></div>
+          <div class="field"><label class="field-label" for="det-email">Email <span class="optional">(optional)</span></label><input class="input" id="det-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="det-email-error" /><p class="field-hint">Only used to send you a link if you forget your password.</p><div class="form-error" id="det-email-error" aria-live="polite"></div></div>
+          <button class="btn btn-primary btn-block" id="det-btn" type="submit">Create account</button>
         </form>
 
         <form class="stack" id="auth-forgot" novalidate hidden onsubmit="authSubmitForgot(event)">
           <a class="btn btn-ghost btn-sm auth-back" href="auth.html" onclick="authShow('login'); return false;"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Back to log in</a>
-          <div class="stack-xs stack"><h1 class="auth-title">Reset your password</h1><p class="muted">Enter the email you log in with. We'll send you a 6-digit code.</p></div>
+          <div class="stack-xs stack"><h1 class="auth-title">Reset your password</h1><p class="muted" id="forgot-sub">Enter your username. We'll email a reset link to the address on your account.</p></div>
           <div class="alert alert-error form-alert" id="forgot-alert" role="alert"></div>
-          <div class="field"><label class="field-label" for="forgot-email">Email</label><input class="input" id="forgot-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="forgot-email-error" /><div class="form-error" id="forgot-email-error" aria-live="polite"></div></div>
-          <button class="btn btn-primary btn-block" id="forgot-btn" type="submit">Send code</button>
+          <div class="field"><label class="field-label" for="forgot-username">Username</label><input class="input" id="forgot-username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="forgot-username-error" /><div class="form-error" id="forgot-username-error" aria-live="polite"></div></div>
+          <!-- Shown when the account has no email: the registration details prove it's theirs. -->
+          <div class="stack" id="forgot-proof" hidden>
+            <div class="field"><label class="field-label" for="forgot-email">Your email</label><input class="input" id="forgot-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="forgot-email-error" /><p class="field-hint">We'll send the link here and save it to your account.</p><div class="form-error" id="forgot-email-error" aria-live="polite"></div></div>
+            <div class="field"><label class="field-label" for="forgot-full_name">Full name</label><input class="input" id="forgot-full_name" type="text" autocomplete="name" maxlength="80" aria-describedby="forgot-full_name-error" /><div class="form-error" id="forgot-full_name-error" aria-live="polite"></div></div>
+            <div class="field"><label class="field-label" for="forgot-phone_no">Phone number</label><input class="input" id="forgot-phone_no" type="tel" autocomplete="tel-national" inputmode="tel" maxlength="16" aria-describedby="forgot-phone_no-error" /><div class="form-error" id="forgot-phone_no-error" aria-live="polite"></div></div>
+            <div class="field"><label class="field-label" for="forgot-institute_code">Institute ID</label><input class="input" id="forgot-institute_code" type="text" maxlength="20" autocapitalize="characters" spellcheck="false" aria-describedby="forgot-institute_code-error" /><div class="form-error" id="forgot-institute_code-error" aria-live="polite"></div></div>
+          </div>
+          <button class="btn btn-primary btn-block" id="forgot-btn" type="submit">Send link</button>
         </form>
 
+        <div class="stack" id="auth-sent" hidden>
+          <a class="btn btn-ghost btn-sm auth-back" href="auth.html" onclick="authShow('login'); return false;"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Back to log in</a>
+          <div class="stack-xs stack"><h1 class="auth-title">Check your email</h1><p class="muted" id="sent-text"></p></div>
+          <p class="small muted">Can't get in? Ask your school or institute to contact us and we'll reset it for you.</p>
+        </div>
+
+        <!-- Opened from the emailed link: #reset=<token> -->
         <form class="stack" id="auth-reset" novalidate hidden onsubmit="authSubmitReset(event)">
-          <a class="btn btn-ghost btn-sm auth-back" href="#forgot" onclick="authShow('forgot'); return false;"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Use a different email</a>
-          <div class="stack-xs stack"><h1 class="auth-title">Check your email</h1><p class="muted">If <b id="reset-to"></b> has a Crackeer account, we've emailed it a 6-digit code. It works for 15 minutes, so check your spam folder if you can't find it.</p></div>
+          <div class="stack-xs stack"><h1 class="auth-title">Choose a new password</h1><p class="muted">This also confirms the email the link was sent to.</p></div>
           <div class="alert alert-error form-alert" id="reset-alert" role="alert"></div>
-          <div class="field"><label class="field-label" for="reset-code">6-digit code</label><input class="input" id="reset-code" type="text" placeholder="123456" autocomplete="one-time-code" inputmode="numeric" maxlength="6" aria-describedby="reset-code-error" /><div class="form-error" id="reset-code-error" aria-live="polite"></div></div>
           <div class="field"><label class="field-label" for="reset-new_password">New password</label><div class="password-field"><input class="input" id="reset-new_password" type="password" autocomplete="new-password" aria-describedby="reset-new_password-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><p class="field-hint">At least 8 characters.</p><div class="form-error" id="reset-new_password-error" aria-live="polite"></div></div>
           <div class="field"><label class="field-label" for="reset-confirm">Confirm new password</label><div class="password-field"><input class="input" id="reset-confirm" type="password" autocomplete="new-password" aria-describedby="reset-confirm-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><div class="form-error" id="reset-confirm-error" aria-live="polite"></div></div>
           <button class="btn btn-primary btn-block" id="reset-btn" type="submit">Change password</button>
-          <button class="btn btn-ghost btn-sm auth-resend" id="reset-resend-btn" type="button" onclick="authResendCode()">Resend code</button>
+          <p class="small muted auth-switch">Link not working? <a href="#forgot" onclick="authShow('forgot'); return false;">Ask for a new one</a></p>
         </form>
       </div>
     </div>

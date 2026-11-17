@@ -9,8 +9,9 @@
 // httpOnly cookie, so fetch uses credentials: 'include'). The file keeps its
 // old name so no page has to change its <script> tag.
 //
-// Payments happen outside the website: an admin records each one in the
-// admin panel, and that is what grants access. There is no checkout here.
+// Students come from institutes: an admin uploads each institute's list of
+// names and phone numbers, and that upload's subscription is what grants
+// access. There is no checkout here.
 //
 // Students can't delete their own account; only an admin can
 // (DELETE /admin/students/:id).
@@ -41,12 +42,6 @@
 
   const STUDENT_SESSION = 'careerai_session';
 
-  // Prices are placeholders until the business sets them.
-  const PLANS = {
-    student_monthly: { plan: 'student_monthly', label: 'Monthly', amount_paise: 19900, months: 1 },
-    student_annual: { plan: 'student_annual', label: 'Annual', amount_paise: 149900, months: 12 }
-  };
-
   function sessionGet(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
   function sessionSet(key, v) { try { v == null ? sessionStorage.removeItem(key) : sessionStorage.setItem(key, v); } catch (e) { } }
 
@@ -57,8 +52,8 @@
 
   // ── Live API ────────────────────────────────────────────────────────────
   // Rejects with an Error carrying .status, .code and, for validation
-  // errors, .field. JSON body unless contentType is given,
-  // in which case body is sent as-is (the roster CSV).
+  // errors, .field (and .details when the API sends some). JSON body unless
+  // contentType is given, in which case body is sent as-is (a list file).
   function http(method, path, body, contentType) {
     return fetch(API_BASE + path, {
       method: method,
@@ -71,6 +66,7 @@
       const e = new Error(err.message || 'Something went wrong. Please try again.');
       e.status = res.status; e.code = err.code || 'server_error';
       if (err.field) e.field = err.field;
+      if (err.details) e.details = err.details;
       // An admin 401 says nothing about the student session.
       if (res.status === 401 && path.indexOf('/admin') !== 0) sessionSet(STUDENT_SESSION, null);
       throw e;
@@ -104,7 +100,6 @@
   // PUBLIC API — one method per backend endpoint
   // ══════════════════════════════════════════════════════════════
   const CareerAPI = {
-    plans: PLANS,
     leaderboardName: leaderboardName,
 
     // GET /careers — live, no login. → { careers } the career catalogue
@@ -113,25 +108,38 @@
     },
 
     auth: {
-      // POST /auth/register — live
+      // POST /auth/register/check — step 1. { full_name, phone_no, institute_code }
+      // → { status: 'new' } | { status: 'existing_account', username }
+      checkRegistration(entry) { return http('POST', '/auth/register/check', entry); },
+      // POST /auth/register — a first account: the entry plus username,
+      // password, class, board, city and an optional email. → { student, access }
       register(body) {
         return http('POST', '/auth/register', body).then(r => { shadow(r.student); return r; });
       },
-      // POST /auth/login — live
+      // POST /auth/register/link — adds this institute to the account that
+      // already exists for this name + phone. The entry plus that account's
+      // password. → { student, access }
+      linkInstitute(body) {
+        return http('POST', '/auth/register/link', body).then(r => { shadow(r.student); return r; });
+      },
+      // POST /auth/login — { username, password }
       login(body) {
-        return http('POST', '/auth/login', body).then(r => { shadow(r.student); return r; });
+        return http('POST', '/auth/login', { username: body.username, password: body.password })
+          .then(r => { shadow(r.student); return r; });
       },
       // POST /auth/logout — live; the local session ends even if the call fails
       logout() {
         const end = () => sessionSet(STUDENT_SESSION, null);
         return http('POST', '/auth/logout').then(r => { end(); return r; }, e => { end(); throw e; });
       },
-      // POST /auth/forgot-password — live; always { ok: true }, account or not
-      forgotPassword(body) { return http('POST', '/auth/forgot-password', { email: body.email }); },
-      // POST /auth/reset-password — live; ends every session of that student
+      // POST /auth/forgot-password — { username } or, when the account has no
+      // email, { username, email, full_name, phone_no, institute_code }.
+      // → { needs_email }
+      forgotPassword(body) { return http('POST', '/auth/forgot-password', body); },
+      // POST /auth/reset-password — { token (from the emailed link), new_password };
+      // ends every session of that student
       resetPassword(body) {
-        return http('POST', '/auth/reset-password',
-          { email: body.email, code: body.code, new_password: body.new_password })
+        return http('POST', '/auth/reset-password', { token: body.token, new_password: body.new_password })
           .then(r => { sessionSet(STUDENT_SESSION, null); return r; });
       },
       // Is there a session at all? (No round trip.) The cookie is httpOnly, so
@@ -142,16 +150,17 @@
     me: {
       // GET /me — live
       get() { return http('GET', '/me').then(r => { shadow(r.student); return r; }); },
-      // PUT /me — live. Changes the name (and so the leaderboard name). → { student }
-      setName(fullName) {
-        return http('PUT', '/me', { full_name: fullName }).then(r => { shadow(r.student); return r; });
+      // PUT /me — live. Any of { email, class, board, city }; name and phone
+      // can't change. → { student }
+      update(details) {
+        return http('PUT', '/me', details).then(r => { shadow(r.student); return r; });
       },
       // GET /me/access — live
       access() { return http('GET', '/me/access'); },
-      // GET /me/profile — live. → { profile } (null before onboarding)
+      // GET /me/profile — live. → { profile } (class, board and city from the
+      // account; completed_at null until onboarding is done)
       profile() { return http('GET', '/me/profile'); },
-      // PUT /me/profile — live. class is required; other answers only change
-      // when sent. → { profile }
+      // PUT /me/profile — live. Answers only change when sent. → { profile }
       saveProfile(fields) { return http('PUT', '/me/profile', fields); },
       // PUT /me/career — live. The career quiz's top career; career
       // leaderboards group by it.
@@ -168,11 +177,7 @@
       // GET /roadmap?career= — live. → { roadmap: { career, emoji, steps } }; 404 not_found if none
       roadmap(career) { return http('GET', '/roadmap' + query({ career: career })); },
       // GET /career-news?career= — live. → { career, categories: [{ key, label, items }], sources, updated_at }
-      careerNews(career) { return http('GET', '/career-news' + query({ career: career })); },
-      // PUT /me/school — live; code '' / null clears it. → { student, access }
-      setSchool(code) {
-        return http('PUT', '/me/school', { school_code: code || null }).then(r => { shadow(r.student); return r; });
-      }
+      careerNews(career) { return http('GET', '/career-news' + query({ career: career })); }
     },
 
     // ══════════════════════════════════════════════════════════════
@@ -215,45 +220,49 @@
         restore(id) { return http('POST', '/admin/contests/' + id + '/restore'); }
       },
 
-      schools: {
-        // GET /admin/schools?deleted=&q=
-        list(opts) { return http('GET', '/admin/schools' + query({ deleted: opts && opts.deleted, q: opts && opts.q })); },
-        // GET /admin/schools/:id
-        get(id) { return http('GET', '/admin/schools/' + id); },
-        // POST /admin/schools
-        create(data) { return http('POST', '/admin/schools', data); },
-        // PUT /admin/schools/:id
-        update(id, data) { return http('PUT', '/admin/schools/' + id, data); },
-        // DELETE /admin/schools/:id?mode=soft|hard
-        remove(id, mode) { return http('DELETE', '/admin/schools/' + id + query({ mode: mode })); },
-        // POST /admin/schools/:id/restore
-        restore(id) { return http('POST', '/admin/schools/' + id + '/restore'); }
+      institutes: {
+        // GET /admin/institutes?deleted=&q=
+        list(opts) { return http('GET', '/admin/institutes' + query({ deleted: opts && opts.deleted, q: opts && opts.q })); },
+        // GET /admin/institutes/:id
+        get(id) { return http('GET', '/admin/institutes/' + id); },
+        // POST /admin/institutes
+        create(data) { return http('POST', '/admin/institutes', data); },
+        // PUT /admin/institutes/:id
+        update(id, data) { return http('PUT', '/admin/institutes/' + id, data); },
+        // DELETE /admin/institutes/:id?mode=soft|hard
+        remove(id, mode) { return http('DELETE', '/admin/institutes/' + id + query({ mode: mode })); },
+        // POST /admin/institutes/:id/restore
+        restore(id) { return http('POST', '/admin/institutes/' + id + '/restore'); }
       },
 
-      roster: {
-        // GET /admin/schools/:id/roster
-        list(schoolId) { return http('GET', '/admin/schools/' + schoolId + '/roster'); },
-        // POST /admin/schools/:id/roster — CSV text, one email per line
-        upload(schoolId, text) { return http('POST', '/admin/schools/' + schoolId + '/roster', String(text || ''), 'text/csv'); },
-        // DELETE /admin/schools/:id/roster/:email
-        remove(schoolId, email) {
-          return http('DELETE', '/admin/schools/' + schoolId + '/roster/' + encodeURIComponent(email));
+      studentList: {
+        // GET /admin/institutes/:id/students
+        list(instituteId) { return http('GET', '/admin/institutes/' + instituteId + '/students'); },
+        // POST /admin/institutes/:id/students?head_count=&starts_at=&ends_at= —
+        // the .xlsx / .csv File as the body. All or nothing: 422 invalid_rows
+        // (e.details.errors) or headcount_exceeded adds nobody.
+        upload(instituteId, file, opts) {
+          return http('POST', '/admin/institutes/' + instituteId + '/students' +
+            query({ head_count: opts.head_count, starts_at: opts.starts_at, ends_at: opts.ends_at }),
+            file, file.type || 'application/octet-stream');
+        },
+        // DELETE /admin/institutes/:id/students?full_name=&phone_no=
+        remove(instituteId, fullName, phoneNo) {
+          return http('DELETE', '/admin/institutes/' + instituteId + '/students' + query({ full_name: fullName, phone_no: phoneNo }));
         }
       },
 
       subscriptions: {
-        // GET /admin/schools/:id/subscriptions
-        list(schoolId) { return http('GET', '/admin/schools/' + schoolId + '/subscriptions'); },
-        // POST /admin/schools/:id/subscriptions — records a payment the school
-        // made. The form takes rupees; the API takes paise.
-        create(schoolId, body) {
-          const rupees = body.amount_rupees === '' || body.amount_rupees == null ? NaN : Number(body.amount_rupees);
-          return http('POST', '/admin/schools/' + schoolId + '/subscriptions', {
-            starts_at: body.starts_at, ends_at: body.ends_at,
-            amount_paise: Number.isFinite(rupees) ? Math.round(rupees * 100) : null,
-            payment_provider: body.payment_provider || 'invoice', payment_ref: body.payment_ref
-          }).catch(e => { if (e.field === 'amount_paise') e.field = 'amount_rupees'; throw e; });
-        }
+        // GET /admin/institutes/:id/subscriptions — newest first, each with its payment
+        list(instituteId) { return http('GET', '/admin/institutes/' + instituteId + '/subscriptions'); }
+      },
+
+      payments: {
+        // GET /admin/institutes/:id/payments
+        list(instituteId) { return http('GET', '/admin/institutes/' + instituteId + '/payments'); },
+        // POST /admin/institutes/:id/payments — { subscription_id, amount (rupees),
+        // mode_of_payment, transaction_id, date_of_payment }
+        create(instituteId, body) { return http('POST', '/admin/institutes/' + instituteId + '/payments', body); }
       },
 
       students: {
@@ -265,17 +274,9 @@
         remove(id, mode) { return http('DELETE', '/admin/students/' + encodeURIComponent(id) + query({ mode: mode })); },
         // POST /admin/students/:id/restore
         restore(id) { return http('POST', '/admin/students/' + encodeURIComponent(id) + '/restore'); },
-        // GET /admin/students/:id/subscriptions — their individual payments
-        payments(id) { return http('GET', '/admin/students/' + encodeURIComponent(id) + '/subscriptions'); },
-        // POST /admin/students/:id/subscriptions — records a payment the student
-        // made outside the website. The form takes rupees; the API takes paise.
-        recordPayment(id, body) {
-          const rupees = body.amount_rupees === '' || body.amount_rupees == null ? NaN : Number(body.amount_rupees);
-          return http('POST', '/admin/students/' + encodeURIComponent(id) + '/subscriptions', {
-            plan: body.plan, starts_at: body.starts_at, ends_at: body.ends_at,
-            amount_paise: Number.isFinite(rupees) ? Math.round(rupees * 100) : null,
-            payment_provider: body.payment_provider, payment_ref: body.payment_ref
-          }).catch(e => { if (e.field === 'amount_paise') e.field = 'amount_rupees'; throw e; });
+        // POST /admin/students/:id/password — signs them out everywhere
+        setPassword(id, password) {
+          return http('POST', '/admin/students/' + encodeURIComponent(id) + '/password', { password: password });
         }
       },
 

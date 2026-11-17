@@ -462,7 +462,6 @@
       return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     }
-    function rupees(paise) { return '₹' + (paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }); }
     function longDate(iso) {
       return new Date(iso).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric' });
     }
@@ -473,22 +472,40 @@
     function val(id) { return document.getElementById(id).value; }
 
     // ── Auth: login / register (pages/auth.html) ──
+    // Only students on an institute's list can register. Step 1 (register)
+    // checks name + phone + institute ID. A new student then sets up their
+    // account (details). A student who already has one, from another
+    // institute, enters its password (link) and then sees their saved details,
+    // already filled in (details, prefilled). After that, they log in with the
+    // username.
+    let authEntry = null;        // { full_name, phone_no, institute_code } once step 1 found them
+    let authLinked = null;       // after link: { student, access }
+    let authResetToken = '';     // from #reset=<token> in the emailed link
+
     function authInit() {
+      const m = /^#reset=([A-Za-z0-9_-]+)$/.exec(location.hash || '');
+      if (m) {
+        // Keep the token out of the address bar (and history) once read.
+        authResetToken = m[1];
+        try { history.replaceState(null, '', location.pathname + location.search + '#reset'); } catch (e) { }
+      }
       // Already logged in: the gate on the next page decides dashboard vs paywall.
-      if (isLoggedIn()) { redirect('dashboard'); return; }
-      // The form on show is in the hash (#register, #forgot, #reset), so
-      // Back steps from the reset form to forgot to login.
+      if (isLoggedIn() && !authResetToken) { redirect('dashboard'); return; }
+      // The form on show is in the hash (#register, #forgot, #reset…), so
+      // Back steps through the forms.
       window.addEventListener('popstate', () => authShow(authFromHash(), 'none'));
-      ['reg-password', 'reg-confirm'].forEach(id =>
-        document.getElementById(id).addEventListener('input', authCheckConfirm));
+      ['det-password', 'det-confirm'].forEach(id =>
+        document.getElementById(id).addEventListener('input', () => authCheckConfirm('det')));
+      ['reset-new_password', 'reset-confirm'].forEach(id =>
+        document.getElementById(id).addEventListener('input', () => authCheckConfirm('reset', 'reset-new_password')));
       authShow(authFromHash(), 'none');
     }
 
-    // Live check under Re-enter password. Quiet while what's typed is still the
+    // Live check under Confirm password. Quiet while what's typed is still the
     // start of the password; flags the first wrong character, confirms a match.
-    function authCheckConfirm() {
-      const pw = val('reg-password'), confirm = val('reg-confirm');
-      const input = document.getElementById('reg-confirm'), box = document.getElementById('reg-confirm-error');
+    function authCheckConfirm(prefix, pwId) {
+      const pw = val(pwId || prefix + '-password'), confirm = val(prefix + '-confirm');
+      const input = document.getElementById(prefix + '-confirm'), box = document.getElementById(prefix + '-confirm-error');
       const wrong = confirm !== '' && !pw.startsWith(confirm);
       const match = confirm !== '' && confirm === pw;
       input.classList.toggle('is-invalid', wrong);
@@ -496,9 +513,10 @@
       box.textContent = wrong ? "The passwords don't match." : match ? 'Passwords match.' : '';
     }
 
+    const AUTH_FORMS = ['login', 'register', 'link', 'details', 'forgot', 'sent', 'reset'];
     function authFromHash() {
       const h = (location.hash || '').replace(/^#\/?/, '');
-      return ['register', 'forgot', 'reset'].includes(h) ? h : 'login';
+      return AUTH_FORMS.includes(h) ? h : 'login';
     }
 
     // Clears the alert box and every per-field error inside one form.
@@ -508,63 +526,15 @@
       form.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
     }
 
-    function authSubmitLogin(e) {
-      e.preventDefault();
-      const form = e.target, btn = document.getElementById('login-btn');
-      authReset(form, 'login-alert');
-      setBusy(btn, true);
-      CareerAPI.auth.login({ email: val('login-email'), password: val('login-password') }).then(r => {
-        claimState(r.student.id);
-        redirect(r.access.has_access ? 'dashboard' : 'paywall');
-      }, err => {
-        setBusy(btn, false);
-        document.getElementById('login-alert').textContent = err.message;
-      });
-    }
-
-    function authSubmitRegister(e) {
-      e.preventDefault();
-      const form = e.target, btn = document.getElementById('reg-btn');
-      authReset(form, 'reg-alert');
-      // Caught here only: the API takes a single password and never sees this.
-      if (val('reg-password') !== val('reg-confirm')) {
-        return authFieldError('reg', 'reg-alert', { field: 'confirm', message: "The passwords don't match." });
-      }
-      setBusy(btn, true);
-      CareerAPI.auth.register({
-        full_name: val('reg-full_name'), email: val('reg-email'),
-        password: val('reg-password'), school_code: val('reg-school_code')
-      }).then(r => {
-        claimState(r.student.id);
-        // New students fill in onboarding next, after paying if they must.
-        if (r.access.has_access) redirect('onboarding');
-        else location.replace(routeTo('paywall') + '?next=onboarding');
-      }, err => {
-        setBusy(btn, false);
-        const box = err.field && document.getElementById('reg-' + err.field + '-error');
-        if (box) {
-          box.textContent = err.message;
-          document.getElementById('reg-' + err.field).classList.add('is-invalid');
-          document.getElementById('reg-' + err.field).focus();
-        } else document.getElementById('reg-alert').textContent = err.message;
-      });
-    }
-
-    // ── Auth: forgot password (pages/auth.html) ──
-    // login → forgot (email) → reset (code + new password) → back to login.
-    // The API answers forgot-password the same way for any email, so the page
-    // never says whether an account exists.
-    const AUTH_RESEND_SECONDS = 60;      // the API issues at most one code a minute
-    let authResetEmail = '';
-    let authResendTimer = null;
-
-    // Shows one of the four forms; the Login/Register tabs only show with theirs.
+    // Shows one form; the Log in / Register tabs only show with theirs.
     // mode: 'push' (default) adds a history entry for it, 'replace' rewrites
     // the current one, 'none' leaves history alone (drawing what it says).
     function authShow(which, mode) {
-      // The reset form needs the email a code was sent to, which a reload or
-      // a Back/Forward onto it no longer has.
-      if (which === 'reset' && !authResetEmail) { which = 'forgot'; mode = 'replace'; }
+      // Forms that need what an earlier step found fall back to that step
+      // after a reload or a Back/Forward onto them.
+      if ((which === 'link' || which === 'details') && !authEntry && !authLinked) { which = 'register'; mode = 'replace'; }
+      if (which === 'reset' && !authResetToken) { which = 'forgot'; mode = 'replace'; }
+      if (which === 'sent' && !document.getElementById('sent-text').textContent) { which = 'forgot'; mode = 'replace'; }
       if (mode !== 'none' && authFromHash() !== which) {
         try {
           history[mode === 'replace' ? 'replaceState' : 'pushState'](null, '',
@@ -572,20 +542,26 @@
         } catch (e) { }
       }
       document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (i === 1) === (which === 'register')));
-      ['login', 'register', 'forgot', 'reset'].forEach(k => { document.getElementById('auth-' + k).hidden = k !== which; });
-      document.getElementById('auth-tabs').hidden = which === 'forgot' || which === 'reset';
+      AUTH_FORMS.forEach(k => { document.getElementById('auth-' + k).hidden = k !== which; });
+      document.getElementById('auth-tabs').hidden = !(which === 'login' || which === 'register');
       document.getElementById('login-ok').textContent = '';
       // A password left showing shouldn't still be showing when its form returns.
       document.querySelectorAll('.password-toggle').forEach(b => togglePassword(b, true));
-      if (which === 'forgot') {
+      const focus = id => { const el = document.getElementById(id); if (el) el.focus(); };
+      if (which === 'login') focus('login-username');
+      else if (which === 'register') focus('reg-full_name');
+      else if (which === 'link') {
+        authReset(document.getElementById('auth-link'), 'link-alert');
+        focus('link-password');
+      } else if (which === 'details') authFillDetails();
+      else if (which === 'forgot') {
         authReset(document.getElementById('auth-forgot'), 'forgot-alert');
-        const input = document.getElementById('forgot-email');
-        if (!input.value) input.value = authResetEmail || val('login-email').trim();
+        const input = document.getElementById('forgot-username');
+        if (!input.value) input.value = val('login-username').trim();
         input.focus();
       } else if (which === 'reset') {
         authReset(document.getElementById('auth-reset'), 'reset-alert');
-        document.getElementById('reset-to').textContent = authResetEmail;
-        document.getElementById('reset-code').focus();
+        focus('reset-new_password');
       }
     }
 
@@ -608,93 +584,210 @@
       } else document.getElementById(alertId).textContent = err.message;
     }
 
-    // Counts down on the Resend link so a click inside the API's cooldown
-    // doesn't look like it sent a code when it silently didn't.
-    function authStartResendTimer() {
-      const btn = document.getElementById('reset-resend-btn');
-      let left = AUTH_RESEND_SECONDS;
-      clearInterval(authResendTimer);
-      const tick = () => {
-        btn.disabled = left > 0;
-        btn.textContent = left > 0 ? 'Resend code in ' + left + 's' : 'Resend code';
-        if (left-- <= 0) clearInterval(authResendTimer);
-      };
-      tick();
-      authResendTimer = setInterval(tick, 1000);
+    // After logging in (or registering): dashboard, or the paywall when the
+    // account is inactive. `next` is where a new student goes once in.
+    function authGo(r, next) {
+      claimState(r.student.id);
+      if (r.access.has_access) redirect(next || 'dashboard');
+      else location.replace(routeTo('paywall') + (next ? '?next=' + next : ''));
     }
 
+    function authSubmitLogin(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('login-btn');
+      authReset(form, 'login-alert');
+      setBusy(btn, true);
+      CareerAPI.auth.login({ username: val('login-username'), password: val('login-password') }).then(r => {
+        authGo(r);
+      }, err => {
+        setBusy(btn, false);
+        document.getElementById('login-alert').textContent = err.message;
+      });
+    }
+
+    // Step 1: on the list? New → details. Already has an account → link.
+    function authSubmitCheck(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('reg-btn');
+      authReset(form, 'reg-alert');
+      const entry = {
+        full_name: val('reg-full_name').trim(), phone_no: val('reg-phone_no').trim(),
+        institute_code: val('reg-institute_code').trim().toUpperCase()
+      };
+      setBusy(btn, true);
+      CareerAPI.auth.checkRegistration(entry).then(r => {
+        setBusy(btn, false);
+        authEntry = entry;
+        authLinked = null;
+        if (r.status === 'existing_account') {
+          document.getElementById('link-username').textContent = r.username;
+          document.getElementById('link-institute').textContent = entry.institute_code;
+          document.getElementById('auth-link').reset();
+          authShow('link');
+        } else {
+          document.getElementById('auth-details').reset();
+          authShow('details');
+        }
+      }, err => {
+        setBusy(btn, false);
+        authFieldError('reg', 'reg-alert', err);
+      });
+    }
+
+    // Step 2 for a student who already has an account: its password links
+    // this institute to it and logs them in. Their saved details come next.
+    function authSubmitLink(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('link-btn');
+      authReset(form, 'link-alert');
+      setBusy(btn, true);
+      CareerAPI.auth.linkInstitute(Object.assign({}, authEntry, { password: val('link-password') })).then(r => {
+        setBusy(btn, false);
+        authLinked = r;
+        authShow('details', 'replace');
+      }, err => {
+        setBusy(btn, false);
+        authFieldError('link', 'link-alert', err);
+      });
+    }
+
+    // The details form: empty for a new account; after linking, filled from
+    // the account with the username fixed and no password fields.
+    function authFillDetails() {
+      const form = document.getElementById('auth-details');
+      authReset(form, 'det-alert');
+      const s = authLinked && authLinked.student;
+      const user = document.getElementById('det-username');
+      user.readOnly = !!s;
+      document.getElementById('det-passwords').hidden = !!s;
+      document.getElementById('det-username-hint').hidden = !!s;
+      document.getElementById('det-title').textContent = s ? 'Check your details' : 'Set up your account';
+      document.getElementById('det-sub').textContent = s
+        ? (authEntry ? authEntry.institute_code : 'This institute') + ' is now added to your account. Change anything that\'s out of date.'
+        : 'Registering ' + (authEntry ? authEntry.full_name + ' with ' + authEntry.institute_code : '') + '. You\'ll log in with this username and password.';
+      document.getElementById('det-ok').textContent = s ? 'All the fields were automatically filled' : '';
+      document.getElementById('det-btn').textContent = s ? 'Continue' : 'Create account';
+      if (s) {
+        user.value = s.username;
+        document.getElementById('det-class').value = String(s.class || '');
+        document.getElementById('det-board').value = s.board || '';
+        document.getElementById('det-city').value = s.city || '';
+        document.getElementById('det-email').value = s.email || '';
+        document.getElementById('det-class').focus();
+      } else user.focus();
+    }
+
+    function authSubmitDetails(e) {
+      e.preventDefault();
+      const form = e.target, btn = document.getElementById('det-btn');
+      authReset(form, 'det-alert');
+      const bad = (field, message) => authFieldError('det', 'det-alert', { field: field, message: message });
+      const details = {
+        class: Number(val('det-class')) || null, board: val('det-board') || null,
+        city: val('det-city').trim(), email: val('det-email').trim() || null
+      };
+      if (!details.class) return bad('class', 'Pick your class.');
+      if (!details.board) return bad('board', 'Pick your board.');
+      if (!details.city) return bad('city', 'Please enter your city.');
+      setBusy(btn, true);
+      if (authLinked) {
+        // Already logged in by the link step: save any changes, then go in.
+        CareerAPI.me.update(details).then(r => {
+          authGo({ student: r.student, access: authLinked.access });
+        }, err => { setBusy(btn, false); authFieldError('det', 'det-alert', err); });
+        return;
+      }
+      // Caught here only: the API takes a single password and never sees this.
+      if (val('det-password') !== val('det-confirm')) {
+        setBusy(btn, false);
+        return bad('confirm', "The passwords don't match.");
+      }
+      CareerAPI.auth.register(Object.assign({}, authEntry, details,
+        { username: val('det-username').trim(), password: val('det-password') })).then(r => {
+        // New students fill in onboarding next, after the paywall if inactive.
+        authGo(r, 'onboarding');
+      }, err => {
+        setBusy(btn, false);
+        // Their list row changed under them (registered elsewhere, removed): start over.
+        if (err.code === 'not_on_list' || err.code === 'already_registered' || err.code === 'account_exists') {
+          authEntry = null;
+          authShow('register', 'replace');
+          document.getElementById('reg-alert').textContent = err.message;
+          return;
+        }
+        authFieldError('det', 'det-alert', err);
+      });
+    }
+
+    // ── Auth: forgot password (pages/auth.html) ──
+    // forgot (username) → link emailed to the account's address → reset
+    // (#reset=<token>, new password) → log in. An account with no email gets
+    // asked for one, with name, phone and institute ID as proof.
     function authSubmitForgot(e) {
       e.preventDefault();
       const form = e.target, btn = document.getElementById('forgot-btn');
-      const email = val('forgot-email').trim();
       authReset(form, 'forgot-alert');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return authFieldError('forgot', 'forgot-alert', { field: 'email', message: 'Please enter a valid email.' });
+      const username = val('forgot-username').trim();
+      if (!username) return authFieldError('forgot', 'forgot-alert', { field: 'username', message: 'Please enter your username.' });
+      const proof = !document.getElementById('forgot-proof').hidden;
+      const body = { username: username };
+      if (proof) {
+        body.email = val('forgot-email').trim();
+        body.full_name = val('forgot-full_name').trim();
+        body.phone_no = val('forgot-phone_no').trim();
+        body.institute_code = val('forgot-institute_code').trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+          return authFieldError('forgot', 'forgot-alert', { field: 'email', message: 'Please enter a valid email.' });
+        }
       }
-      authResetEmail = email;
       setBusy(btn, true);
-      CareerAPI.auth.forgotPassword({ email: email }).then(() => {
+      CareerAPI.auth.forgotPassword(body).then(r => {
         setBusy(btn, false);
-        document.getElementById('auth-reset').reset();
-        authShow('reset');
-        authStartResendTimer();
+        if (r.needs_email && !proof) {
+          document.getElementById('forgot-proof').hidden = false;
+          document.getElementById('forgot-sub').textContent =
+            'Your account has no email yet. Add one, and confirm it\'s you with the details you registered with.';
+          document.getElementById('forgot-email').focus();
+          return;
+        }
+        document.getElementById('sent-text').textContent = proof
+          ? 'If those details match your account, we\'ve sent a reset link to ' + body.email + '. It works for 30 minutes, so check your spam folder if you can\'t find it.'
+          : 'We\'ve sent a reset link to the email on your account. It works for 30 minutes, so check your spam folder if you can\'t find it.';
+        authShow('sent');
       }, err => {
         setBusy(btn, false);
         authFieldError('forgot', 'forgot-alert', err);
       });
     }
 
-    function authResendCode() {
-      const btn = document.getElementById('reset-resend-btn');
-      authReset(document.getElementById('auth-reset'), 'reset-alert');
-      btn.disabled = true;
-      btn.textContent = 'Sending…';
-      CareerAPI.auth.forgotPassword({ email: authResetEmail }).then(() => {
-        authStartResendTimer();
-        document.getElementById('reset-code').focus();
-      }, err => {
-        btn.disabled = false;
-        btn.textContent = 'Resend code';
-        document.getElementById('reset-alert').textContent = err.message;
-      });
-    }
-
     function authSubmitReset(e) {
       e.preventDefault();
       const form = e.target, btn = document.getElementById('reset-btn');
-      const code = val('reset-code').replace(/\s+/g, '');
       const password = val('reset-new_password');
       authReset(form, 'reset-alert');
       const bad = (field, message) => authFieldError('reset', 'reset-alert', { field: field, message: message });
-      if (!/^\d{6}$/.test(code)) return bad('code', 'Enter the 6-digit code from the email.');
       if (password.length < 8) return bad('new_password', 'Password must be at least 8 characters.');
       if (password.length > 200) return bad('new_password', 'Password must be at most 200 characters.');
       if (password !== val('reset-confirm')) return bad('confirm', "The passwords don't match.");
       setBusy(btn, true);
-      CareerAPI.auth.resetPassword({ email: authResetEmail, code: code, new_password: password }).then(() => {
+      CareerAPI.auth.resetPassword({ token: authResetToken, new_password: password }).then(() => {
         setBusy(btn, false);
-        clearInterval(authResendTimer);
+        authResetToken = '';
         form.reset();
         authShow('login', 'replace');
-        document.getElementById('login-email').value = authResetEmail;
         document.getElementById('login-password').value = '';
-        document.getElementById('login-password').focus();
+        document.getElementById('login-username').focus();
         document.getElementById('login-ok').textContent = 'Password changed. Log in with your new password.';
       }, err => {
         setBusy(btn, false);
         authFieldError('reset', 'reset-alert', err);
-        if (err.code === 'invalid_code') document.getElementById('reset-code').select();
       });
     }
 
     // ── Paywall (pages/paywall.html) ──
-    // Shown whenever the access check fails. Explains why (no School ID,
-    // email not on the school's list, school not paying) and how to get an
-    // individual plan. There is no checkout: students pay outside the
-    // website, send us the payment ID, and an admin records it, which is
-    // what grants access. Payments are non-refundable.
-    // Where students send their payment ID. Blank → "the Crackeer team".
-    const PW_PAYMENT_CONTACT = '';
+    // Shown whenever the access check fails: no institute list the student is
+    // on has a subscription covering today. Students don't pay here; their
+    // school or institute subscribes, and the admin uploads its list.
     let pwNext = 'dashboard';
 
     function pwInit() {
@@ -706,7 +799,7 @@
       const root = document.getElementById('pw-root');
       root.innerHTML = '<div class="card-flat pw-center" role="status"><div class="spinner"></div><p>Checking your access…</p></div>';
       Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
-        root.innerHTML = a.has_access ? pwAllSet(a) : pwReason(m.student, a) + pwPlans(m.student);
+        root.innerHTML = a.has_access ? pwAllSet(a) : pwReason(m.student, a);
       }, err => {
         if (err.status === 401) { redirect('auth'); return; }
         root.innerHTML = '<section class="card-flat pw-center stack" role="alert"><h1 class="auth-title">We couldn\'t check your access</h1>' +
@@ -715,80 +808,13 @@
       });
     }
 
-    function pwSchoolForm(label) {
-      return '<section class="card stack" aria-labelledby="pw-school-title">' +
-        '<div class="stack-xs stack"><h2 class="card-title" id="pw-school-title">Is your school on Crackeer?</h2>' +
-        '<p class="card-sub">If your school has a Crackeer plan, enter the School ID they gave you and you\'re in for free.</p></div>' +
-        '<form class="pw-school-form" novalidate onsubmit="pwSetSchool(event)">' +
-        '<label class="visually-hidden" for="pw-code">School ID</label>' +
-        '<input class="input" id="pw-code" maxlength="20" placeholder="School ID, e.g. DPS-RKP" autocapitalize="characters" aria-describedby="pw-code-error" />' +
-        '<button class="btn btn-secondary" id="pw-code-btn" type="submit">' + label + '</button></form>' +
-        '<div class="form-error" id="pw-code-error" aria-live="polite"></div></section>';
-    }
-
     function pwReason(st, a) {
-      const school = a.school ? esc(a.school.name) : '';
-      const actions = '<div class="cluster"><button class="btn btn-secondary btn-sm" onclick="pwRender()">Check again</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="pwShowSchoolForm()">Wrong school?</button></div>';
-      const reason = (art, title, body, extra) =>
-        '<section class="pw-reason" aria-labelledby="pw-title">' + illo(art) +
-        '<div class="stack-sm stack"><h1 class="auth-title" id="pw-title">' + title + '</h1><p class="muted">' + body + '</p>' + (extra || '') + '</div></section>';
-      if (a.reason === 'not_on_roster') {
-        return reason('lock', 'You\'re not on your school\'s list yet',
-          school + ' pays for its students, but <b>' + esc(st.email) + '</b> isn\'t on the list they sent us. Ask your school coordinator to add it, or get your own plan below.', actions) +
-          '<div id="pw-school-slot"></div>';
-      }
-      if (a.reason === 'school_not_subscribed') {
-        return reason('calendar', 'Your school\'s plan isn\'t active',
-          school + ' hasn\'t paid for this year yet, or its plan has run out. Ask your school about it, or get your own plan below.', actions) +
-          '<div id="pw-school-slot"></div>';
-      }
-      return reason('lock', 'Unlock Crackeer, ' + esc(st.full_name.split(' ')[0]), 'Get in free through your school, or get your own plan.') + pwSchoolForm('Check');
-    }
-
-    function pwShowSchoolForm() {
-      document.getElementById('pw-school-slot').innerHTML = pwSchoolForm('Update');
-      document.getElementById('pw-code').focus();
-    }
-
-    function pwSetSchool(e) {
-      e.preventDefault();
-      const btn = document.getElementById('pw-code-btn');
-      const out = document.getElementById('pw-code-error');
-      out.textContent = '';
-      document.getElementById('pw-code').classList.remove('is-invalid');
-      setBusy(btn, true);
-      CareerAPI.me.setSchool(val('pw-code')).then(r => {
-        if (r.access.has_access) { document.getElementById('pw-root').innerHTML = pwAllSet(r.access); return; }
-        pwRender();
-      }, err => {
-        setBusy(btn, false);
-        out.textContent = err.message;
-        document.getElementById('pw-code').classList.add('is-invalid');
-      });
-    }
-
-    function pwPlans(st) {
-      const P = CareerAPI.plans, a = P.student_annual, m = P.student_monthly;
-      const saving = Math.round((1 - a.amount_paise / (m.amount_paise * 12)) * 100);
-      const contact = PW_PAYMENT_CONTACT ? '<b>' + esc(PW_PAYMENT_CONTACT) + '</b>' : 'the Crackeer team';
-      const step = (n, title, meta) => '<li class="tl-item"><span class="tl-dot">' + n + '</span><p class="tl-title">' + title + '</p><p class="tl-meta">' + meta + '</p></li>';
-      return '<div class="pw-or"><span>or get your own plan</span></div>' +
-        '<div class="grid-2">' +
-        '<div class="card-flat pw-plan stack-sm stack"><p class="card-title">' + esc(m.label) + '</p>' +
-        '<p><span class="pw-price num">' + rupees(m.amount_paise) + '</span> <span class="muted">a month</span></p><p class="card-sub">Pay month by month. Stop any time.</p></div>' +
-        '<div class="card pw-plan stack-sm stack"><div class="cluster cluster-between"><p class="card-title">' + esc(a.label) + '</p><span class="badge fit-strong">Save ' + saving + '%</span></div>' +
-        '<p><span class="pw-price num">' + rupees(a.amount_paise) + '</span> <span class="muted">a year</span></p><p class="card-sub">Works out to ' + rupees(a.amount_paise / 12) + ' a month.</p></div>' +
-        '</div>' +
-        '<div class="card-sunk stack-sm stack"><p class="list-title">Every plan includes</p><ul class="pw-includes">' +
-        ['Career quiz and your full report', 'A roadmap for every career', 'AI Chat that knows your results', 'Weekly contests and leaderboards', 'Career Space news, internships and jobs']
-          .map(t => '<li>' + icon('check') + t + '</li>').join('') + '</ul></div>' +
-        '<section class="stack-sm stack" aria-labelledby="pw-pay-title"><h2 class="card-title" id="pw-pay-title">How to pay</h2><ol class="timeline">' +
-        step(1, 'Pay for the plan you want', 'Contact ' + contact + ' for payment details. UPI and bank transfer both work.') +
-        step(2, 'Send us your payment ID', 'The UPI reference or UTR, plus the email you registered with: <b>' + esc(st.email) + '</b>.') +
-        step(3, 'We switch your plan on', 'Once the payment is confirmed, press Check again.') +
-        '</ol><div><button class="btn btn-primary" onclick="pwRender()">Check again</button></div>' +
-        '<p class="small muted">Your plan runs from the day it\'s switched on. Payments are non-refundable.</p></section>';
+      const inst = a.institute ? esc(a.institute.name) : 'your school';
+      return '<section class="pw-reason" aria-labelledby="pw-title">' + illo('lock') +
+        '<div class="stack-sm stack"><h1 class="auth-title" id="pw-title">' + esc(a.message) + '</h1>' +
+        '<p class="muted">Hi ' + esc(st.full_name.split(' ')[0]) + '. Crackeer is free for you once ' + inst +
+        ' subscribes. Ask them about it; as soon as they do, press Check again.</p>' +
+        '<div class="cluster"><button class="btn btn-primary btn-sm" onclick="pwRender()">Check again</button></div></div></section>';
     }
 
     function pwContinue() {
@@ -797,123 +823,83 @@
     }
 
     function pwAllSet(a) {
-      const how = a.source === 'school'
-        ? esc(a.school.name) + ' covers your plan until <b>' + longDate(a.ends_at) + '</b>.'
-        : 'Your plan is active until <b>' + longDate(a.ends_at) + '</b>.';
+      const how = (a.institute ? esc(a.institute.name) : 'Your institute') + ' covers you until <b>' + longDate(a.ends_at) + '</b>.';
       return '<section class="card pw-center stack" aria-labelledby="pw-ok-title">' + illo('thumb-up', 'lg') +
         '<h1 class="auth-title" id="pw-ok-title">You\'re all set</h1><p class="muted">' + how + '</p>' + pwContinue() + '</section>';
     }
 
-    // ── Settings: account, School ID and membership (app.html#/settings) ──
+    // ── Settings: account and plan (app.html#/settings) ──
+    // Name and phone come from the institute's list and can't change here;
+    // email, class, board and city can.
     function syncSettings() {
       if (!window.CareerAPI) return;
-      stSyncProfile();
       Promise.all([CareerAPI.me.get(), CareerAPI.me.access()]).then(([m, a]) => {
         const st = m.student;
         stStudent = st;
         document.getElementById('st-name').textContent = st.full_name + ' (shown on leaderboards as ' + st.leaderboard_name + ')';
-        document.getElementById('st-name-edit').innerHTML = '';
-        document.getElementById('st-email').textContent = st.email;
-        document.getElementById('st-school').textContent = st.school
-          ? st.school.name + ', ' + st.school.school_code
-          : 'Not added. Your school gives you this.';
-        document.getElementById('st-school-edit').innerHTML = '';
-        document.getElementById('st-plan').innerHTML = a.source === 'school'
-          ? 'Covered by ' + esc(a.school.name) + ' until ' + longDate(a.ends_at)
-          : esc((CareerAPI.plans[a.plan] || { label: '' }).label) + ' plan, active until ' + longDate(a.ends_at) + '. Non-refundable.';
-        document.getElementById('st-plan-badge').textContent = a.source === 'school' ? 'School plan' : 'Individual';
+        document.getElementById('st-username').textContent = st.username;
+        document.getElementById('st-phone').textContent = st.phone_no;
+        document.getElementById('st-email').textContent = st.email
+          ? st.email + (st.email_verified ? '' : ' (not confirmed yet)')
+          : 'Not added. Add one so you can reset your password.';
+        document.getElementById('st-email-edit').innerHTML = '';
+        document.getElementById('st-institute').textContent = st.institute
+          ? st.institute.name + ', ' + st.institute.institute_code
+          : 'None';
+        document.getElementById('st-class').textContent = profileSummary(st);
+        document.getElementById('st-class-edit').innerHTML = '';
+        document.getElementById('st-plan').innerHTML = a.has_access
+          ? 'Covered by ' + esc(a.institute ? a.institute.name : 'your institute') + ' until ' + longDate(a.ends_at)
+          : esc(a.message);
+        document.getElementById('st-plan-badge').textContent = a.has_access ? 'Active' : 'Inactive';
       }, err => { if (err.status === 401) redirect('auth'); });
     }
 
-    function stEditSchool() {
-      const box = document.getElementById('st-school-edit');
-      if (box.innerHTML) { box.innerHTML = ''; return; }
-      box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveSchool(event)">' +
-        '<div class="field"><label class="field-label" for="st-code">School ID</label>' +
-        '<input class="input" id="st-code" maxlength="20" placeholder="e.g. DPS-RKP" autocapitalize="characters" aria-describedby="st-code-error" />' +
-        '<p class="field-hint">Changing your school can change whether you\'re covered.</p><div class="form-error" id="st-code-error"></div></div>' +
-        '<div id="st-school-warn"></div>' +
-        '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-code-btn" type="submit">Save School ID</button>' +
-        (stStudent && stStudent.school ? '<button class="btn btn-danger btn-sm" type="button" onclick="stConfirmRemoveSchool()">Remove</button>' : '') +
-        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditSchool()">Cancel</button></div></form>';
-      document.getElementById('st-code').focus();
-    }
-
-    // Removing the School ID can lock the app, so it asks first.
-    function stConfirmRemoveSchool() {
-      document.getElementById('st-school-warn').innerHTML =
-        '<div class="alert alert-warn" role="alert">' + icon('info') + '<div class="stack-sm stack"><span><span class="alert-title">Remove your School ID?</span> ' +
-        'The app locks until you add one again or get your own plan.</span><div class="cluster">' +
-        '<button class="btn btn-danger btn-sm" type="button" onclick="stSaveSchool(null)">' + icon('trash-2') + 'Remove School ID</button>' +
-        '<button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById(\'st-school-warn\').innerHTML = \'\'">Keep it</button></div></div></div>';
-    }
-
-    function stSaveSchool(e) {
-      if (e) e.preventDefault();
-      const code = e ? val('st-code') : '';
-      CareerAPI.me.setSchool(code).then(r => {
-        // Losing school cover means losing access: straight to the paywall.
-        if (!r.access.has_access) { show('paywall'); return; }
-        syncSettings();
-        syncUser();
-      }, err => { document.getElementById('st-code-error').textContent = err.message; });
-    }
-
-    // ── Settings: name, and class / board / city (the onboarding profile) ──
-    let stStudent = null, stProfile = null;
+    let stStudent = null;
     const ST_BOARDS = ['CBSE', 'ICSE', 'State Board'];
 
-    function stEditName() {
-      const box = document.getElementById('st-name-edit');
+    function stEditEmail() {
+      const box = document.getElementById('st-email-edit');
       if (box.innerHTML) { box.innerHTML = ''; return; }
-      box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveName(event)">' +
-        '<div class="field"><label class="field-label" for="st-name-input">Full name</label>' +
-        '<input class="input" id="st-name-input" maxlength="80" autocomplete="name" aria-describedby="st-name-error" />' +
-        '<p class="field-hint">Other students see your first name and last initial.</p><div class="form-error" id="st-name-error"></div></div>' +
-        '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-name-btn" type="submit">Save name</button>' +
-        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditName()">Cancel</button></div></form>';
-      const inp = document.getElementById('st-name-input');
-      inp.value = stStudent ? stStudent.full_name : '';
+      box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveEmail(event)">' +
+        '<div class="field"><label class="field-label" for="st-email-input">Email</label>' +
+        '<input class="input" id="st-email-input" type="email" maxlength="254" autocomplete="email" aria-describedby="st-email-error" />' +
+        '<p class="field-hint">Only used to send you a link if you forget your password. Leave it blank to remove it.</p><div class="form-error" id="st-email-error"></div></div>' +
+        '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-email-btn" type="submit">Save email</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditEmail()">Cancel</button></div></form>';
+      const inp = document.getElementById('st-email-input');
+      inp.value = stStudent && stStudent.email ? stStudent.email : '';
       inp.focus();
     }
 
-    function stSaveName(e) {
+    function stSaveEmail(e) {
       e.preventDefault();
-      const btn = document.getElementById('st-name-btn');
+      const btn = document.getElementById('st-email-btn');
       setBusy(btn, true);
-      CareerAPI.me.setName(val('st-name-input')).then(() => {
+      CareerAPI.me.update({ email: val('st-email-input').trim() || null }).then(() => {
         syncSettings();
-        syncUser();
       }, err => {
         setBusy(btn, false);
-        document.getElementById('st-name-error').textContent = err.message;
+        document.getElementById('st-email-error').textContent = err.message;
       });
     }
 
-    // "Class 10 · CBSE · Mumbai", or '' before onboarding.
+    // "Class 10, CBSE, Mumbai" from a student (or profile), '' when missing.
     function profileSummary(p) {
-      return p ? ['Class ' + p.class, p.board, p.city].filter(Boolean).join(', ') : '';
-    }
-
-    function stSyncProfile() {
-      CareerAPI.me.profile().then(r => {
-        stProfile = r.profile;
-        document.getElementById('st-class').textContent = profileSummary(stProfile) || 'Not added yet';
-        document.getElementById('st-class-edit').innerHTML = '';
-      }, err => { document.getElementById('st-class').textContent = err.message; });
+      return p && p.class ? ['Class ' + p.class, p.board, p.city].filter(Boolean).join(', ') : '';
     }
 
     function stEditClass() {
       const box = document.getElementById('st-class-edit');
       if (box.innerHTML) { box.innerHTML = ''; return; }
-      const p = stProfile || {};
+      const p = stStudent || {};
       const opt = (v, label, cur) => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>';
       const chev = icon('chevron-down');
       box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveClass(event)"><div class="grid-3">' +
         '<div class="field"><label class="field-label" for="st-class-input">Class</label><div class="select-wrap"><select class="select" id="st-class-input">' +
         opt('10', 'Class 10', String(p.class || 10)) + opt('9', 'Class 9', String(p.class || 10)) + '</select>' + chev + '</div></div>' +
         '<div class="field"><label class="field-label" for="st-board-input">Board</label><div class="select-wrap"><select class="select" id="st-board-input">' +
-        opt('', 'Choose a board', p.board || '') + ST_BOARDS.map(b => opt(b, b, p.board || '')).join('') + '</select>' + chev + '</div></div>' +
+        ST_BOARDS.map(b => opt(b, b, p.board || 'CBSE')).join('') + '</select>' + chev + '</div></div>' +
         '<div class="field"><label class="field-label" for="st-city-input">City</label><input class="input" id="st-city-input" maxlength="80" autocomplete="address-level2" /></div></div>' +
         '<div class="form-error" id="st-class-error"></div>' +
         '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-class-btn" type="submit">Save</button>' +
@@ -926,12 +912,12 @@
       e.preventDefault();
       const btn = document.getElementById('st-class-btn');
       setBusy(btn, true);
-      CareerAPI.me.saveProfile({
+      CareerAPI.me.update({
         class: Number(val('st-class-input')),
-        board: val('st-board-input') || null,
-        city: val('st-city-input').trim() || null
+        board: val('st-board-input'),
+        city: val('st-city-input').trim()
       }).then(() => {
-        stSyncProfile();
+        syncSettings();
         syncUser();
       }, err => {
         setBusy(btn, false);
@@ -948,10 +934,8 @@
         if (av) av.textContent = m.student.full_name.charAt(0).toUpperCase();
         const hi = document.getElementById('chat-hello-name');
         if (hi) hi.textContent = ' ' + m.student.full_name.split(' ')[0];
-      }, () => { });
-      CareerAPI.me.profile().then(r => {
         const cls = document.getElementById('user-class');
-        if (cls) { cls.textContent = profileSummary(r.profile); cls.title = cls.textContent; }
+        if (cls) { cls.textContent = profileSummary(m.student); cls.title = cls.textContent; }
       }, () => { });
     }
 
@@ -987,11 +971,13 @@
       document.querySelectorAll('#' + id + ' .chip').forEach(c =>
         c.classList.toggle('selected', (values || []).indexOf(c.textContent.trim()) !== -1));
     }
-    // The answers on step n, shaped for PUT /me/profile. class goes with every
-    // step because the API requires it; the other keys are only that step's.
+    // The answers on step n, shaped for PUT /me/profile: only that step's keys.
+    // Step 1's class, board and city were asked at registration; saving them
+    // here updates the account.
     function obFields(n) {
-      const f = { class: Number(val('ob-class')) };
+      const f = {};
       if (n === 1) {
+        f.class = Number(val('ob-class'));
         f.board = val('ob-board');
         f.medium = val('ob-medium');
         f.city = val('ob-city').trim() || null;
@@ -1091,7 +1077,7 @@
       const box = document.getElementById('eval-body');
       CareerAPI.me.profile().then(r => {
         const p = r.profile;
-        if (!p) { redirect('onboarding'); return; }
+        if (!p || !p.completed_at) { redirect('onboarding'); return; }
         const marks = p.marks ? Object.entries(p.marks).sort((a, b) => b[1] - a[1]) : [];
         const badges = list => (list && list.length) ? '<div class="cluster">' + list.map(x => '<span class="badge badge-outline">' + esc(x) + '</span>').join('') + '</div>' : '<p class="muted">None picked</p>';
         const row = (k, v) => v ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
