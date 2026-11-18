@@ -233,6 +233,13 @@
       return false;
     }
 
+    // The header's close button. Not while submitting: leaving would cut
+    // the submit off with the student unsure whether it went through.
+    function ctExit() {
+      if (ctSubmitting) return;
+      stepExit('contests');
+    }
+
     function ctGo(i) {
       if (!ctRun || ctSubmitting || i < 0 || i >= ctRun.questions.length) return;
       ctIdx = i;

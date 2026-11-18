@@ -380,6 +380,12 @@
       history.back();
     }
 
+    // Leaving the step page unfinished (Back on the first step, the
+    // contest's close button): back to where the student came from. Through
+    // stepLeave, or goBack's history.back() would only pop the guard and
+    // the page would step back a question instead of leaving.
+    function stepExit(fallback) { stepLeave(() => goBack(fallback)); }
+
     // ── Per-page init: replaces the old single-page bootstrap ──
     document.addEventListener('DOMContentLoaded', () => {
       initTheme();
@@ -973,7 +979,6 @@
       document.getElementById('ob-title').textContent = obTitles[obCurrent - 1];
       document.getElementById('ob-sub').textContent = obSubs[obCurrent - 1];
       document.getElementById('ob-bar').value = obCurrent;
-      document.getElementById('ob-back').disabled = obCurrent <= 1;
       const dots = document.querySelectorAll('.dot');
       dots.forEach((d, i) => {
         d.className = 'dot' + (i < obCurrent - 1 ? ' done' : i === obCurrent - 1 ? ' active' : '');
@@ -1039,7 +1044,12 @@
       const btn = document.getElementById('ob-next'), errEl = document.getElementById('ob-error');
       // Not while a step is saving: the save moves on from the step it saved.
       if (btn.disabled) return;
-      if (dir < 0) { obShow(obCurrent + dir); return; }
+      if (dir < 0) {
+        // Back on step 1 leaves: to the chat when its profile gate sent the student here.
+        if (obCurrent <= 1) stepExit(new URLSearchParams(location.search).get('next') === 'chat' ? 'chat' : 'dashboard');
+        else obShow(obCurrent + dir);
+        return;
+      }
       const step = obCurrent;
       if (step === 2) {
         const bad = [...document.querySelectorAll('#ob-step-2 [data-subject]')].find(inp =>
@@ -2172,7 +2182,8 @@
       document.getElementById('cq-area').textContent = stripEmoji(q.area);
       const bar = document.getElementById('cq-bar');
       bar.max = total; bar.value = cqIdx;
-      document.getElementById('cq-back-btn').disabled = cqIdx <= 0;
+      // On the first question the arrow leaves the quiz (cqBack).
+      document.getElementById('cq-back-btn').setAttribute('aria-label', cqIdx > 0 ? 'Previous question' : 'Leave the quiz');
       document.getElementById('cq-q').textContent = q.q;
 
       // How many answers this question accepts (doc section 3).
@@ -2264,6 +2275,13 @@
       // Last question → hand off to ai_loading.html, which runs the analysis
       if (cqIdx >= RS_QUESTIONS.length) { stepLeave(() => redirect('ailoading')); return; }
       cqSlide('next');
+    }
+
+    // The header arrow: the previous question, or out of the quiz from the
+    // first one, back to wherever the student started it from.
+    function cqBack() {
+      if (cqSliding) return;
+      if (cqIdx <= 0) stepExit('dashboard'); else cqPrev();
     }
 
     function cqPrev() {
