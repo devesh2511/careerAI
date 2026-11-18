@@ -252,6 +252,22 @@
         }
       },
 
+      // Join requests: students not on the list of an institute with
+      // accepts_requests, waiting for approval. Approving activates the account.
+      requests: {
+        // GET /admin/institutes/:id/requests — oldest first
+        list(instituteId) { return http('GET', '/admin/institutes/' + instituteId + '/requests'); },
+        // POST /admin/institutes/:id/requests/:requestId/approve
+        // → { student, subscription, over_headcount }; 409 no_current_subscription
+        approve(instituteId, requestId) {
+          return http('POST', '/admin/institutes/' + instituteId + '/requests/' + requestId + '/approve');
+        },
+        // DELETE /admin/institutes/:id/requests/:requestId — reject; the account stays
+        reject(instituteId, requestId) {
+          return http('DELETE', '/admin/institutes/' + instituteId + '/requests/' + requestId);
+        }
+      },
+
       subscriptions: {
         // GET /admin/institutes/:id/subscriptions — newest first, each with its payment
         list(instituteId) { return http('GET', '/admin/institutes/' + instituteId + '/subscriptions'); }

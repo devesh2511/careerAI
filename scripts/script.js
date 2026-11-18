@@ -478,7 +478,12 @@
     // institute, enters its password (link) and then sees their saved details,
     // already filled in (details, prefilled). After that, they log in with the
     // username.
+    // An institute that takes join requests (the testing institute) lets
+    // students who aren't on its list through the same steps; they get a
+    // request instead (authNeedsApproval) and the paywall says it's waiting
+    // for approval until an admin approves it.
     let authEntry = null;        // { full_name, phone_no, institute_code } once step 1 found them
+    let authNeedsApproval = false; // step 1 said they aren't on the list: finishing sends a join request
     let authLinked = null;       // after link: { student, access }
     let authResetToken = '';     // from #reset=<token> in the emailed link
 
@@ -619,9 +624,12 @@
         setBusy(btn, false);
         authEntry = entry;
         authLinked = null;
+        authNeedsApproval = !!r.needs_approval;
         if (r.status === 'existing_account') {
-          document.getElementById('link-username').textContent = r.username;
+          // Not sent for a join request (anyone could look it up by name + phone).
+          document.getElementById('link-username').textContent = r.username || 'your existing username';
           document.getElementById('link-institute').textContent = entry.institute_code;
+          document.getElementById('link-approval').hidden = !authNeedsApproval;
           document.getElementById('auth-link').reset();
           authShow('link');
         } else {
@@ -662,9 +670,13 @@
       document.getElementById('det-passwords').hidden = !!s;
       document.getElementById('det-username-hint').hidden = !!s;
       document.getElementById('det-title').textContent = s ? 'Check your details' : 'Set up your account';
+      const code = authEntry ? authEntry.institute_code : 'this institute';
       document.getElementById('det-sub').textContent = s
-        ? (authEntry ? authEntry.institute_code : 'This institute') + ' is now added to your account. Change anything that\'s out of date.'
-        : 'Registering ' + (authEntry ? authEntry.full_name + ' with ' + authEntry.institute_code : '') + '. You\'ll log in with this username and password.';
+        ? (authNeedsApproval
+          ? 'Your request to join ' + code + ' is sent. Change anything that\'s out of date.'
+          : (authEntry ? authEntry.institute_code : 'This institute') + ' is now added to your account. Change anything that\'s out of date.')
+        : 'Registering ' + (authEntry ? authEntry.full_name + ' with ' + authEntry.institute_code : '') + '. You\'ll log in with this username and password.' +
+          (authNeedsApproval ? ' You\'re not on ' + code + '\'s list, so your account will be activated once ' + code + ' approves your request.' : '');
       document.getElementById('det-ok').textContent = s ? 'All the fields were automatically filled' : '';
       document.getElementById('det-btn').textContent = s ? 'Continue' : 'Create account';
       if (s) {
@@ -709,7 +721,7 @@
       }, err => {
         setBusy(btn, false);
         // Their list row changed under them (registered elsewhere, removed): start over.
-        if (err.code === 'not_on_list' || err.code === 'already_registered' || err.code === 'account_exists') {
+        if (err.code === 'not_on_list' || err.code === 'already_registered' || err.code === 'account_exists' || err.code === 'request_pending') {
           authEntry = null;
           authShow('register', 'replace');
           document.getElementById('reg-alert').textContent = err.message;
@@ -810,6 +822,14 @@
 
     function pwReason(st, a) {
       const inst = a.institute ? esc(a.institute.name) : 'your school';
+      // They asked to join an institute they aren't on the list of.
+      if (a.reason === 'pending_approval') {
+        return '<section class="pw-reason" aria-labelledby="pw-title">' + illo('lock') +
+          '<div class="stack-sm stack"><h1 class="auth-title" id="pw-title">' + esc(a.message) + '</h1>' +
+          '<p class="muted">Hi ' + esc(st.full_name.split(' ')[0]) + '. You\'ve asked to join ' + (a.institute ? inst : 'your institute') +
+          '. Your account will be activated as soon as your request is approved; then press Check again.</p>' +
+          '<div class="cluster"><button class="btn btn-primary btn-sm" onclick="pwRender()">Check again</button></div></div></section>';
+      }
       return '<section class="pw-reason" aria-labelledby="pw-title">' + illo('lock') +
         '<div class="stack-sm stack"><h1 class="auth-title" id="pw-title">' + esc(a.message) + '</h1>' +
         '<p class="muted">Hi ' + esc(st.full_name.split(' ')[0]) + '. Crackeer is free for you once ' + inst +

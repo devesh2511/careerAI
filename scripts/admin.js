@@ -957,7 +957,8 @@
             ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();admRestore(\'institutes\',' + s.id + ',' + admEsc(JSON.stringify(s.name)) + ',this)">Restore</button>' +
               '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();admDeleteSchool(' + s.id + ',true)">Hard delete</button>'
             : '';
-          return '<tr class="adm-click" onclick="admGo(\'schools/' + s.id + '\')"><td><b>' + admEsc(s.name) + '</b><div class="adm-sub">' + admEsc(admTypeLabel(s.type)) + '</div></td>' +
+          const waiting = s.pending_count ? ' <span class="badge badge-orange">' + s.pending_count + ' waiting for approval</span>' : '';
+          return '<tr class="adm-click" onclick="admGo(\'schools/' + s.id + '\')"><td><b>' + admEsc(s.name) + '</b>' + waiting + '<div class="adm-sub">' + admEsc(admTypeLabel(s.type)) + '</div></td>' +
             '<td><span class="adm-mono">' + admEsc(s.institute_code) + '</span></td>' +
             '<td>' + admEsc(s.city) + '</td>' +
             '<td>' + admStatusBadge(s) + '</td><td>' + admPlanBadge(s) + '</td>' +
@@ -991,6 +992,9 @@
           attrs: ' style="text-transform:uppercase;" autocapitalize="characters"', hint: 'Students type this when they register. 3–20 letters, digits or dashes.' }) +
         admField('Type', 'type', s.type, { select: ADM_INST_TYPES, hint: 'A student on a school\'s list and another list sees the school on their account.' }) +
         admField('Status', 'status', s.status, { select: [{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended (its students lose access)' }] }) +
+        admField('Students not on the list', 'accepts_requests', s.accepts_requests ? 'true' : 'false', {
+          select: [{ value: 'false', label: 'Can\'t register' }, { value: 'true', label: 'Can ask to join (you approve each)' }],
+          hint: 'With requests on, anyone with the Institute ID can register; their account stays inactive until you approve them on the Students list tab.' }) +
         admField('City', 'city', s.city) +
         admField('Address', 'address', s.address, { optional: true, span: true }) +
         admField('Contact details', 'contact_details', s.contact_details, { optional: true, span: true, placeholder: 'Name, phone or email of the coordinator' }) +
@@ -1027,7 +1031,8 @@
           ' &nbsp;' + admStatusBadge(s) + ' ' + admPlanBadge(s), actions, '<a href="#/schools">Schools</a> / ' + admEsc(s.institute_code)) +
           (s.is_deleted ? '<div class="adm-note adm-banner-lock">This institute is <b>soft-deleted</b>. Its subscriptions don\'t count and nobody can register through it. The list is kept.</div>' : '') +
           '<div class="lb-tabs adm-tabs" role="tablist">' +
-          [['details', 'Details'], ['students', 'Students list (' + s.list_count + ')'], ['subscriptions', 'Subscriptions and payments']].map(t =>
+          [['details', 'Details'], ['students', 'Students list (' + s.list_count + ')' + (s.pending_count ? ' · ' + s.pending_count + ' waiting' : '')],
+            ['subscriptions', 'Subscriptions and payments']].map(t =>
             '<button class="filter-chip' + (t[0] === tab ? ' active' : '') + '" role="tab" aria-selected="' + (t[0] === tab) + '" onclick="admGo(\'schools/' + s.id + '/' + t[0] + '\')">' + admEsc(t[1]) + '</button>').join('') +
           '</div>';
         if (tab === 'details') {
@@ -1035,7 +1040,10 @@
             '<div class="adm-error-box" style="display:none;"></div>' + admSchoolFields(s) +
             '<div class="adm-q-foot"><button class="btn btn-primary btn-sm" type="submit">Save changes</button></div></form>');
         } else if (tab === 'students') {
-          return CareerAPI.admin.studentList.list(s.id).then(rows => admPaint(seq, head + admRosterHtml(s, rows)));
+          // Join requests only exist for institutes that take them (or did).
+          const reqs = s.accepts_requests || s.pending_count ? CareerAPI.admin.requests.list(s.id) : Promise.resolve([]);
+          return Promise.all([CareerAPI.admin.studentList.list(s.id), reqs])
+            .then(([rows, requests]) => admPaint(seq, head + admRequestsHtml(s, requests) + admRosterHtml(s, rows)));
         } else {
           return CareerAPI.admin.subscriptions.list(s.id).then(rows => admPaint(seq, head + admSubsHtml(s, rows)));
         }
@@ -1058,6 +1066,46 @@
       const today = admIstDate(admNow()).split('-').map(Number);
       const y = today[1] >= 4 ? today[0] : today[0] - 1;
       return { start: y + '-04-01', last: (y + 1) + '-03-31' };
+    }
+
+    // Students not on the list who registered with this Institute ID (institutes
+    // that take requests). Their account exists but is inactive until approved:
+    // approving puts them on the list, on the current subscription.
+    function admRequestsHtml(s, requests) {
+      if (!s.accepts_requests && !requests.length) return '';
+      const rows = requests.map(q => {
+        const st = q.student;
+        const who = '<button class="adm-link" onclick="admGo(\'students/' + st.id + '\')">' + admEsc(st.username) + '</button>' +
+          (st.is_deleted ? ' <span class="badge badge-red">Account deleted</span>' : '');
+        const about = 'Class ' + admEsc(st.class) + ' · ' + admEsc(st.board) + ' · ' + admEsc(st.city) +
+          (st.email ? '<div class="adm-sub">' + admEsc(st.email) + '</div>' : '');
+        return '<tr><td><b>' + admEsc(q.full_name) + '</b></td><td><span class="adm-mono">' + admEsc(q.phone_no) + '</span></td>' +
+          '<td>' + who + '</td><td>' + about + '</td><td>' + admEsc(admDay(q.requested_at)) + '</td>' +
+          '<td class="adm-row-actions">' +
+          '<button class="btn btn-primary btn-sm" onclick="admApproveRequest(' + s.id + ',' + q.id + ',' + admEsc(JSON.stringify(q.full_name)) + ',this)">Approve</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="admRejectRequest(' + s.id + ',' + q.id + ',' + admEsc(JSON.stringify(q.full_name)) + ',this)">Reject</button></td></tr>';
+      });
+      return '<div class="adm-section-title">Waiting for approval (' + requests.length + ')</div>' +
+        '<div class="adm-note">These students aren\'t on the list but registered with Institute ID <span class="adm-mono"><b>' + admEsc(s.institute_code) +
+        '</b></span>. Their account stays <b>inactive</b> until you approve it. Approving adds them to the list on the current subscription; rejecting leaves their account without this institute.</div>' +
+        admTable([{ label: 'Name' }, { label: 'Phone' }, { label: 'Username' }, { label: 'Details' }, { label: 'Requested' }, { label: '', cls: 'adm-row-actions' }], rows,
+          'No requests right now. Students who register with this Institute ID and aren\'t on the list show up here.') +
+        '<div class="adm-section-title">Students list</div>';
+    }
+    function admApproveRequest(instituteId, requestId, fullName, btn) {
+      admBusy(btn, true, 'Approving…');
+      CareerAPI.admin.requests.approve(instituteId, requestId).then(res => {
+        const sub = res.subscription;
+        admToast('Approved ' + fullName + '.' + (res.student.has_access ? ' Their account is active.' : ' They still have no access: check this institute is active.') +
+          (res.over_headcount ? ' The subscription now has ' + sub.students + ' students for a headcount of ' + sub.head_count + '.' : ''));
+        admRoute();
+      }).catch(err => { admBusy(btn, false); if (!admAuthGuard(err)) alert(err.message); });
+    }
+    function admRejectRequest(instituteId, requestId, fullName, btn) {
+      if (!confirm('Reject ' + fullName + '\'s request? Their account stays, but without this institute\'s access.')) return;
+      admBusy(btn, true, 'Rejecting…');
+      CareerAPI.admin.requests.reject(instituteId, requestId).then(() => { admToast('Rejected ' + fullName + '.'); admRoute(); })
+        .catch(err => { admBusy(btn, false); if (!admAuthGuard(err)) alert(err.message); });
     }
 
     function admRosterHtml(s, rows) {
@@ -1185,7 +1233,12 @@
     let admStudentQuery = '';
 
     function admAccessBadge(a) {
-      return a.has_access ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-orange">Inactive</span>';
+      if (a.has_access) return '<span class="badge badge-green">Active</span>';
+      // Asked to join an institute that takes requests; approve it on that institute's Students list tab.
+      if (a.reason === 'pending_approval') {
+        return '<span class="badge badge-blue">Waiting for approval' + (a.institute ? ' (' + admEsc(a.institute.institute_code) + ')' : '') + '</span>';
+      }
+      return '<span class="badge badge-orange">Inactive</span>';
     }
     function admStudentTabSet(t) { admStudentTab = t; admRoute(); }
 
