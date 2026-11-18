@@ -287,6 +287,11 @@ a.card:hover, .card-link:hover { transform: translate(-1px, -1px); box-shadow: 4
 .rr-asphalt { stroke: var(--road); stroke-width: 22px; }
 .rr-dash { stroke: var(--road-dash); stroke-width: 1.5px; stroke-dasharray: 6 7; stroke-linecap: butt !important; }
 .rr-stages { list-style: none; margin: 0; padding: 0; position: relative; }
+/* The script measures the stops straight after setting each stage's offset, so
+   nothing it moves may animate. base.css's reduced-motion rule gives every
+   element a 0.01ms transition on all properties; without this the offsets lag
+   behind and the road is drawn through where the stops were. */
+.rr-stages, .rr-stage, .rr-track path { transition: none; }
 .rr-stage { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: start; padding-bottom: var(--sp-4); }
 .rr-slot { grid-column: 1; grid-row: 1; position: relative; align-self: stretch; }
 .rr-pin {
