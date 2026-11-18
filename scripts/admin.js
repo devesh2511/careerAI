@@ -1174,11 +1174,34 @@
             bad.slice(0, 50).map(x => '<li>Row ' + x.line + ': ' + admEsc(x.reason) + (x.value ? ' <span class="adm-mono">(' + admEsc(x.value) + ')</span>' : '') + '</li>').join('') +
             (bad.length > 50 ? '<li>…and ' + (bad.length - 50) + ' more</li>' : '') + '</ul></div>';
         }
+        // A school upload that would cut students off another school early.
+        const early = err.details && err.details.students;
+        if (early && early.length) {
+          document.getElementById('adm-roster-result').innerHTML = '<div class="adm-result" style="color:var(--accent3);"><b>Still covered by another school</b><ul>' +
+            early.slice(0, 50).map(x => '<li>' + admEsc(x.full_name) + ' <span class="adm-mono">' + admEsc(x.phone_no) + '</span>: ' + admEsc(x.school.name) + '</li>').join('') +
+            (early.length > 50 ? '<li>…and ' + (early.length - 50) + ' more</li>' : '') + '</ul></div>';
+        }
       });
     }
     function admRosterResult(res) {
+      const people = (list, fn) => '<ul>' + list.slice(0, 50).map(fn).join('') +
+        (list.length > 50 ? '<li>…and ' + (list.length - 50) + ' more</li>' : '') + '</ul>';
+      const who = x => admEsc(x.full_name) + ' <span class="adm-mono">' + admEsc(x.phone_no) + '</span>';
+      const moved = res.moved || [], old = res.matched_by_old_details || [], amb = res.ambiguous || [], off = res.deactivated || [];
+      // Moves grouped by the school they came off: "3 students moved from School A".
+      const bySchool = {};
+      moved.forEach(x => { (bySchool[x.from.name] = bySchool[x.from.name] || []).push(x); });
       return '<div class="adm-result"><div>✅ <b>' + res.added + '</b> added to the list</div>' +
         (res.renewed ? '<div>↺ <b>' + res.renewed + '</b> already on it, moved to the new subscription</div>' : '') +
+        (res.linked ? '<div>🔗 <b>' + res.linked + '</b> already had an account, linked to it (no new account made)</div>' : '') +
+        Object.keys(bySchool).map(name => '<div>↪ <b>' + bySchool[name].length + '</b> student' + (bySchool[name].length === 1 ? '' : 's') +
+          ' moved from ' + admEsc(name) + ' (a student can only be on one school)' + people(bySchool[name], who) + '</div>').join('') +
+        (old.length ? '<div>🕘 <b>' + old.length + '</b> matched by old details (the list has their name or phone from before a correction)' +
+          people(old, x => admEsc(x.uploaded_name) + ' <span class="adm-mono">' + admEsc(x.uploaded_phone) + '</span> → ' +
+            '<a href="#/students/' + x.student_id + '">' + admEsc(x.current_name) + ' <span class="adm-mono">' + admEsc(x.current_phone) + '</span></a>') + '</div>' : '') +
+        (amb.length ? '<div style="color:var(--accent3);">⚠ <b>' + amb.length + '</b> match old details of more than one account, so they weren\'t linked. Check them' + people(amb, who) + '</div>' : '') +
+        (off.length ? '<div style="color:var(--accent3);">⛔ <b>' + off.length + '</b> deactivated: on the list, but still can\'t log in' +
+          people(off, x => '<a href="#/students/' + x.student_id + '">' + who(x) + '</a>') + '</div>' : '') +
         '<div>Subscription #' + res.subscription.id + ': ' + res.subscription.head_count + ' students, ' + admEsc(admDay(res.subscription.starts_at)) +
         ' – ' + admEsc(admLastDay(res.subscription.ends_at)) + '. Record the payment on the Subscriptions tab.</div></div>';
     }
@@ -1232,21 +1255,25 @@
     let admStudentTab = 'active';
     let admStudentQuery = '';
 
-    function admAccessBadge(a) {
+    function admAccessBadge(a, s) {
+      if (s && s.deactivation) return '<span class="badge badge-red">Deactivated</span>';
       if (a.has_access) return '<span class="badge badge-green">Active</span>';
       // Asked to join an institute that takes requests; approve it on that institute's Students list tab.
       if (a.reason === 'pending_approval') {
         return '<span class="badge badge-blue">Waiting for approval' + (a.institute ? ' (' + admEsc(a.institute.institute_code) + ')' : '') + '</span>';
       }
+      if (a.reason === 'no_institute') return '<span class="badge badge-orange">On no list</span>';
       return '<span class="badge badge-orange">Inactive</span>';
     }
     function admStudentTabSet(t) { admStudentTab = t; admRoute(); }
 
     function admStudentRows() {
-      return CareerAPI.admin.students.list({ deleted: admStudentTab === 'deleted', q: admStudentQuery }).then(list => {
+      return CareerAPI.admin.students.list({
+        deleted: admStudentTab === 'deleted', deactivated: admStudentTab === 'deactivated', q: admStudentQuery
+      }).then(list => {
         const rows = list.map(s => {
           const n = admEsc(JSON.stringify(s.full_name));
-          const actions = admStudentTab === 'deleted'
+          const actions = s.is_deleted
             ? '<button class="btn btn-ghost btn-sm" onclick="admRestore(\'students\',' + s.id + ',' + n + ',this)">Restore</button>' +
               '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',true)">Hard delete</button>'
             : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',false)">Delete</button>';
@@ -1254,11 +1281,14 @@
             '<div class="adm-sub">' + admEsc(s.username) + '</div></td>' +
             '<td><span class="adm-mono">' + admEsc(s.phone_no) + '</span>' + (s.email ? '<div class="adm-sub">' + admEsc(s.email) + '</div>' : '') + '</td>' +
             '<td>' + (s.institute ? admEsc(s.institute.name) + '<div class="adm-sub adm-mono">' + admEsc(s.institute.institute_code) + '</div>' : '<span style="color:var(--muted);">—</span>') + '</td>' +
-            '<td>' + (admStudentTab === 'deleted' ? '<span class="badge badge-red">Deleted ' + admEsc(admDay(s.deleted_at)) + '</span>' : admAccessBadge(s.access)) + '</td>' +
+            '<td>' + (s.is_deleted ? '<span class="badge badge-red">Deleted ' + admEsc(admDay(s.deleted_at)) + '</span> ' : '') +
+            (!s.is_deleted || s.deactivation ? admAccessBadge(s.access, s) : '') + '</td>' +
             '<td class="adm-row-actions">' + actions + '</td></tr>';
         });
         return admTable([{ label: 'Student' }, { label: 'Phone / email' }, { label: 'Institute' }, { label: 'Access' }, { label: '', cls: 'adm-row-actions' }], rows,
-          admStudentQuery ? 'No students match “' + admEsc(admStudentQuery) + '”.' : admStudentTab === 'deleted' ? 'No deleted students.' : 'Nobody has registered yet.');
+          admStudentQuery ? 'No students match “' + admEsc(admStudentQuery) + '”.'
+            : admStudentTab === 'deleted' ? 'No deleted students.'
+              : admStudentTab === 'deactivated' ? 'No deactivated students.' : 'Nobody has registered yet.');
       });
     }
 
@@ -1266,7 +1296,7 @@
       admStudentRows().then(table => {
         admPaint(seq,
           admTopbar('Students', 'Everyone who has registered. Deleting here is a soft delete unless you choose otherwise.', '') +
-          '<div class="adm-toolbar">' + admTabs([{ key: 'active', label: 'Active' }, { key: 'deleted', label: 'Deleted' }], admStudentTab, 'admStudentTabSet') +
+          '<div class="adm-toolbar">' + admTabs([{ key: 'active', label: 'Active' }, { key: 'deactivated', label: 'Deactivated' }, { key: 'deleted', label: 'Deleted' }], admStudentTab, 'admStudentTabSet') +
           '<input class="form-input adm-search" type="search" placeholder="Search name, username, phone or email" value="' + admEsc(admStudentQuery) + '" oninput="admSearch(\'students\',this.value)" /></div>' +
           '<div id="adm-list">' + table + '</div>');
       }).catch(err => admFail(seq, err));
@@ -1281,10 +1311,16 @@
       });
     }
 
-    // ── One student: access, institutes and password (#/students/:id) ──
+    // ── One student: access, institutes, support actions and history (#/students/:id) ──
     function admStudentAccess(s) {
       const a = s.access;
       if (s.is_deleted) return 'This student is <b>soft-deleted</b>: they can\'t log in until restored.';
+      if (s.deactivation) {
+        const d = s.deactivation;
+        return '<b>Deactivated for malpractice</b> on ' + admEsc(admDay(d.deactivated_at)) + (d.by ? ' by ' + admEsc(d.by.full_name) : '') +
+          ': “' + admEsc(d.note) + '”. They can\'t log in and are hidden from leaderboards; their results are kept.';
+      }
+      if (a.reason === 'no_institute') return 'On no institute\'s list. They can log in but see “' + admEsc(a.message) + '”. A new institute\'s upload links them back.';
       if (a.has_access) return 'Covered by <b>' + admEsc(a.institute ? a.institute.name : 'an institute') + '</b> until ' + admEsc(admLastDay(a.ends_at)) + '.';
       return 'Inactive: none of their institutes has a current subscription. They see “' + admEsc(a.message) + '”.';
     }
@@ -1296,7 +1332,12 @@
           ? '<button class="btn btn-primary btn-sm" onclick="admRestore(\'students\',' + s.id + ',' + n + ',this)">Restore</button>' +
             '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',true)">Hard delete</button>'
           : '<button class="btn btn-danger btn-sm" onclick="admDeleteStudent(' + s.id + ',' + n + ',false)">Delete student</button>') +
+          (s.deactivation
+            ? '<button class="btn btn-primary btn-sm" onclick="admReactivateModal(' + s.id + ',' + n + ')">Reactivate</button>'
+            : '<button class="btn btn-danger btn-sm" onclick="admDeactivateModal(' + s.id + ')">Deactivate</button>') +
+          '<button class="btn btn-ghost btn-sm" onclick="admEditDetailsModal(' + s.id + ')">Edit name / phone</button>' +
           '<button class="btn btn-ghost btn-sm" onclick="admStudentPasswordModal(' + s.id + ',' + n + ')">Set new password</button>';
+        admStudentCurrent = s;
         const list = (s.institutes || []).map(i =>
           '<tr><td><button class="adm-link" onclick="admGo(\'schools/' + i.id + '/students\')">' + admEsc(i.name) + '</button>' +
           (i.is_deleted ? ' <span class="badge badge-red">Deleted</span>' : '') + '<div class="adm-sub">' + admEsc(admTypeLabel(i.type)) + '</div></td>' +
@@ -1309,16 +1350,120 @@
         admPaint(seq,
           admTopbar(admEsc(s.full_name),
             'Username <span class="adm-mono"><b>' + admEsc(s.username) + '</b></span> · ' + admEsc(s.phone_no) +
-            ' &nbsp;' + admAccessBadge(s.access), actions, '<a href="#/students">Students</a> / ' + admEsc(s.username)) +
-          '<div class="adm-note' + (s.is_deleted || !s.access.has_access ? ' adm-banner-lock' : '') + '">' + admStudentAccess(s) + '</div>' +
+            ' &nbsp;' + admAccessBadge(s.access, s), actions, '<a href="#/students">Students</a> / ' + admEsc(s.username)) +
+          '<div class="adm-note' + (s.is_deleted || s.deactivation || !s.access.has_access ? ' adm-banner-lock' : '') + '">' + admStudentAccess(s) + '</div>' +
           '<div class="adm-panel adm-panel-pad"><div class="adm-form-grid">' +
           kv('Email', s.email ? admEsc(s.email) + (s.email_verified ? ' ✓' : ' <span class="adm-sub">(not confirmed)</span>') : '—') +
           kv('Class, board, city', admEsc('Class ' + s.class + ', ' + s.board + ', ' + s.city)) +
           kv('Last login', s.last_login_at ? admEsc(admWhen(s.last_login_at)) : 'Never') +
-          kv('Registered', admEsc(admDay(s.created_at))) + '</div></div>' +
+          kv('Registered', admEsc(admDay(s.created_at))) +
+          ((s.old_details || []).length ? kv('Old details (uploads still match these)', s.old_details.map(o =>
+            admEsc(o.full_name) + ' <span class="adm-mono">' + admEsc(o.phone_no) + '</span>').join('<br>')) : '') +
+          '</div></div>' +
           '<div class="adm-section-title">Institute lists they\'re on</div>' +
           admTable([{ label: 'Institute' }, { label: 'Institute ID' }, { label: 'Subscription' }, { label: 'Registered' }], list,
-            'Not on any institute\'s list any more.'));
+            'Not on any institute\'s list any more.') +
+          '<div class="adm-section-title">History</div>' + admStudentHistory(s.history || []));
+      });
+    }
+
+    // What admins did to this account, and school moves, newest first.
+    const ADM_EVENT_LABELS = {
+      deactivated: 'Deactivated (malpractice)', reactivated: 'Reactivated', left_institute: 'Left an institute',
+      details_changed: 'Name / phone corrected', password_set: 'New password set', moved_school: 'Moved school'
+    };
+    const ADM_MOVE_VIA = {
+      upload: 'list upload', link: 'they linked it', register: 'registration', join_request: 'request approved',
+      details_changed: 'details corrected', cleanup: 'one-school cleanup'
+    };
+    function admEventWhat(e) {
+      const d = e.data || {};
+      if (e.kind === 'left_institute' && d.institute) return 'Taken off ' + admEsc(d.institute.name) + '\'s list';
+      if (e.kind === 'details_changed' && d.old && d.new) {
+        return admEsc(d.old.full_name) + ' <span class="adm-mono">' + admEsc(d.old.phone_no) + '</span> → ' +
+          admEsc(d.new.full_name) + ' <span class="adm-mono">' + admEsc(d.new.phone_no) + '</span>';
+      }
+      if (e.kind === 'moved_school' && d.from) {
+        return 'Off ' + admEsc(d.from.name) + (d.to ? ', now on ' + admEsc(d.to.name) : '') +
+          (ADM_MOVE_VIA[d.via] ? ' (' + ADM_MOVE_VIA[d.via] + ')' : '');
+      }
+      return '';
+    }
+    function admStudentHistory(events) {
+      const rows = events.map(e => {
+        const what = admEventWhat(e);
+        return '<tr><td>' + admEsc(admWhen(e.created_at)) + '</td><td><b>' + admEsc(ADM_EVENT_LABELS[e.kind] || e.kind) + '</b>' +
+          (what ? '<div class="adm-sub">' + what + '</div>' : '') + '</td>' +
+          '<td>' + (e.note ? admEsc(e.note) : '<span style="color:var(--muted);">—</span>') + '</td>' +
+          '<td>' + (e.admin ? admEsc(e.admin.full_name) : '<span class="adm-sub">Automatic</span>') + '</td></tr>';
+      });
+      return admTable([{ label: 'When' }, { label: 'What' }, { label: 'Note' }, { label: 'By' }], rows, 'Nothing recorded yet.');
+    }
+
+    let admStudentCurrent = null;   // the student on show, for the modals below
+
+    // One button, the reason decides: left an institute takes them off that
+    // list only; malpractice locks the whole account.
+    function admDeactivateModal(id) {
+      const s = admStudentCurrent;
+      if (!s || s.id !== id) return;
+      const choice = (value, title, sub, checked) => '<label class="adm-choice' + (value === 'malpractice' ? ' is-hard' : '') + '">' +
+        '<input type="radio" name="choice" value="' + admEsc(value) + '"' + (checked ? ' checked' : '') + ' />' +
+        '<div><div class="adm-choice-title">' + title + '</div><div class="adm-choice-sub">' + sub + '</div></div></label>';
+      const lists = (s.institutes || []).filter(i => !i.is_deleted);
+      admModal({
+        title: 'Deactivate ' + s.full_name, submit: 'Deactivate', danger: true,
+        body: '<div class="form-group"><div class="form-label">Reason</div>' +
+          lists.map((i, k) => choice('left:' + i.id, 'Left ' + admEsc(i.name),
+            'Removed from ' + admEsc(i.name) + '\'s list only. Their account and other lists stay; a new institute\'s upload links them back.', k === 0)).join('') +
+          choice('malpractice', 'Malpractice', 'Whole account locked: signed out now, can\'t log in, hidden from leaderboards. Results are kept. Only an admin can reactivate.', !lists.length) +
+          '</div>' +
+          admField('Note', 'note', '', { textarea: true, rows: 2, placeholder: 'e.g. reported by the principal on 12 Nov', hint: 'Required: why, and who asked.' }),
+        onSubmit: form => {
+          const d = admFormData(form);
+          if (!d.choice) { admFormError(form, { message: 'Pick a reason.' }); return false; }
+          const body = d.choice === 'malpractice' ? { reason: 'malpractice', note: d.note }
+            : { reason: 'left_institute', institute_id: Number(d.choice.slice(5)), note: d.note };
+          return CareerAPI.admin.students.deactivate(id, body).then(() => {
+            admToast(body.reason === 'malpractice' ? s.full_name + ' deactivated.' : s.full_name + ' taken off that list.');
+            admRoute();
+          });
+        }
+      });
+    }
+
+    function admReactivateModal(id, name) {
+      admModal({
+        title: 'Reactivate ' + name, submit: 'Reactivate',
+        body: '<p>They can log in again and come back on leaderboards.</p>' +
+          admField('Note', 'note', '', { textarea: true, rows: 2, placeholder: 'e.g. cleared after review with the school', hint: 'Required.' }),
+        onSubmit: form => CareerAPI.admin.students.reactivate(id, { note: admFormData(form).note })
+          .then(() => { admToast(name + ' reactivated.'); admRoute(); })
+      });
+    }
+
+    // Name and phone, on the account and every list it's on. The old ones
+    // are kept so uploads still recognise them.
+    function admEditDetailsModal(id) {
+      const s = admStudentCurrent;
+      if (!s || s.id !== id) return;
+      admModal({
+        title: 'Edit details: ' + s.full_name, submit: 'Save',
+        body: '<div class="adm-form-grid">' +
+          admField('Full name', 'full_name', s.full_name, { maxlength: 80, hint: 'Was: ' + s.full_name }) +
+          admField('Phone', 'phone_no', s.phone_no, { mono: true, attrs: ' inputmode="tel" maxlength="16"', hint: 'Was: ' + s.phone_no }) +
+          '</div>' +
+          admField('Note', 'note', '', { textarea: true, rows: 2, placeholder: 'e.g. school typo, confirmed by parent on call', hint: 'Required.' }),
+        onSubmit: form => {
+          const d = admFormData(form), body = { note: d.note };
+          if (d.full_name.trim() !== s.full_name) body.full_name = d.full_name;
+          if (d.phone_no.trim() !== s.phone_no) body.phone_no = d.phone_no;
+          if (!('full_name' in body) && !('phone_no' in body)) {
+            admFormError(form, { field: 'full_name', message: 'Change the name or the phone number.' });
+            return false;
+          }
+          return CareerAPI.admin.students.editDetails(id, body).then(() => { admToast('Details updated.'); admRoute(); });
+        }
       });
     }
 

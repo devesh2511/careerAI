@@ -492,6 +492,7 @@
     let authNeedsApproval = false; // step 1 said they aren't on the list: finishing sends a join request
     let authLinked = null;       // after link: { student, access }
     let authResetToken = '';     // from #reset=<token> in the emailed link
+    let authConfirmToken = '';   // from #confirm=<token> in the "Confirm your email" link
 
     function authInit() {
       const m = /^#reset=([A-Za-z0-9_-]+)$/.exec(location.hash || '');
@@ -500,8 +501,14 @@
         authResetToken = m[1];
         try { history.replaceState(null, '', location.pathname + location.search + '#reset'); } catch (e) { }
       }
-      // Already logged in: the gate on the next page decides dashboard vs paywall.
-      if (isLoggedIn() && !authResetToken) { redirect('dashboard'); return; }
+      const c = /^#confirm=([A-Za-z0-9_-]+)$/.exec(location.hash || '');
+      if (c) {
+        authConfirmToken = c[1];
+        try { history.replaceState(null, '', location.pathname + location.search + '#confirm'); } catch (e) { }
+      }
+      // Already logged in: the gate on the next page decides dashboard vs
+      // paywall. Not for an emailed link: confirming works logged in too.
+      if (isLoggedIn() && !authResetToken && !authConfirmToken) { redirect('dashboard'); return; }
       // The form on show is in the hash (#register, #forgot, #reset…), so
       // Back steps through the forms.
       window.addEventListener('popstate', () => authShow(authFromHash(), 'none'));
@@ -524,7 +531,7 @@
       box.textContent = wrong ? "The passwords don't match." : match ? 'Passwords match.' : '';
     }
 
-    const AUTH_FORMS = ['login', 'register', 'link', 'details', 'forgot', 'sent', 'reset'];
+    const AUTH_FORMS = ['login', 'register', 'link', 'details', 'forgot', 'sent', 'reset', 'confirm'];
     function authFromHash() {
       const h = (location.hash || '').replace(/^#\/?/, '');
       return AUTH_FORMS.includes(h) ? h : 'login';
@@ -545,6 +552,8 @@
       // after a reload or a Back/Forward onto them.
       if ((which === 'link' || which === 'details') && !authEntry && !authLinked) { which = 'register'; mode = 'replace'; }
       if (which === 'reset' && !authResetToken) { which = 'forgot'; mode = 'replace'; }
+      // Back/Forward onto an already-used confirm link: just log in.
+      if (which === 'confirm' && !authConfirmToken && !document.getElementById('confirm-text').textContent) { which = 'login'; mode = 'replace'; }
       if (which === 'sent' && !document.getElementById('sent-text').textContent) { which = 'forgot'; mode = 'replace'; }
       if (mode !== 'none' && authFromHash() !== which) {
         try {
@@ -573,7 +582,7 @@
       } else if (which === 'reset') {
         authReset(document.getElementById('auth-reset'), 'reset-alert');
         focus('reset-new_password');
-      }
+      } else if (which === 'confirm' && authConfirmToken) authRunConfirm();
     }
 
     // Eye button beside a password input: flips it between dots and plain text.
@@ -738,44 +747,50 @@
     }
 
     // ── Auth: forgot password (pages/auth.html) ──
-    // forgot (username) → link emailed to the account's address → reset
-    // (#reset=<token>, new password) → log in. An account with no email gets
-    // asked for one, with name, phone and institute ID as proof.
+    // forgot (username) → link emailed to the account's confirmed address →
+    // reset (#reset=<token>, new password) → log in. No confirmed email: the
+    // institute asks us, and an admin sets a new password.
     function authSubmitForgot(e) {
       e.preventDefault();
       const form = e.target, btn = document.getElementById('forgot-btn');
       authReset(form, 'forgot-alert');
       const username = val('forgot-username').trim();
       if (!username) return authFieldError('forgot', 'forgot-alert', { field: 'username', message: 'Please enter your username.' });
-      const proof = !document.getElementById('forgot-proof').hidden;
-      const body = { username: username };
-      if (proof) {
-        body.email = val('forgot-email').trim();
-        body.full_name = val('forgot-full_name').trim();
-        body.phone_no = val('forgot-phone_no').trim();
-        body.institute_code = val('forgot-institute_code').trim();
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
-          return authFieldError('forgot', 'forgot-alert', { field: 'email', message: 'Please enter a valid email.' });
-        }
-      }
       setBusy(btn, true);
-      CareerAPI.auth.forgotPassword(body).then(r => {
+      // The answer is the same whether or not a link went out, so the page
+      // can't say which.
+      CareerAPI.auth.forgotPassword({ username: username }).then(() => {
         setBusy(btn, false);
-        if (r.needs_email && !proof) {
-          document.getElementById('forgot-proof').hidden = false;
-          document.getElementById('forgot-sub').textContent =
-            'Your account has no email yet. Add one, and confirm it\'s you with the details you registered with.';
-          document.getElementById('forgot-email').focus();
-          return;
-        }
-        document.getElementById('sent-text').textContent = proof
-          ? 'If those details match your account, we\'ve sent a reset link to ' + body.email + '. It works for 30 minutes, so check your spam folder if you can\'t find it.'
-          : 'We\'ve sent a reset link to the email on your account. It works for 30 minutes, so check your spam folder if you can\'t find it.';
+        document.getElementById('sent-text').textContent =
+          "If this account has a confirmed email, we've sent a reset link to it. It works for 30 minutes, so check your spam folder if you can't find it.";
         authShow('sent');
       }, err => {
         setBusy(btn, false);
         authFieldError('forgot', 'forgot-alert', err);
       });
+    }
+
+    // #confirm=<token> from the "Confirm your email" link. Works logged in or
+    // not (they may open it on another device).
+    function authRunConfirm() {
+      const title = document.getElementById('confirm-title'), text = document.getElementById('confirm-text');
+      const next = document.getElementById('confirm-next');
+      const token = authConfirmToken;
+      authConfirmToken = '';
+      title.textContent = 'Confirming your email…';
+      text.textContent = '';
+      next.hidden = true;
+      const done = (ok, message) => {
+        title.textContent = ok ? 'Email verified' : "We couldn't confirm your email";
+        text.textContent = message;
+        next.href = isLoggedIn() ? routeTo('dashboard') : 'auth.html';
+        next.textContent = isLoggedIn() ? 'Go to your dashboard' : 'Log in';
+        next.hidden = false;
+      };
+      if (!token) return done(false, 'This link is wrong or has expired. Ask for a new one from your account settings.');
+      CareerAPI.auth.confirmEmail({ token: token }).then(
+        () => done(true, "Thanks, your email is confirmed. If you ever forget your password, we can email you a reset link."),
+        err => done(false, (err && err.message) || 'This link is wrong or has expired. Ask for a new one from your account settings.'));
     }
 
     function authSubmitReset(e) {
@@ -828,6 +843,14 @@
 
     function pwReason(st, a) {
       const inst = a.institute ? esc(a.institute.name) : 'your school';
+      // On no institute's list (they left, or were removed).
+      if (a.reason === 'no_institute') {
+        return '<section class="pw-reason" aria-labelledby="pw-title">' + illo('lock') +
+          '<div class="stack-sm stack"><h1 class="auth-title" id="pw-title">' + esc(a.message) + '</h1>' +
+          '<p class="muted">Hi ' + esc(st.full_name.split(' ')[0]) + '. Your account and everything in it are still here. ' +
+          'Once your new institute adds you to their list, press Check again.</p>' +
+          '<div class="cluster"><button class="btn btn-primary btn-sm" onclick="pwRender()">Check again</button></div></div></section>';
+      }
       // They asked to join an institute they aren't on the list of.
       if (a.reason === 'pending_approval') {
         return '<section class="pw-reason" aria-labelledby="pw-title">' + illo('lock') +
@@ -865,9 +888,7 @@
         document.getElementById('st-name').textContent = st.full_name + ' (shown on leaderboards as ' + st.leaderboard_name + ')';
         document.getElementById('st-username').textContent = st.username;
         document.getElementById('st-phone').textContent = st.phone_no;
-        document.getElementById('st-email').textContent = st.email
-          ? st.email + (st.email_verified ? '' : ' (not confirmed yet)')
-          : 'Not added. Add one so you can reset your password.';
+        stRenderEmail(st);
         document.getElementById('st-email-edit').innerHTML = '';
         document.getElementById('st-institute').textContent = st.institute
           ? st.institute.name + ', ' + st.institute.institute_code
@@ -884,13 +905,39 @@
     let stStudent = null;
     const ST_BOARDS = ['CBSE', 'ICSE', 'State Board'];
 
+    // The email, with an "Email verified" badge once confirmed, else a
+    // Confirm email button (the confirmation email only goes when they press
+    // it). Forgot-password only works with a confirmed email.
+    function stRenderEmail(st, note) {
+      const el = document.getElementById('st-email');
+      if (!st.email) { el.textContent = 'Not added. Add one, then confirm it, so you can reset your password.'; return; }
+      el.innerHTML = esc(st.email) + ' ' + (st.email_verified
+        ? '<span class="badge fit-strong">' + icon('check') + 'Email verified</span>'
+        : '<button class="btn btn-secondary btn-sm" type="button" id="st-email-confirm" onclick="stConfirmEmail()">Confirm email</button>') +
+        (note ? '<span class="field-hint" role="status" style="display:block">' + esc(note) + '</span>' : '');
+    }
+
+    function stConfirmEmail() {
+      const btn = document.getElementById('st-email-confirm');
+      setBusy(btn, true);
+      CareerAPI.me.requestEmailConfirm().then(r => {
+        if (r.status === 'already_verified') { syncSettings(); return; }
+        stRenderEmail(stStudent, r.status === 'already_sent'
+          ? 'We sent a link less than a minute ago. Check your inbox (and spam), or try again in a minute.'
+          : 'We\'ve sent a link to ' + stStudent.email + '. Open it within 24 hours to confirm your email.');
+      }, err => {
+        setBusy(btn, false);
+        stRenderEmail(stStudent, err.message);
+      });
+    }
+
     function stEditEmail() {
       const box = document.getElementById('st-email-edit');
       if (box.innerHTML) { box.innerHTML = ''; return; }
       box.innerHTML = '<form class="setting-edit st-edit" novalidate onsubmit="stSaveEmail(event)">' +
         '<div class="field"><label class="field-label" for="st-email-input">Email</label>' +
         '<input class="input" id="st-email-input" type="email" maxlength="254" autocomplete="email" aria-describedby="st-email-error" />' +
-        '<p class="field-hint">Only used to send you a link if you forget your password. Leave it blank to remove it.</p><div class="form-error" id="st-email-error"></div></div>' +
+        '<p class="field-hint">Used to send you a reset link if you forget your password, once you\'ve confirmed it. Leave it blank to remove it.</p><div class="form-error" id="st-email-error"></div></div>' +
         '<div class="cluster"><button class="btn btn-primary btn-sm" id="st-email-btn" type="submit">Save email</button>' +
         '<button class="btn btn-ghost btn-sm" type="button" onclick="stEditEmail()">Cancel</button></div></form>';
       const inp = document.getElementById('st-email-input');

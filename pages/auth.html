@@ -100,34 +100,33 @@
             <div class="field"><label class="field-label" for="det-board">Board</label><div class="select-wrap"><select class="select" id="det-board" aria-describedby="det-board-error"><option value="">Choose</option><option>CBSE</option><option>ICSE</option><option>State Board</option></select><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chevron-down"/></svg></div><div class="form-error" id="det-board-error" aria-live="polite"></div></div>
           </div>
           <div class="field"><label class="field-label" for="det-city">City</label><input class="input" id="det-city" type="text" placeholder="e.g. Pune" autocomplete="address-level2" maxlength="80" aria-describedby="det-city-error" /><div class="form-error" id="det-city-error" aria-live="polite"></div></div>
-          <div class="field"><label class="field-label" for="det-email">Email <span class="optional">(optional)</span></label><input class="input" id="det-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="det-email-error" /><p class="field-hint">Only used to send you a link if you forget your password.</p><div class="form-error" id="det-email-error" aria-live="polite"></div></div>
+          <div class="field"><label class="field-label" for="det-email">Email <span class="optional">(optional)</span></label><input class="input" id="det-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="det-email-error" /><p class="field-hint">Used to send you a reset link if you forget your password, once you've confirmed it.</p><div class="form-error" id="det-email-error" aria-live="polite"></div></div>
           <button class="btn btn-primary btn-block" id="det-btn" type="submit">Create account</button>
         </form>
 
         <form class="stack" id="auth-forgot" novalidate hidden onsubmit="authSubmitForgot(event)">
           <a class="btn btn-ghost btn-sm auth-back" href="auth.html" onclick="authShow('login'); return false;"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Back to log in</a>
-          <div class="stack-xs stack"><h1 class="auth-title">Reset your password</h1><p class="muted" id="forgot-sub">Enter your username. We'll email a reset link to the address on your account.</p></div>
+          <div class="stack-xs stack"><h1 class="auth-title">Reset your password</h1><p class="muted" id="forgot-sub">Enter your username. If your account has a confirmed email, we'll send a reset link to it.</p></div>
           <div class="alert alert-error form-alert" id="forgot-alert" role="alert"></div>
           <div class="field"><label class="field-label" for="forgot-username">Username</label><input class="input" id="forgot-username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="forgot-username-error" /><div class="form-error" id="forgot-username-error" aria-live="polite"></div></div>
-          <!-- Shown when the account has no email: the registration details prove it's theirs. -->
-          <div class="stack" id="forgot-proof" hidden>
-            <div class="field"><label class="field-label" for="forgot-email">Your email</label><input class="input" id="forgot-email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="forgot-email-error" /><p class="field-hint">We'll send the link here and save it to your account.</p><div class="form-error" id="forgot-email-error" aria-live="polite"></div></div>
-            <div class="field"><label class="field-label" for="forgot-full_name">Full name</label><input class="input" id="forgot-full_name" type="text" autocomplete="name" maxlength="80" aria-describedby="forgot-full_name-error" /><div class="form-error" id="forgot-full_name-error" aria-live="polite"></div></div>
-            <div class="field"><label class="field-label" for="forgot-phone_no">Phone number</label><input class="input" id="forgot-phone_no" type="tel" autocomplete="tel-national" inputmode="tel" maxlength="16" aria-describedby="forgot-phone_no-error" /><div class="form-error" id="forgot-phone_no-error" aria-live="polite"></div></div>
-            <div class="field"><label class="field-label" for="forgot-institute_code">Institute ID</label><input class="input" id="forgot-institute_code" type="text" maxlength="20" autocapitalize="characters" spellcheck="false" aria-describedby="forgot-institute_code-error" /><div class="form-error" id="forgot-institute_code-error" aria-live="polite"></div></div>
-          </div>
           <button class="btn btn-primary btn-block" id="forgot-btn" type="submit">Send link</button>
         </form>
 
         <div class="stack" id="auth-sent" hidden>
           <a class="btn btn-ghost btn-sm auth-back" href="auth.html" onclick="authShow('login'); return false;"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-left"/></svg>Back to log in</a>
           <div class="stack-xs stack"><h1 class="auth-title">Check your email</h1><p class="muted" id="sent-text"></p></div>
-          <p class="small muted">Can't get in? Ask your school or institute to contact us and we'll reset it for you.</p>
+          <p class="small muted">No email, or never confirmed it? Ask your institute to contact us and we'll reset your password.</p>
+        </div>
+
+        <!-- Opened from the emailed "Confirm your email" link: #confirm=<token> -->
+        <div class="stack" id="auth-confirm" hidden>
+          <div class="stack-xs stack"><h1 class="auth-title" id="confirm-title">Confirming your email…</h1><p class="muted" id="confirm-text" role="status"></p></div>
+          <a class="btn btn-primary btn-block" id="confirm-next" href="auth.html" hidden>Continue</a>
         </div>
 
         <!-- Opened from the emailed link: #reset=<token> -->
         <form class="stack" id="auth-reset" novalidate hidden onsubmit="authSubmitReset(event)">
-          <div class="stack-xs stack"><h1 class="auth-title">Choose a new password</h1><p class="muted">This also confirms the email the link was sent to.</p></div>
+          <div class="stack-xs stack"><h1 class="auth-title">Choose a new password</h1><p class="muted">Pick a new password for your account.</p></div>
           <div class="alert alert-error form-alert" id="reset-alert" role="alert"></div>
           <div class="field"><label class="field-label" for="reset-new_password">New password</label><div class="password-field"><input class="input" id="reset-new_password" type="password" autocomplete="new-password" aria-describedby="reset-new_password-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><p class="field-hint">At least 8 characters.</p><div class="form-error" id="reset-new_password-error" aria-live="polite"></div></div>
           <div class="field"><label class="field-label" for="reset-confirm">Confirm new password</label><div class="password-field"><input class="input" id="reset-confirm" type="password" autocomplete="new-password" aria-describedby="reset-confirm-error" /><button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="Show password" aria-pressed="false"><svg class="icon eye-open" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye"/></svg><svg class="icon eye-closed" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-eye-off"/></svg></button></div><div class="form-error" id="reset-confirm-error" aria-live="polite"></div></div>

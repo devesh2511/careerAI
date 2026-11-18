@@ -132,10 +132,12 @@
         const end = () => sessionSet(STUDENT_SESSION, null);
         return http('POST', '/auth/logout').then(r => { end(); return r; }, e => { end(); throw e; });
       },
-      // POST /auth/forgot-password — { username } or, when the account has no
-      // email, { username, email, full_name, phone_no, institute_code }.
-      // → { needs_email }
-      forgotPassword(body) { return http('POST', '/auth/forgot-password', body); },
+      // POST /auth/forgot-password — { username }. The link only goes to a
+      // confirmed email; the answer is always { ok: true }.
+      forgotPassword(body) { return http('POST', '/auth/forgot-password', { username: body.username }); },
+      // POST /auth/confirm-email — { token } from the "Confirm your email"
+      // link. No login needed.
+      confirmEmail(body) { return http('POST', '/auth/confirm-email', { token: body.token }); },
       // POST /auth/reset-password — { token (from the emailed link), new_password };
       // ends every session of that student
       resetPassword(body) {
@@ -157,6 +159,9 @@
       },
       // GET /me/access — live
       access() { return http('GET', '/me/access'); },
+      // POST /me/email/confirm — emails a confirmation link to the current
+      // email. → { status: 'sent' | 'already_sent' | 'already_verified' }
+      requestEmailConfirm() { return http('POST', '/me/email/confirm'); },
       // GET /me/profile — live. → { profile } (class, board and city from the
       // account; completed_at null until onboarding is done)
       profile() { return http('GET', '/me/profile'); },
@@ -282,8 +287,11 @@
       },
 
       students: {
-        // GET /admin/students?deleted=&q=
-        list(opts) { return http('GET', '/admin/students' + query({ deleted: opts && opts.deleted, q: opts && opts.q })); },
+        // GET /admin/students?deleted=&deactivated=&q=
+        list(opts) {
+          return http('GET', '/admin/students' +
+            query({ deleted: opts && opts.deleted, deactivated: opts && opts.deactivated, q: opts && opts.q }));
+        },
         // GET /admin/students/:id
         get(id) { return http('GET', '/admin/students/' + encodeURIComponent(id)); },
         // DELETE /admin/students/:id?mode=soft|hard
@@ -293,7 +301,14 @@
         // POST /admin/students/:id/password — signs them out everywhere
         setPassword(id, password) {
           return http('POST', '/admin/students/' + encodeURIComponent(id) + '/password', { password: password });
-        }
+        },
+        // POST /admin/students/:id/deactivate — { reason: 'malpractice' |
+        // 'left_institute', institute_id?, note }. → the student
+        deactivate(id, body) { return http('POST', '/admin/students/' + encodeURIComponent(id) + '/deactivate', body); },
+        // POST /admin/students/:id/reactivate — { note }. → the student
+        reactivate(id, body) { return http('POST', '/admin/students/' + encodeURIComponent(id) + '/reactivate', body); },
+        // PATCH /admin/students/:id/details — { full_name?, phone_no?, note }. → the student
+        editDetails(id, body) { return http('PATCH', '/admin/students/' + encodeURIComponent(id) + '/details', body); }
       },
 
       admins: {
