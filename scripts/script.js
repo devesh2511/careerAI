@@ -2505,7 +2505,7 @@
     // Roadmap → Export PDF. The @media print block hides the app chrome, so
     // only the open roadmap goes on paper.
     function rmExportPdf() {
-      if (!document.getElementById('rm-timeline').children.length) {
+      if (!document.querySelector('#rm-timeline .rr-stage')) {
         alert('Pick a career with a roadmap first.');
         return;
       }
@@ -3026,14 +3026,14 @@
       html += '</div>';
 
       html += '<section class="card-flat stack" aria-labelledby="cd-rm-title"><h2 class="card-title" id="cd-rm-title">Your path from Class 10</h2>' +
-        '<div class="alert alert-info" id="cd-rm-note" role="status">Loading roadmap…</div><ol class="timeline" id="cd-timeline"></ol></section>';
+        '<div class="alert alert-info" id="cd-rm-note" role="status">Loading roadmap…</div><div id="cd-timeline"></div></section>';
       body.innerHTML = html;
 
       const req = ++cdReq;
       CareerAPI.me.roadmap(c.title).then(r => {
         if (req !== cdReq) return;
         document.getElementById('cd-rm-note').hidden = true;
-        document.getElementById('cd-timeline').innerHTML = rmTimeline(r.roadmap.steps);
+        rmRoad(document.getElementById('cd-timeline'), r.roadmap.steps);
       }, err => {
         if (req !== cdReq) return;
         document.getElementById('cd-rm-note').textContent = err.code === 'not_found'
@@ -3657,12 +3657,12 @@
       const req = ++rmReq;
       const match = ((appResults && appResults.top_careers) || []).find(c => c.title === career);
       document.getElementById('rm-career').textContent = career;
-      document.getElementById('rm-timeline').innerHTML = '';
+      rmRoad(document.getElementById('rm-timeline'), []);
       rmNote('Loading roadmap…');
       CareerAPI.me.roadmap(career).then(r => {
         if (req !== rmReq) return;
         rmNote('');
-        document.getElementById('rm-timeline').innerHTML = rmTimeline(r.roadmap.steps);
+        rmRoad(document.getElementById('rm-timeline'), r.roadmap.steps);
       }, err => {
         if (req !== rmReq) return;
         rmNote(err.code === 'not_found'
@@ -3671,20 +3671,130 @@
       });
     }
 
-    // Also drawn on the career detail page. The first stage is "now", so it
-    // shows as reached.
-    // One <li> per stage, direct children of the list (rmExportPdf counts them).
-    function rmTimeline(steps) {
-      return (steps || []).map((s, i) =>
-        '<li class="tl-item' + (i === 0 ? ' current' : '') + '"><span class="tl-dot">' + (i + 1) + '</span>' +
-        '<p class="tl-title">' + esc(s.title) + '</p><p class="tl-meta">' + esc(s.period || '') + '</p>' +
-        ((s.actions || []).length ? '<div class="tl-body"><ul>' + s.actions.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : '') +
-        '</li>').join('');
+    // The roadmap as a winding road (CSS: "Roadmap road" in css/components.css).
+    // Drawn into #rm-timeline and, on the career detail page, #cd-timeline.
+    // Everything shown comes from the roadmap's steps ({ period, title,
+    // actions }); any number of stages and steps. Each stage is a numbered stop
+    // with a card that opens to show its steps; all start closed. The first
+    // stage is "now" ("You are here"). A stage with no steps has nothing to
+    // open, so it is a plain card and isn't counted in the progress bar.
+    // Each stop's colour and icon are styling picked by position: the RIASEC
+    // pastels, and the last stop is always the briefcase (the job).
+    const RR_COLORS = ['--r', '--i', '--a', '--s', '--e', '--c'];
+    const RR_ICONS = ['book-open', 'compass', 'list-checks', 'graduation-cap'];
+    function rmRoadIcon(i, n) { return i === n - 1 ? 'briefcase' : RR_ICONS[i] || 'star'; }
+
+    function rmRoad(el, steps) {
+      if (el._rrObs) { el._rrObs.disconnect(); el._rrObs = null; }
+      steps = steps || [];
+      if (!steps.length) { el.innerHTML = ''; return; }
+      const n = steps.length, key = el.id || 'rr';
+      const plural = k => k + (k === 1 ? ' step' : ' steps');
+      const openable = steps.map(s => (s.actions || []).length > 0);
+      const opens = openable.map((o, i) => o ? i : -1).filter(i => i >= 0);  // the stages with steps, one dot each
+      const total = opens.length;
+      el.innerHTML = '<div class="rr">' +
+        (total ? '<div class="rr-progress no-print"><span class="rr-dots" aria-hidden="true">' + opens.map(() => '<i></i>').join('') + '</span>' +
+          '<span class="rr-count" aria-live="polite"></span><button class="btn btn-ghost btn-sm rr-all" type="button"></button></div>' : '') +
+        '<div class="rr-road"><svg class="rr-track" aria-hidden="true" data-allow-overlap><path class="rr-edge"/><path class="rr-asphalt"/><path class="rr-dash"/></svg><ol class="rr-stages">' +
+        steps.map((s, i) => {
+          const acts = s.actions || [], id = key + '-stage-' + (i + 1);
+          const text = '<span class="rr-text">' + (s.period ? '<span class="rr-period">' + esc(s.period) + '</span>' : '') +
+            '<span class="rr-title">' + esc(s.title || '') + '</span>' +
+            (acts.length ? '<span class="rr-tease">' + plural(acts.length) + ' · tap to open</span>' : '') + '</span>';
+          const ico = '<span class="rr-ico" aria-hidden="true">' + icon(rmRoadIcon(i, n)) + '</span>';
+          return '<li class="rr-stage' + (i === 0 ? ' current' : '') + (acts.length ? '' : ' is-static') + '" style="--stage: var(' + RR_COLORS[i % RR_COLORS.length] + ')">' +
+            '<div class="rr-slot"><span class="rr-pin" aria-hidden="true">' + String(i + 1).padStart(2, '0') +
+              (i === 0 ? '<span class="rr-here">You are here</span>' : '') + '</span></div>' +
+            '<div class="rr-card"><h3 class="rr-head">' +
+              (acts.length
+                ? '<button class="rr-top" type="button" aria-expanded="false" aria-controls="' + id + '">' + ico + text + '<span class="rr-chev" aria-hidden="true">' + icon('chevron-down') + '</span></button>'
+                : '<span class="rr-top">' + ico + text + '</span>') +
+            '</h3>' +
+            (acts.length ? '<div class="rr-body" id="' + id + '"><div><ul>' + acts.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></div></div>' : '') +
+            '</div></li>';
+        }).join('') +
+        '</ol></div><p class="rr-finish">' + icon('trophy') + 'Finish line</p></div>';
+
+      const road = el.querySelector('.rr-road'), cards = [...el.querySelectorAll('.rr-card')];
+      const seen = new Set();
+      function progress() {
+        if (!total) return;
+        const open = cards.filter(c => c.classList.contains('is-open')).length;
+        el.querySelectorAll('.rr-dots i').forEach((d, k) => d.classList.toggle('on', seen.has(opens[k])));
+        el.querySelector('.rr-count').textContent = seen.size === total
+          ? (total === 1 ? 'Stage explored' : 'All ' + total + ' stages explored')
+          : seen.size + ' of ' + total + (total === 1 ? ' stage' : ' stages') + ' explored';
+        el.querySelector('.rr-all').textContent = open === total ? 'Close all' : 'Open all';
+      }
+      function toggle(i, open) {
+        if (!openable[i]) return;
+        const card = cards[i], btn = card.querySelector('.rr-top');
+        if (open === undefined) open = !card.classList.contains('is-open');
+        card.classList.toggle('is-open', open);
+        btn.setAttribute('aria-expanded', String(open));
+        card.querySelector('.rr-tease').textContent = plural(steps[i].actions.length) + (open ? ' · tap to close' : ' · tap to open');
+        if (open) seen.add(i);
+        progress();
+      }
+      el.querySelectorAll('.rr-stage').forEach((st, i) => {
+        if (!openable[i]) return;
+        st.querySelector('.rr-top').addEventListener('click', () => toggle(i));
+        st.querySelector('.rr-pin').addEventListener('click', () => toggle(i));
+      });
+      const all = el.querySelector('.rr-all');
+      if (all) all.addEventListener('click', () => {
+        const open = cards.some((c, i) => openable[i] && !c.classList.contains('is-open'));
+        steps.forEach((s, i) => toggle(i, open));
+      });
+      progress();
+
+      // Layout and road, redone whenever a card changes size (a stage opening
+      // or closing, a resize or layout switch, the page being shown). Only the
+      // cards are observed: their size never depends on what this sets, so it
+      // can't loop. Stroke widths and the layout switch live in the CSS.
+      const stages = [...road.querySelectorAll('.rr-stage')], list = road.querySelector('.rr-stages');
+      const paths = road.querySelectorAll('.rr-track path');
+      function layout() {
+        if (!road.isConnected) { obs.disconnect(); return; }
+        const box = road.getBoundingClientRect();
+        if (!box.width) return;
+        const wide = getComputedStyle(road).getPropertyValue('--rr-wide').trim() === '1';
+        // Wide layout: cards alternate sides, so each stage tucks up beside the
+        // one before it. It starts at least RR_STEP below the previous stop and
+        // clear of the card two back, on its own side.
+        const RR_STEP = 124, RR_GAP = 16;
+        let tops = [], ends = [], flowEnd = 0;
+        stages.forEach((st, i) => {
+          const h = st.offsetHeight;
+          const top = !wide || i === 0 ? flowEnd
+            : Math.max(tops[i - 1] + RR_STEP, i > 1 ? ends[i - 2] + RR_GAP : 0);
+          st.style.marginTop = i && wide ? (top - flowEnd) + 'px' : '';
+          tops.push(top); ends.push(top + h); flowEnd = top + h;
+        });
+        list.style.paddingBottom = wide ? Math.max(0, Math.max(...ends) - flowEnd) + 'px' : '';
+
+        const rbox = road.getBoundingClientRect();
+        const pts = [...road.querySelectorAll('.rr-pin')].map(p => {
+          const r = p.getBoundingClientRect();
+          return [r.left + r.width / 2 - rbox.left, r.top + r.height / 2 - rbox.top];
+        });
+        const mid = rbox.width / 2;
+        const line = [[wide ? mid + 44 : pts[0][0], 0], ...pts, [wide ? mid : pts[n - 1][0], rbox.height]];
+        let d = 'M' + line[0].map(Math.round).join(' ');
+        for (let k = 1; k < line.length; k++) {
+          const [x0, y0] = line[k - 1], [x1, y1] = line[k], h = (y1 - y0) / 2;
+          d += ' C' + [x0, y0 + h, x1, y1 - h, x1, y1].map(v => Math.round(v * 10) / 10).join(' ');
+        }
+        paths.forEach(p => p.setAttribute('d', d));
+      }
+      const obs = el._rrObs = new ResizeObserver(layout);
+      cards.forEach(c => obs.observe(c));
     }
 
     function rmMessage(text) {
       document.getElementById('rm-career').textContent = 'Your top career';
-      document.getElementById('rm-timeline').innerHTML = '';
+      rmRoad(document.getElementById('rm-timeline'), []);
       rmNote(text);
     }
 

@@ -267,6 +267,108 @@ a.card:hover, .card-link:hover { transform: translate(-1px, -1px); box-shadow: 4
 .tl-body { margin-top: var(--sp-2); font-size: var(--fs-body); }
 .tl-body ul { padding-left: 1.1em; display: grid; gap: 4px; }
 
+/* ---------- Roadmap road (rmRoad in scripts/script.js) ----------
+   A winding road with one numbered stop per stage; a stage's card opens to show
+   its steps. The base layout is the narrow one (road down the left edge, cards on
+   the right); from 640px of road width on screen the road winds down the middle
+   and cards alternate sides. Print always gets the narrow layout, every stage
+   open. The script offsets each wide-layout stage so it tucks up beside the
+   one before, and draws the SVG road through the stop centres. */
+.rr { container: rr / inline-size; display: grid; gap: var(--sp-4); }
+.rr-progress { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); font-size: var(--fs-small); color: var(--muted); }
+.rr-dots { display: flex; gap: 4px; }
+.rr-dots i { width: 16px; height: 6px; border-radius: var(--r-pill); background: var(--line-soft); transition: background var(--dur) var(--ease); }
+.rr-dots i.on { background: var(--ink); }
+.rr-progress .btn { margin-left: auto; }
+.rr-road { position: relative; padding-top: 32px; --rr-wide: 0; }
+.rr-track { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.rr-track path { fill: none; stroke-linecap: round; }
+.rr-edge { stroke: var(--road-edge); stroke-width: 30px; }
+.rr-asphalt { stroke: var(--road); stroke-width: 22px; }
+.rr-dash { stroke: var(--road-dash); stroke-width: 1.5px; stroke-dasharray: 6 7; stroke-linecap: butt !important; }
+.rr-stages { list-style: none; margin: 0; padding: 0; position: relative; }
+.rr-stage { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: start; padding-bottom: var(--sp-4); }
+.rr-slot { grid-column: 1; grid-row: 1; position: relative; align-self: stretch; }
+.rr-pin {
+  position: absolute; top: 8px; left: 24px; translate: -50% 0; z-index: 1;
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--stage); color: var(--on-pastel); border: var(--outline); box-shadow: var(--shadow-hard-sm);
+  font-family: var(--font-num); font-weight: 700; font-size: 0.875rem; cursor: pointer;
+}
+.rr-stage:nth-child(even) .rr-pin { left: 32px; }
+.rr-stage.is-static .rr-pin { cursor: default; }
+.rr-stage.current .rr-pin { animation: rr-pulse 2.2s var(--ease) infinite; }
+@keyframes rr-pulse {
+  0% { box-shadow: var(--shadow-hard-sm), 0 0 0 0 var(--accent); }
+  80%, 100% { box-shadow: var(--shadow-hard-sm), 0 0 0 12px transparent; }
+}
+.rr-here {
+  position: absolute; bottom: calc(100% + 6px); left: -6px; white-space: nowrap;
+  font-family: var(--font-ui); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--ink); color: var(--paper); padding: 2px 8px; border-radius: var(--r-pill);
+}
+.rr-card { grid-column: 2; grid-row: 1; min-width: 0; background: var(--surface); border: var(--outline-soft); border-radius: var(--r-card); transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
+.rr-card.is-open { border-color: var(--line); box-shadow: var(--shadow-hard); }
+.rr-head { margin: 0; font: inherit; }
+.rr-top {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center;
+  width: 100%; min-height: 44px; padding: var(--sp-3) var(--sp-4); margin: 0;
+  background: none; border: 0; border-radius: inherit; color: inherit; font: inherit; text-align: left;
+}
+button.rr-top { cursor: pointer; }
+.rr-top:hover .rr-title { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 0.18em; }
+.rr-ico { display: none; width: 40px; height: 40px; border-radius: var(--r-input); place-items: center; background: var(--stage); color: var(--on-pastel); border: var(--outline); }
+.rr-ico .icon { width: 20px; height: 20px; }
+.rr-text { display: grid; gap: 2px; min-width: 0; }
+.rr-period { font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.rr-title { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1.25; }
+.rr-tease { font-size: var(--fs-small); color: var(--muted); }
+.rr-chev { color: var(--muted); transition: transform var(--dur) var(--ease); }
+.rr-card.is-open .rr-chev { transform: rotate(180deg); }
+.rr-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur) var(--ease); }
+.rr-card.is-open .rr-body { grid-template-rows: 1fr; }
+.rr-body > div { overflow: hidden; visibility: hidden; transition: visibility 0s linear var(--dur); }
+.rr-card.is-open .rr-body > div { visibility: visible; transition: visibility 0s; }
+.rr-body ul { margin: 0; padding: 0 var(--sp-4) var(--sp-4) calc(var(--sp-4) + 1.1em); display: grid; gap: 6px; font-size: var(--fs-body); }
+.rr-finish { display: flex; align-items: center; gap: var(--sp-2); margin: 0; padding-left: 12px; font-family: var(--font-display); font-weight: 600; }
+.rr-finish .icon { width: 24px; height: 24px; color: var(--accent-text); }
+@media screen {
+  @container rr (min-width: 640px) {
+    .rr-road { padding-top: 40px; --rr-wide: 1; }
+    .rr-edge { stroke-width: 50px; }
+    .rr-asphalt { stroke-width: 40px; }
+    .rr-dash { stroke-width: 2.5px; stroke-dasharray: 12 12; }
+    .rr-stage { grid-template-columns: minmax(0, 1fr) 136px minmax(0, 1fr); padding-bottom: var(--sp-4); }
+    .rr-slot { grid-column: 2; }
+    .rr-card { grid-column: 3; }
+    .rr-stage:nth-child(even) .rr-card { grid-column: 1; }
+    .rr-pin { top: 12px; width: 48px; height: 48px; font-size: 1rem; left: calc(50% - 28px); }
+    .rr-stage:nth-child(even) .rr-pin { left: calc(50% + 28px); }
+    .rr-here { left: 50%; translate: -50% 0; }
+    .rr-top { grid-template-columns: 40px minmax(0, 1fr) auto; padding: var(--sp-4); }
+    .rr-ico { display: grid; }
+    .rr-body ul { padding-left: calc(var(--sp-4) + 40px + var(--sp-3) + 1.1em); }
+    .rr-finish { justify-content: center; padding-left: 0; }
+  }
+}
+@media print {
+  .rr-progress, .rr-track, .rr-here, .rr-tease, .rr-chev { display: none !important; }
+  .rr-road { padding-top: 0; }
+  .rr-stage { break-inside: avoid; margin-top: 0 !important; }  /* the wide layout's tuck-up offsets, set by script */
+  .rr-stages { padding-bottom: 0 !important; }
+  .rr-pin, .rr-stage.current .rr-pin { box-shadow: none; animation: none; }
+  /* A full roadmap runs past one page: let its card split between stages
+     (layouts.css keeps other cards whole). */
+  .card:has(.rr) { break-inside: auto; }
+  .rr-stage { padding-bottom: var(--sp-3); }
+  .rr-body ul { gap: 2px; padding-bottom: var(--sp-3); }
+  .rr-card, .rr-card.is-open { border-color: var(--line-soft); box-shadow: none; }
+  .rr-body, .rr-body > div { transition: none !important; }
+  .rr-body { grid-template-rows: 1fr !important; }
+  .rr-body > div { visibility: visible !important; }
+  .rr-top { padding-bottom: var(--sp-2); }
+}
+
 /* ---------- Table ---------- */
 .table-wrap { overflow-x: auto; }
 .table { font-size: var(--fs-small); overflow-wrap: break-word; } /* body's 'anywhere' would let auto table layout squeeze a column to one letter */

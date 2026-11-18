@@ -51,6 +51,10 @@
   --cat-exams-weak: #ffe3d8;
   --cat-scholarships: #6b3fa0;
   --cat-scholarships-weak: #ebe1fa;
+  /* Roadmap road (scripts/script.js rmRoad): asphalt, its kerb and the centre dashes. */
+  --road: #2e2a25;
+  --road-edge: #ddd3c1;
+  --road-dash: #f6f1e7;
 }
 
 [data-theme="dark"] {
@@ -101,6 +105,9 @@
   --cat-exams-weak: #45261e;
   --cat-scholarships: #c7a8f5;
   --cat-scholarships-weak: #2d2340;
+  --road: #3d3731;
+  --road-edge: #5a5249;
+  --road-dash: #cfc4b2;
 }
 
 /* Printing (Save as PDF) always uses the light palette, whatever the screen theme. */
@@ -154,6 +161,10 @@
     --cat-exams-weak: #ffe3d8;
     --cat-scholarships: #6b3fa0;
     --cat-scholarships-weak: #ebe1fa;
+    /* Roadmap road (scripts/script.js rmRoad): asphalt, its kerb and the centre dashes. */
+    --road: #2e2a25;
+    --road-edge: #ddd3c1;
+    --road-dash: #f6f1e7;
   }
 }
 
