@@ -2812,33 +2812,7 @@
       const link = (on, ic, t, s) => '<li><button class="db-link" type="button" onclick="' + on + '">' +
         '<span class="icon-tile">' + icon(ic) + '</span><span class="db-link-text"><span class="db-link-title">' + t + '</span>' +
         '<span class="card-sub">' + s + '</span></span></button></li>';
-      return '<section class="card-flat db-links" aria-labelledby="db-links-title"><h2 class="card-title" id="db-links-title">Keep exploring</h2><ul class="db-link-list">' +
-        link('navTo(\'explorer\')', 'search', 'Explore careers', 'Compare careers by stream, salary and fit.') +
-        link('navTo(\'chat\')', 'message-square', 'Ask AI Chat', '&ldquo;Which entrance exams do I need for my top career?&rdquo;') +
-        link('navTo(\'space\')', 'newspaper', 'Career Space', 'News, internships and jobs for your career.') +
-        link('cqDownloadReport()', 'download', 'Download your report', 'A printable PDF of your quiz results.') +
-        '</ul></section>';
-    }
-
-    // One row of the best-fit list. The whole row opens the career; titles
-    // carry & and /, so they travel in data-career, not in the onclick.
-    function dbFitRow(c) {
-      const p = Math.round(c.match_pct || 0);
-      return '<li><button class="db-fit" type="button" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
-        '<span class="db-fit-main"><span class="db-fit-title">' + esc(c.title) + '</span>' +
-        (c.why ? '<span class="db-fit-why">' + esc(c.why) + '</span>' : '') + '</span>' +
-        '<span class="db-fit-score"><span class="db-fit-pct">' + p + '<span class="db-fit-unit">%</span></span>' +
-        '<span class="badge ' + fitClass(p) + '">' + esc(fitLabel(p).split(',')[0]) + '</span></span>' +
-        '<progress class="progress progress-ink db-fit-meter" max="100" value="' + p + '" aria-hidden="true"></progress>' +
-        '</button></li>';
-    }
-
-    // "Keep exploring": the same four ways on from Home, whatever the state.
-    function dbLinks() {
-      const link = (on, ic, t, s) => '<li><button class="db-link" type="button" onclick="' + on + '">' +
-        '<span class="icon-tile">' + icon(ic) + '</span><span class="db-link-text"><span class="db-link-title">' + t + '</span>' +
-        '<span class="card-sub">' + s + '</span></span></button></li>';
-      return '<section class="card-flat db-links" aria-labelledby="db-links-title"><h2 class="card-title" id="db-links-title">Keep exploring</h2><ul class="db-link-list">' +
+      return '<section class="card-flat db-links" aria-labelledby="db-links-title"><h2 class="db-side-title" id="db-links-title">Keep exploring</h2><ul class="db-link-list">' +
         link('navTo(\'explorer\')', 'search', 'Explore careers', 'Compare careers by stream, salary and fit.') +
         link('navTo(\'chat\')', 'message-square', 'Ask AI Chat', '&ldquo;Which entrance exams do I need for my top career?&rdquo;') +
         link('navTo(\'space\')', 'newspaper', 'Career Space', 'News, internships and jobs for your career.') +
@@ -2878,6 +2852,8 @@
 
       // ── No results yet: the quiz is the one thing to do ─────────────
       if (!appResults) {
+        // The quiz card is the focus here, so the headline keeps the normal size.
+        title.className = '';
         title.innerHTML = 'Let\'s find <span class="hl">your direction</span>.';
         sub.textContent = 'Answer 25 quick questions about what you enjoy. We\'ll match you with careers and build a step-by-step roadmap for the one you pick.';
         ctaBtn.hidden = true;
@@ -2902,11 +2878,19 @@
       if (statsWrap) statsWrap.hidden = true;
       if (stats) stats.innerHTML = '';
       const d = appResults, list = d.top_careers || [], top = list[0], r = d.riasec || {};
-      title.innerHTML = top ? 'Your <span class="hl">path</span> is taking shape.' : 'Your results are in.';
+      // The headline is the one big thing on Home, so it states the result:
+      // how many careers are tied at the top, or the one that is clearly ahead.
+      const joint = top ? Math.max(1, rsJointTop(list)) : 0;
+      const countWord = n => ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][n] || String(n);
+      title.className = top ? 'db-hero-title' : '';
+      title.textContent = !top ? 'Your results are in.'
+        : joint >= 2 ? countWord(joint) + ' careers fit you almost equally.'
+        : top.title + ' fits you best.';
       // The personality type heads the interest-code card; with no code, it leads the subtitle.
       const hasCode = /[RIASEC]/.test(r.code || '');
       sub.textContent = top
-        ? (!hasCode && d.personality_type ? d.personality_type + '. ' : '') + 'Start with the careers that fit you best, then pick one to build your roadmap.'
+        ? (!hasCode && d.personality_type ? d.personality_type + '. ' : '') +
+          (joint >= 2 ? 'Explore each one, then pick a career to build your roadmap.' : 'Compare it with your other matches, then pick one to build your roadmap.')
         : (d.stream_recommendation ? cqStreamLabel(d) + ' is your recommended stream for Class 11.' : '');
       ctaBtn.hidden = false;
       ctaBtn.innerHTML = top ? icon('route') + 'Open my roadmap' : 'Explore careers';
@@ -2923,16 +2907,16 @@
       // top matches: the quiz can't separate them, so a margin bracket groups
       // them and none is crowned. One career clearly ahead gets the bracket alone.
       if (top) {
-        const joint = Math.max(1, rsJointTop(list));
-        const note = joint === 1
-          ? 'Your best fit'
-          : (joint === list.length ? (joint === 2 ? 'Both' : 'All ' + joint) : 'These ' + joint) +
-            ' fit you almost equally. The quiz can\'t separate them, so explore each before you choose.';
+        // The headline already says how many are tied; the note says what to do about it.
+        const lead = list[1] ? Math.round(top.match_pct || 0) - Math.round(list[1].match_pct || 0) : 0;
+        const note = joint >= 2
+          ? 'The quiz can\'t separate these, so explore each before you choose.'
+          : (lead ? lead + ' points ahead of your next match' : 'Your best fit');
         const rest = list.length > joint
           ? '<ul class="db-fit-list db-fit-rest">' + list.slice(joint).map(dbFitRow).join('') + '</ul>'
           : '';
         html += '<section class="card db-fits" aria-labelledby="db-fits-title">' +
-          '<h2 class="card-title-lg" id="db-fits-title">Your best-fit careers</h2>' +
+          '<h2 class="visually-hidden" id="db-fits-title">Your best-fit careers</h2>' +
           '<div class="db-fit-group' + (dbPenDrawn ? ' db-fit-still' : '') + '"><p class="db-fit-note">' + esc(note) + '</p>' +
           '<ul class="db-fit-list">' + list.slice(0, joint).map(dbFitRow).join('') + '</ul></div>' +
           rest + '<div class="db-fits-foot"><button class="btn btn-ghost" type="button" onclick="navTo(\'results\')">Compare them in Career Matches</button></div></section>';
@@ -2949,7 +2933,7 @@
           (d.stream_reason ? '<p class="db-stream-reason">' + esc(d.stream_reason) + '</p>' : '') +
           '<div><button class="btn btn-secondary btn-sm" onclick="exploreStream(appResults && appResults.stream_recommendation)">See careers in this stream</button></div></div></section>';
       }
-      html += '</div><aside class="stack-lg stack">';
+      html += '</div><aside class="stack db-side">';
 
       // The interest code, each letter in plain words (names like
       // "Investigative" are only the fallback).
@@ -2960,14 +2944,15 @@
           return x.plain || (typeof RS_DIM_PLAIN !== 'undefined' && RS_DIM_PLAIN[l]) || x.name || l;
         };
         html += '<section class="card-flat db-code" aria-labelledby="db-code-title">' +
-          '<div class="stack-xs stack"><h2 class="card-title" id="db-code-title">' + esc(d.personality_type || 'Your interest code') + '</h2>' +
+          '<div class="stack-xs stack"><h2 class="db-side-title" id="db-code-title">' + esc(d.personality_type || 'Your interest code') + '</h2>' +
           '<p class="card-sub">What you enjoy most, strongest first</p></div>' +
           '<ul class="db-code-list">' + code.map(l => '<li><span class="riasec-tile" data-dim="' + l + '" aria-hidden="true">' + l + '</span><span>' + esc(plain(l)) + '</span></li>').join('') +
           '</ul></section>';
       }
-      html += '<section class="card-ink db-contest" aria-labelledby="db-contest-title"><div class="cluster cluster-lg">' + illo('trophy', 'sm') +
-        '<div class="grow stack-xs stack"><h2 class="card-title" id="db-contest-title">Weekly contests</h2><p class="muted small">Five questions every Saturday about your career. Climb the leaderboard and keep your streak.</p></div></div>' +
-        '<button class="btn btn-primary btn-block" onclick="navTo(\'contests\')">Go to contests</button></section>';
+      // A light card here: on Home the contest supports the matches, it doesn't lead.
+      html += '<section class="card-flat db-contest" aria-labelledby="db-contest-title">' + illo('trophy', 'sm') +
+        '<div class="grow stack-xs stack"><h2 class="db-side-title" id="db-contest-title">Weekly contests</h2><p class="card-sub">Five questions every Saturday about your career. Climb the leaderboard and keep your streak.</p>' +
+        '<div><button class="btn btn-secondary btn-sm" onclick="navTo(\'contests\')">Go to contests</button></div></div></section>';
       html += dbLinks();
       html += '</aside></div>';
       main.innerHTML = html;
