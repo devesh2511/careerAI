@@ -27,3 +27,8 @@ tests/browser/node_modules/
 
 # Tests — not part of the site
 tests/
+
+# Markdown docs live in D:\Crackeer, not with the code (README and licence files excepted)
+*.md
+!README.md
+!LICENSE*.md
