@@ -44,6 +44,13 @@
       return isNaN(d) ? '' : d.toISOString();
     }
     function admNow() { return window.ContestAPI ? ContestAPI.now() : Date.now(); }
+    // <input type="datetime-local"> value ('YYYY-MM-DDTHH:MM') of an instant, in IST
+    function admIstLocal(t) { return new Date(t + 5.5 * 3600e3).toISOString().slice(0, 16); }
+    // ISO instant of an IST datetime-local value; '' if blank or not a real time
+    function admIstLocalIso(v) {
+      const d = v ? new Date(Date.parse(v + ':00+05:30')) : null;
+      return d && !isNaN(d) ? d.toISOString() : '';
+    }
 
     // ── Toast ──
     let admToastTimer = null;
@@ -920,6 +927,8 @@
 
     function admPlanBadge(s) {
       const sub = s.subscription;
+      // A live pilot stands in for a subscription until the institute pays.
+      if (s.pilot && s.pilot.live && !(sub && sub.active)) return '<span class="badge badge-purple">Pilot until ' + admEsc(admWhen(s.pilot.ends_at)) + '</span>';
       if (!sub) return '<span class="badge badge-orange">No subscription</span>';
       const paid = sub.paid ? '' : ' <span class="badge badge-blue">Payment not recorded</span>';
       if (sub.active) return '<span class="badge badge-green">Until ' + admEsc(admLastDay(sub.ends_at)) + '</span>' + paid;
@@ -976,7 +985,7 @@
     function admSchools(r, seq) {
       admSchoolRows().then(table => {
         admPaint(seq,
-          admTopbar('Schools and institutes', 'Students can register only if they\'re on an institute\'s list, and use the app while that list\'s subscription is current.',
+          admTopbar('Schools and institutes', 'Students can register only if they\'re on an institute\'s list, and use the app while that list\'s subscription is current. During a pilot, anyone with the Institute ID can register, up to the pilot seats.',
             admSchoolTab === 'active' ? '<button class="btn btn-primary btn-sm" onclick="admSchoolModal()">+ Add institute</button>' : '') +
           '<div class="adm-toolbar">' + admTabs([{ key: 'active', label: 'Active' }, { key: 'deleted', label: 'Deleted' }], admSchoolTab, 'admSchoolTabSet') +
           '<input class="form-input adm-search" type="search" placeholder="Search name, institute ID or city" value="' + admEsc(admSchoolQuery) + '" oninput="admSearch(\'schools\',this.value)" /></div>' +
@@ -998,13 +1007,89 @@
         admField('City', 'city', s.city) +
         admField('Address', 'address', s.address, { optional: true, span: true }) +
         admField('Contact details', 'contact_details', s.contact_details, { optional: true, span: true, placeholder: 'Name, phone or email of the coordinator' }) +
+        '</div>' + admPilotFields(s);
+    }
+    // Pilot: a short free trial before the institute pays. While it runs,
+    // students not on the list register with the Institute ID and get access
+    // straight away, up to the seats for their class. It ends by itself.
+    function admPilotFields(s) {
+      const p = s.pilot || { mode: false, ends_at: null, seats: { class9: { limit: 5 }, class10: { limit: 5 } } };
+      // A pilot that's on shows its real end time, even once it has passed;
+      // one that's off suggests 48 hours from now unless its end is still ahead.
+      const stored = p.ends_at ? Date.parse(p.ends_at) : NaN;
+      const end = !isNaN(stored) && (p.mode || stored > admNow()) ? stored : admNow() + 48 * 3600e3;
+      const seat = { type: 'number', attrs: ' min="0" max="1000" step="1" inputmode="numeric"' };
+      return '<div class="adm-section-title">Pilot</div><div class="adm-form-grid">' +
+        admField('Pilot mode', 'pilot_mode', p.mode ? 'true' : 'false', {
+          select: [{ value: 'false', label: 'Off' }, { value: 'true', label: 'On: students not on the list can join the trial' }],
+          hint: 'For a free trial before the institute pays. Pilot students use the app straight away and keep their account when the institute subscribes, if the uploaded list has their name and phone.' }) +
+        admField('Pilot ends (IST)', 'pilot_ends_at', admIstLocal(end), { type: 'datetime-local',
+          hint: 'Pilot students lose access and sign-ups close at this time, even if pilot mode is still on.' }) +
+        admField('Class 9 seats', 'pilot_seats_class9', p.seats.class9.limit, seat) +
+        admField('Class 10 seats', 'pilot_seats_class10', p.seats.class10.limit, seat) +
         '</div>';
+    }
+    // The institute form's values for the API. The pilot end time (entered in
+    // IST) is sent only when it matters: on create, when the pilot is being
+    // turned on, or when the admin changed it. A plain save leaves it alone,
+    // so saving an institute whose pilot has run out doesn't restart it.
+    // form.dataset.pilotMode: the saved pilot mode (details form only).
+    function admSchoolData(form) {
+      const d = admFormData(form);
+      const endEl = form.querySelector('[name=pilot_ends_at]');
+      const wasOn = form.dataset.pilotMode === 'true';
+      const changed = !endEl || d.pilot_ends_at !== endEl.defaultValue;
+      if (d.pilot_mode === 'true' && (!wasOn || changed)) d.pilot_ends_at = admIstLocalIso(d.pilot_ends_at);
+      else delete d.pilot_ends_at;
+      return d;
+    }
+    // The pilot's state, with Extend / Stop buttons, above the details form.
+    function admPilotStatus(s) {
+      const p = s.pilot;
+      if (!p || !p.mode || s.is_deleted) return '';
+      const seats = c => {
+        const x = p.seats['class' + c];
+        return 'Class ' + c + ': <b>' + x.used + ' / ' + x.limit + '</b>' + (x.used >= x.limit ? ' (full)' : '');
+      };
+      const state = p.live
+        ? '<span class="badge badge-purple">Pilot running</span> until <b>' + admEsc(admWhen(p.ends_at)) + '</b>'
+        : Date.parse(p.ends_at) <= admNow()
+          ? '<span class="badge badge-orange">Pilot ended</span> ' + admEsc(admWhen(p.ends_at)) + '. Pilot students have no access now.'
+          : '<span class="badge badge-orange">Pilot paused</span> (the institute is suspended)';
+      return '<div class="adm-note">' + state + ' · ' + seats(9) + ' · ' + seats(10) +
+        '<div class="adm-actions" style="margin-top:8px;">' +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="admPilotAction(' + s.id + ',\'extend\',this)">Extend 1 day</button>' +
+        '<button class="btn btn-danger btn-sm" type="button" onclick="admPilotAction(' + s.id + ',\'stop\',this)">Stop now</button></div></div>';
+    }
+    // Extend: one more day from the current end (or from now, if it has ended).
+    // Stop: pilot mode off, so pilot students lose access straight away.
+    function admPilotAction(id, action, btn) {
+      const form = document.getElementById('adm-school-form');
+      if (!form) return;
+      if (action === 'stop' && !confirm('Stop the pilot now? Pilot students lose access straight away, and nobody else can join the trial.')) return;
+      const d = admSchoolData(form);
+      if (action === 'stop') {
+        d.pilot_mode = 'false';
+        delete d.pilot_ends_at;
+      } else {
+        const cur = Date.parse(form.dataset.pilotEnds || '');
+        d.pilot_mode = 'true';
+        // Whole minutes, so the end time shows exactly in the minute-precision field.
+        const next = Math.max(isNaN(cur) ? 0 : cur, admNow()) + 24 * 3600e3;
+        d.pilot_ends_at = new Date(Math.ceil(next / 60e3) * 60e3).toISOString();
+      }
+      admClearErrors(form);
+      admBusy(btn, true);
+      CareerAPI.admin.institutes.update(id, d).then(s => {
+        admToast(action === 'stop' ? 'Pilot stopped.' : 'Pilot extended to ' + admWhen(s.pilot.ends_at) + '.');
+        admRoute();
+      }).catch(err => { admBusy(btn, false); admFormError(form, err); });
     }
     function admSchoolModal() {
       admModal({
         title: 'Add school or institute', submit: 'Add', wide: true, body: admSchoolFields(),
-        onSubmit: form => CareerAPI.admin.institutes.create(admFormData(form)).then(s => {
-          admToast(s.name + ' added. Upload its student list next.');
+        onSubmit: form => CareerAPI.admin.institutes.create(admSchoolData(form)).then(s => {
+          admToast(s.name + ' added.' + (s.pilot && s.pilot.live ? ' Its pilot is running.' : ' Upload its student list next.'));
           admGo('schools/' + s.id + '/students');
         })
       });
@@ -1036,7 +1121,8 @@
             '<button class="filter-chip' + (t[0] === tab ? ' active' : '') + '" role="tab" aria-selected="' + (t[0] === tab) + '" onclick="admGo(\'schools/' + s.id + '/' + t[0] + '\')">' + admEsc(t[1]) + '</button>').join('') +
           '</div>';
         if (tab === 'details') {
-          return admPaint(seq, head + '<form class="adm-panel adm-panel-pad" id="adm-school-form" novalidate onsubmit="admSaveSchool(event,' + s.id + ')">' +
+          return admPaint(seq, head + admPilotStatus(s) + '<form class="adm-panel adm-panel-pad" id="adm-school-form" novalidate onsubmit="admSaveSchool(event,' + s.id + ')"' +
+            ' data-pilot-ends="' + admEsc((s.pilot && s.pilot.ends_at) || '') + '" data-pilot-mode="' + (s.pilot && s.pilot.mode ? 'true' : 'false') + '">' +
             '<div class="adm-error-box" style="display:none;"></div>' + admSchoolFields(s) +
             '<div class="adm-q-foot"><button class="btn btn-primary btn-sm" type="submit">Save changes</button></div></form>');
         } else if (tab === 'students') {
@@ -1055,7 +1141,7 @@
       const form = e.target, btn = form.querySelector('button[type=submit]');
       admClearErrors(form);
       admBusy(btn, true);
-      CareerAPI.admin.institutes.update(id, admFormData(form)).then(() => {
+      CareerAPI.admin.institutes.update(id, admSchoolData(form)).then(() => {
         admToast('Saved.');
         admRoute();
       }).catch(err => { admBusy(btn, false); admFormError(form, err); });
@@ -1113,10 +1199,11 @@
         const st = r.student
           ? '<span class="badge badge-green">Registered</span><div class="adm-sub">as <button class="adm-link" onclick="admGo(\'students/' + r.student.id + '\')">' + admEsc(r.student.username) + '</button></div>'
           : '<span class="badge badge-blue">Not registered yet</span>';
+        const pilot = r.via_pilot ? ' <span class="badge badge-purple" title="Joined during the pilot">Pilot</span>' : '';
         const sub = !r.subscription ? '<span class="badge badge-orange">None</span>'
           : r.subscription.active ? '<span class="badge badge-green">Until ' + admEsc(admLastDay(r.subscription.ends_at)) + '</span>'
             : '<span class="badge badge-red">Ended ' + admEsc(admLastDay(r.subscription.ends_at)) + '</span>';
-        return '<tr><td><b>' + admEsc(r.full_name) + '</b></td><td><span class="adm-mono">' + admEsc(r.phone_no) + '</span></td><td>' + st + '</td><td>' + sub + '</td>' +
+        return '<tr><td><b>' + admEsc(r.full_name) + '</b>' + pilot + '</td><td><span class="adm-mono">' + admEsc(r.phone_no) + '</span></td><td>' + st + '</td><td>' + sub + '</td>' +
           '<td>' + admEsc(admDay(r.created_at)) + '</td>' +
           '<td class="adm-row-actions"><button class="btn btn-ghost btn-sm" onclick="admRosterRemove(' + s.id + ',' + admEsc(JSON.stringify(r.full_name)) + ',' + admEsc(JSON.stringify(r.phone_no)) + ')">Remove</button></td></tr>';
       });
@@ -1138,7 +1225,14 @@
         '</div>' +
         '<div class="adm-actions"><span style="flex:1;"></span><button class="btn btn-primary btn-sm" type="submit">Upload list</button></div>' +
         '<div id="adm-roster-result"></div></form>';
-      return '<div class="adm-note">Students register with their <b>name and phone number exactly as on this list</b> and Institute ID <span class="adm-mono"><b>' +
+      const p = s.pilot;
+      const pilotUsed = p ? p.seats.class9.used + p.seats.class10.used : 0;
+      const pilotNote = p && p.live
+        ? '<div class="adm-note"><span class="badge badge-purple">Pilot running</span> until <b>' + admEsc(admWhen(p.ends_at)) + '</b> · ' +
+          pilotUsed + ' of ' + (p.seats.class9.limit + p.seats.class10.limit) + ' seats used. Students who joined through the pilot show a <b>Pilot</b> badge. ' +
+          'When the institute pays, upload its list as usual: pilot students on it with the same name and phone keep their account.</div>'
+        : '';
+      return pilotNote + '<div class="adm-note">Students register with their <b>name and phone number exactly as on this list</b> and Institute ID <span class="adm-mono"><b>' +
         admEsc(s.institute_code) + '</b></span>. Removing someone takes this institute\'s access away; their account stays.</div>' + upload +
         admTable([{ label: 'Name' }, { label: 'Phone' }, { label: 'Status' }, { label: 'Subscription' }, { label: 'Added' }, { label: '', cls: 'adm-row-actions' }], list,
           'Nobody on the list yet. Upload the file the institute sent you above.');
@@ -1188,6 +1282,7 @@
         (list.length > 50 ? '<li>…and ' + (list.length - 50) + ' more</li>' : '') + '</ul>';
       const who = x => admEsc(x.full_name) + ' <span class="adm-mono">' + admEsc(x.phone_no) + '</span>';
       const moved = res.moved || [], old = res.matched_by_old_details || [], amb = res.ambiguous || [], off = res.deactivated || [];
+      const pilot = res.pilot_unmatched || [];
       // Moves grouped by the school they came off: "3 students moved from School A".
       const bySchool = {};
       moved.forEach(x => { (bySchool[x.from.name] = bySchool[x.from.name] || []).push(x); });
@@ -1202,6 +1297,13 @@
         (amb.length ? '<div style="color:var(--accent3);">⚠ <b>' + amb.length + '</b> match old details of more than one account, so they weren\'t linked. Check them' + people(amb, who) + '</div>' : '') +
         (off.length ? '<div style="color:var(--accent3);">⛔ <b>' + off.length + '</b> deactivated: on the list, but still can\'t log in' +
           people(off, x => '<a href="#/students/' + x.student_id + '">' + who(x) + '</a>') + '</div>' : '') +
+        // Pilot students the file didn't match: shown once, here, not saved.
+        (pilot.length ? '<div style="color:var(--accent3);">⚠ <b>' + pilot.length + '</b> pilot student' + (pilot.length === 1 ? '' : 's') +
+          ' not found in this file, so they aren\'t on this subscription and lose access when the pilot ends. ' +
+          'If one is in the file under another spelling, open the student and correct their name and phone to match the file: that moves them onto the subscription.' +
+          people(pilot, x => '<a href="#/students/' + x.student_id + '">' + who(x) + '</a> · ' + admEsc(x.username) + ' · class ' + admEsc(x.class) +
+            (x.suggestions.length ? '<div class="adm-sub">Same phone in the file: ' +
+              x.suggestions.map(g => '<b>' + admEsc(g.full_name) + '</b>').join(', ') + '</div>' : '')) + '</div>' : '') +
         '<div>Subscription #' + res.subscription.id + ': ' + res.subscription.head_count + ' students, ' + admEsc(admDay(res.subscription.starts_at)) +
         ' – ' + admEsc(admLastDay(res.subscription.ends_at)) + '. Record the payment on the Subscriptions tab.</div></div>';
     }

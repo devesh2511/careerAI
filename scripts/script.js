@@ -488,8 +488,11 @@
     // students who aren't on its list through the same steps; they get a
     // request instead (authNeedsApproval) and the paywall says it's waiting
     // for approval until an admin approves it.
+    // An institute running a pilot (a free trial before it pays) lets them
+    // through too, with access straight away (authPilot), while seats last.
     let authEntry = null;        // { full_name, phone_no, institute_code } once step 1 found them
     let authNeedsApproval = false; // step 1 said they aren't on the list: finishing sends a join request
+    let authPilot = false;       // step 1 said they aren't on the list: finishing takes a trial seat
     let authLinked = null;       // after link: { student, access }
     let authResetToken = '';     // from #reset=<token> in the emailed link
     let authConfirmToken = '';   // from #confirm=<token> in the "Confirm your email" link
@@ -640,11 +643,13 @@
         authEntry = entry;
         authLinked = null;
         authNeedsApproval = !!r.needs_approval;
+        authPilot = !!r.pilot;
         if (r.status === 'existing_account') {
-          // Not sent for a join request (anyone could look it up by name + phone).
+          // Not sent for a join request or a trial (anyone could look it up by name + phone).
           document.getElementById('link-username').textContent = r.username || 'your existing username';
           document.getElementById('link-institute').textContent = entry.institute_code;
           document.getElementById('link-approval').hidden = !authNeedsApproval;
+          document.getElementById('link-pilot').hidden = !authPilot;
           document.getElementById('auth-link').reset();
           authShow('link');
         } else {
@@ -689,9 +694,13 @@
       document.getElementById('det-sub').textContent = s
         ? (authNeedsApproval
           ? 'Your request to join ' + code + ' is sent. Change anything that\'s out of date.'
-          : (authEntry ? authEntry.institute_code : 'This institute') + ' is now added to your account. Change anything that\'s out of date.')
+          : authPilot
+            ? 'You\'ve joined ' + code + '\'s trial. Change anything that\'s out of date.'
+            : (authEntry ? authEntry.institute_code : 'This institute') + ' is now added to your account. Change anything that\'s out of date.')
         : 'Registering ' + (authEntry ? authEntry.full_name + ' with ' + authEntry.institute_code : '') + '. You\'ll log in with this username and password.' +
-          (authNeedsApproval ? ' You\'re not on ' + code + '\'s list, so your account will be activated once ' + code + ' approves your request.' : '');
+          (authNeedsApproval ? ' You\'re not on ' + code + '\'s list, so your account will be activated once ' + code + ' approves your request.' : '') +
+          (authPilot ? ' You\'re joining ' + code + '\'s trial, so you can start using Crackeer straight away. If ' + code +
+            ' subscribes, you keep this account.' : '');
       document.getElementById('det-ok').textContent = s ? 'All the fields were automatically filled' : '';
       document.getElementById('det-btn').textContent = s ? 'Continue' : 'Create account';
       if (s) {
@@ -736,7 +745,8 @@
       }, err => {
         setBusy(btn, false);
         // Their list row changed under them (registered elsewhere, removed): start over.
-        if (err.code === 'not_on_list' || err.code === 'already_registered' || err.code === 'account_exists' || err.code === 'request_pending') {
+        if (err.code === 'not_on_list' || err.code === 'already_registered' || err.code === 'account_exists' || err.code === 'request_pending' ||
+            err.code === 'already_at_school' || (err.code === 'pilot_full' && !err.field)) {
           authEntry = null;
           authShow('register', 'replace');
           document.getElementById('reg-alert').textContent = err.message;
