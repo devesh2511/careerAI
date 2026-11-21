@@ -397,6 +397,7 @@
         if (!ok) return;
         if (!careers) alert("Couldn't load the career list. Check your connection and reload the page.");
         return cqLoadSaved().then(() => {
+          cqRerankSaved();
           document.body.style.visibility = '';
           initPage();
         });
@@ -2491,6 +2492,20 @@
     // pages in app.html can read the last quiz run.
     let appResults = loadState().appResults || null;
 
+    // A saved run keeps the shortlist it was given on the day of the quiz.
+    // Re-matching it here (career list loaded, saved run fetched) means a fix
+    // to the shortlist rules reaches students without a retake. The engine
+    // leaves the run alone if it is from an older question set or its top
+    // career would change. Only this device's copy is updated.
+    function cqRerankSaved() {
+      const saved = loadState().appResults;
+      if (!saved || typeof rsRerankResults !== 'function') return;
+      const fresh = rsRerankResults(saved, RIASEC_CAREERS);
+      if (fresh === saved) return;
+      saveState({ appResults: fresh });
+      appResults = fresh;
+    }
+
     // Entry point for career_results.html
     function cqShowResults() {
       const s = loadState();
@@ -2625,11 +2640,14 @@
           '<button class="btn btn-ghost btn-sm no-print" onclick="navTo(\'explorer\')">Explore every career</button></p>';
         return;
       }
-      data.top_careers.forEach(c => {
+      const joint = rsJointTop(data.top_careers);
+      data.top_careers.forEach((c, i) => {
         const card = document.createElement('article');
         card.className = 'card stack-sm stack air-career-card';
         card.innerHTML =
-          '<div class="card-head"><h3 class="card-title air-career-name"></h3><span class="badge air-fit-label ' + fitClass(c.match_pct) + '"></span></div>' +
+          '<div class="card-head"><h3 class="card-title air-career-name"></h3><span class="cluster">' +
+          (joint >= 2 && i < joint ? '<span class="badge badge-accent">Joint top match</span>' : '') +
+          '<span class="badge air-fit-label ' + fitClass(c.match_pct) + '"></span></span></div>' +
           '<p class="card-sub air-career-field"></p><p class="air-career-why"></p>' +
           '<div class="cluster"><span class="badge badge-outline air-career-stream"></span>' + (c.salary ? '<span class="small air-career-salary"></span>' : '') + '</div>';
         card.querySelector('.air-career-name').textContent = c.title;
@@ -2837,7 +2855,24 @@
       }
       if (retakeBtn) retakeBtn.hidden = false;
       html += '<div class="grid-main-side"><div class="stack-lg stack">';
-      html += top
+      // Careers within RS_TIE_POINTS of #1 are joint top matches: the quiz
+      // can't separate them, so they share the card instead of one of them
+      // being crowned. One career clearly ahead keeps the single card.
+      const joint = rsJointTop(d.top_careers);
+      const codeTiles = code.length ? '<div class="cluster cluster-lg"><div class="riasec" aria-label="Your interest code: ' + esc(names.join(', ')) + '">' +
+        code.map(l => '<span class="riasec-tile" data-dim="' + l + '">' + l + '</span>').join('') + '</div><p class="dim-names">' + esc(names.join(', ')) + '</p></div>' : '';
+      const shownJoint = Math.min(joint, 3);
+      html += joint >= 2
+        ? '<section class="card stack" aria-labelledby="db-top-title"><p class="small muted" id="db-top-title">Your top matches · equally strong</p>' + codeTiles +
+          '<div class="grid-3 db-joint">' + d.top_careers.slice(0, shownJoint).map(c =>
+            '<div class="card-flat stack-sm stack db-joint-item"><h2 class="card-title">' + esc(c.title) + '</h2>' +
+            '<span class="badge ' + fitClass(c.match_pct) + '">' + esc(fitLabel(c.match_pct)) + '</span>' +
+            (c.why ? '<p class="small">' + esc(c.why) + '</p>' : '') +
+            '<div><button class="btn btn-secondary btn-sm" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">See what it involves</button></div></div>').join('') +
+          '</div><p class="small muted">These ' + joint + ' fit you almost equally. Explore each before you choose.' +
+          (joint > shownJoint ? ' +' + (joint - shownJoint) + ' more equally strong.' : '') + '</p>' +
+          '<div class="cluster cluster-lg"><button class="btn btn-ghost" onclick="navTo(\'results\')">See all matches</button></div></section>'
+        : top
         ? '<section class="card stack" aria-labelledby="db-top-title"><div class="card-head"><div class="stack-xs stack"><p class="small muted">Your top match</p>' +
           '<h2 class="card-title-lg" id="db-top-title">' + esc(top.title) + '</h2></div><span class="badge ' + fitClass(top.match_pct) + '">' + esc(fitLabel(top.match_pct)) + '</span></div>' +
           (code.length ? '<div class="cluster cluster-lg"><div class="riasec" aria-label="Your interest code: ' + esc(names.join(', ')) + '">' +
@@ -2855,7 +2890,9 @@
           '<div><button class="btn btn-secondary btn-sm" onclick="exploreStream(appResults && appResults.stream_recommendation)">Careers in this stream</button></div></section>';
       }
       html += '</div><aside class="stack-lg stack">';
-      const others = (d.top_careers || []).slice(1);
+      // After the careers already in the top card. Tied careers beyond the
+      // card's three lead this list, so none of the five is hidden.
+      const others = (d.top_careers || []).slice(joint >= 2 ? shownJoint : 1);
       if (others.length) {
         html += '<section class="card-flat stack-sm stack" aria-labelledby="db-careers-title"><h2 class="card-title" id="db-careers-title">Your other matches</h2><div class="stack-sm stack" id="db-strip">' +
           others.map(c => '<button class="pill career-pill" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)"><span class="pill-num career-pill-pct">' +
@@ -2888,6 +2925,8 @@
         '<h2 class="empty-title">' + title + '</h2><p class="empty-text">' + text + '</p><div class="cluster">' + btn + '</div></div></section>';
 
       if (!appResults) {
+        const staleNote = document.getElementById('res-tie-note');
+        if (staleNote) staleNote.hidden = true;
         if (banner) banner.hidden = true;
         if (bar) bar.innerHTML = '';
         if (streamVal) streamVal.textContent = '';
@@ -2905,6 +2944,8 @@
       if (!list) return;
       const careers = d.top_careers || [];
       if (!careers.length) {
+        const staleNote = document.getElementById('res-tie-note');
+        if (staleNote) staleNote.hidden = true;
         if (bar) bar.innerHTML = '';
         list.innerHTML = empty('magnifier', 'No strong matches yet',
           'None of the careers scored above ' + RS_MIN_FIT + '% for you. That usually means your answers were spread across many areas, which is fine. Retake the quiz, or explore careers yourself.',
@@ -2921,17 +2962,33 @@
         bar.innerHTML = chip('All', '', careers.length) + Object.keys(counts).map(f => chip(f, f, counts[f])).join('');
       }
 
+      // Joint top matches (rsJointTop): one note above the list for the whole
+      // group, and a tag on each tied card. Judged on the unfiltered list, so
+      // a filter chip never changes which careers count as tied.
+      const joint = rsJointTop(careers);
+      let tieNote = document.getElementById('res-tie-note');
+      if (!tieNote) {
+        tieNote = document.createElement('p');
+        tieNote.id = 'res-tie-note';
+        tieNote.className = 'small muted';
+        list.insertAdjacentElement('beforebegin', tieNote);
+      }
+      tieNote.hidden = joint < 2;
+      tieNote.textContent = joint >= 2 ? 'Your top ' + joint + ' are equally strong matches: the quiz can\'t separate them, so explore each.' : '';
+
       list.innerHTML = '';
       careers.filter(c => !rsFilter || (c.field || 'Other') === rsFilter).forEach(c => {
+        const tied = joint >= 2 && careers.indexOf(c) < joint;
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'card card-link career-card stack-sm stack';
         card.onclick = () => cdOpen(c.title);
-        card.innerHTML = '<span class="card-head"><span class="card-title career-name"></span><span class="badge ' + fitClass(c.match_pct) + '"></span></span>' +
+        card.innerHTML = '<span class="card-head"><span class="card-title career-name"></span><span class="cluster">' +
+          (tied ? '<span class="badge badge-accent">Joint top match</span>' : '') + '<span class="badge fit-badge ' + fitClass(c.match_pct) + '"></span></span></span>' +
           '<span class="small muted career-field"></span><span class="card-sub career-reason"></span>' +
           (c.salary ? '<span class="small"><span class="muted">Starting salary</span> <b class="career-salary"></b></span>' : '');
         card.querySelector('.career-name').textContent = c.title;
-        card.querySelector('.badge').textContent = fitLabel(c.match_pct);
+        card.querySelector('.fit-badge').textContent = fitLabel(c.match_pct);
         card.querySelector('.career-field').textContent = [c.field, c.stream].filter(Boolean).join(', ');
         card.querySelector('.career-reason').textContent = c.why || '';
         if (c.salary) card.querySelector('.career-salary').textContent = String(c.salary).replace(/\s*starting$/i, '');
@@ -3018,7 +3075,9 @@
           '<div class="riasec" aria-label="Work areas ' + dims.join(' ') + '">' + dims.map(k => '<span class="riasec-tile" data-dim="' + k + '">' + k + '</span>').join('') + '</div>' +
           '<div class="list">' + dims.map(k => '<div class="list-row"><span class="grow"><span class="list-title">' + esc(RS_DIM_PLAIN[k]) + '</span>' +
             (mine.includes(k) ? ' <span class="badge fit-strong">One of your strengths</span>' : '') +
-            '<br><span class="list-meta">' + esc(RS_DIM_MEANING[k]) + '</span></span></div>').join('') + '</div></section>';
+            '<br><span class="list-meta">' + esc(RS_DIM_MEANING[k]) + '</span></span></div>').join('') + '</div>' +
+          // Required credit: many careers' RIASEC profiles come from O*NET (CC BY 4.0).
+          '<p class="small muted">Career interest profiles are based in part on O*NET 29.3 (U.S. Department of Labor/ETA), used under CC BY 4.0.</p></section>';
       }
       html += '</div>';
 
@@ -3113,16 +3172,17 @@
     let exGroup = 'all', exStream = 'all', exFit = 'all', exSort = '', exQuery = '';
     let exCareers = null, exGroups = null;
 
-    // The student's six-dimensional profile, or null before the quiz.
-    // riasecScores is what the quiz saves; appResults is the fallback for a
-    // session stored by a build that only wrote the results payload.
-    // The student's profile in the shape rsCareerFit() takes. A result from
-    // before the world or subject questions has no scores for them; those
-    // layers are null and rsCareerFit() leaves them out.
+    // The student's profile in the shape rsCareerFit() takes, or null before
+    // the quiz. The results payload's riasec.pct comes first: it holds the
+    // exact scores the shortlist was ranked with. riasecScores is only a
+    // fallback, because a run loaded from the server stores it rounded to
+    // whole numbers, which moved some careers a point off their shortlist %.
+    // A result from before the world or subject questions has no scores for
+    // them; those layers are null and rsCareerFit() leaves them out.
     function exStudentProfile() {
       const s = loadState();
       const r = appResults && appResults.riasec;
-      const pct = (s.riasecScores && s.riasecScores.pct) || (r && r.pct);
+      const pct = (r && r.pct) || (s.riasecScores && s.riasecScores.pct);
       if (!pct) return null;
       return {
         pct: pct,
@@ -3157,9 +3217,17 @@
     function exBuildList() {
       const db = typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : [];
       const profile = exStudentProfile();
+      // Where each career sits in the student's quiz shortlist (1-5).
+      const tops = (profile && appResults && appResults.top_careers) || [];
+      const rankOf = {};
+      tops.forEach((t, i) => { rankOf[t.title] = i + 1; });
+      // Ranks up to this are joint top matches (rsJointTop), tagged as such.
+      const jointTo = rsJointTop(tops) >= 2 ? rsJointTop(tops) : 0;
       return db.map(c => ({
         career: c,
         match_pct: profile ? Math.round(rsCareerFit(profile, c).fit * 100) : null,
+        match_rank: rankOf[c.title] || null,
+        joint: !!rankOf[c.title] && rankOf[c.title] <= jointTo,
         salary: exSalaryRange(c.salary),
         streams: exStreamsOf(c),
         // Searching the stream and the "why" line too means "PCB" or
@@ -3256,7 +3324,14 @@
         return (dir === 'desc' ? (vb - va) || (tb - ta) : (va - vb) || (ta - tb)) || byTitle(a, b);
       };
       switch (sort) {
-        case 'fit': return (a, b) => (b.match_pct - a.match_pct) || byTitle(a, b);
+        // The quiz shortlist leads, in its own order. It keeps at most two
+        // careers per family for variety, so a career outside it can have a
+        // higher % than one inside it; the "Your match" tag says why.
+        case 'fit': return (a, b) => {
+          const ra = a.match_rank || Infinity, rb = b.match_rank || Infinity;
+          if (ra !== rb) return ra - rb;
+          return (b.match_pct - a.match_pct) || byTitle(a, b);
+        };
         case 'za': return (a, b) => byTitle(b, a);
         case 'salary-high': return bySalary('desc');
         case 'salary-low': return bySalary('asc');
@@ -3284,8 +3359,10 @@
       card.onclick = () => cdOpen(c.title);
       card.innerHTML = '<span class="card-head"><span class="card-title"></span>' +
         (pct === null ? '' : '<span class="badge ' + fitClass(pct) + '"></span>') + '</span>' +
-        '<span class="small muted field"></span><span class="small ex-salary"></span>';
+        '<span class="small muted field"></span><span class="small ex-salary"></span>' +
+        (item.match_rank ? '<span class="badge badge-accent ex-yours"></span>' : '');
       card.querySelector('.card-title').textContent = c.title;
+      if (item.match_rank) card.querySelector('.ex-yours').textContent = item.joint ? 'Joint top match' : 'Your #' + item.match_rank + ' match';
       if (pct !== null) card.querySelector('.badge').textContent = fitLabel(pct);
       card.querySelector('.field').textContent = [c.field, c.stream].filter(Boolean).join(', ');
       card.querySelector('.ex-salary').textContent = c.salary ? String(c.salary).replace(/\s*starting$/i, '') + ' to start' : 'Salary not listed';

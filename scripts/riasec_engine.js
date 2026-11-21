@@ -32,7 +32,15 @@
 
   // Saved with every quiz run (POST /me/career-quiz), so a run can be
   // re-scored later. Bump it whenever scoring or the career data changes.
-  const RS_ENGINE_VERSION = 'riasec-2';
+  // riasec-3: same questions as riasec-2, interest weighted above worlds.
+  // riasec-4: same questions; 56 careers' RIASEC profiles now come from
+  // O*NET 29.3 (careerAPI migration 021), so saved results are re-matched.
+  const RS_ENGINE_VERSION = 'riasec-4';
+  // Versions that asked the CURRENT questions. Their saved results are still
+  // current (no "older quiz" notice) and are re-matched with today's scoring
+  // on load. Add the new version here when only scoring changes; start a
+  // fresh list when the questions change.
+  const RS_SAME_QUESTIONS = ['riasec-2', 'riasec-3', 'riasec-4'];
 
   const RS_DIMS = ['R', 'I', 'A', 'S', 'E', 'C'];
 
@@ -508,8 +516,7 @@
     // Differentiation (Healy & Mourton): the spread of the six scores. A
     // student whose answers are scattered evenly has no real interest
     // shape, and the code would be invented by tie-breaking.
-    const mean = RS_DIMS.reduce((t, d) => t + pct[d], 0) / RS_DIMS.length;
-    const sd = Math.sqrt(RS_DIMS.reduce((t, d) => t + (pct[d] - mean) * (pct[d] - mean), 0) / RS_DIMS.length);
+    const sd = rsProfileSd(pct);
     const flat = sd < RS_FLAT_SD;
 
     // Consistency (Holland): top two areas side by side on the hexagon is
@@ -533,6 +540,16 @@
   // pick options at random fall below 9, while over 90% of students who
   // pick their two favourite areas even 40% of the time land above it.
   const RS_FLAT_SD = 9;
+
+  // Standard deviation of the six area percentages: how much shape the
+  // profile has. Shared by rsScore (the flat flag) and rsCareerFit (which
+  // blend to use), so the two can never disagree about who is flat.
+  function rsProfileSd(pct) {
+    const p = pct || {};
+    const vs = RS_DIMS.map(d => p[d] || 0);
+    const mean = vs.reduce((t, v) => t + v, 0) / vs.length;
+    return Math.sqrt(vs.reduce((t, v) => t + (v - mean) * (v - mean), 0) / vs.length);
+  }
 
   // ── Close scores (doc section 8) ─────────────────────────────────────────
   // "Difference <= 5 points → treat as close". Groups adjacent ranked
@@ -623,6 +640,14 @@
   // without beating "Computer Science Engineer" for them.
   const RS_SECOND_DOMAIN = 0.8;
 
+  // A world the student never picked counts RS_DOMAIN_FLOOR / (1 + floor)
+  // = 0.2 rather than 0, and their favourite still counts 1. Five questions
+  // are too few to rule a world out: at 0, careers in it could not reach the
+  // minimum fit however well the interests matched, which left many students
+  // with a short or empty list. Applied here, not to the stored scores, so
+  // saved results and the "your worlds" display are unaffected.
+  const RS_DOMAIN_FLOOR = 0.25;
+
   // null when the student has no world scores (a result saved before Part 2
   // existed), so the layer is left out rather than counted as zero.
   function rsDomainFit(domains, career) {
@@ -631,7 +656,8 @@
     if (!list.length) return 0;
     let best = 0;
     list.forEach((k, i) => {
-      const v = (domains[k] || 0) * (i === 0 ? 1 : RS_SECOND_DOMAIN);
+      const s = ((domains[k] || 0) + RS_DOMAIN_FLOOR) / (1 + RS_DOMAIN_FLOOR);
+      const v = s * (i === 0 ? 1 : RS_SECOND_DOMAIN);
       if (v > best) best = v;
     });
     return best;
@@ -663,12 +689,23 @@
   // satisfaction (O*NET, Strong, SDS all match on it). Adding a layer later
   // (work style, values) means giving it a weight here and a scorer in
   // `extras` — the ranking code below does not change.
-  const RS_FIT_WEIGHTS = { interest: 0.55, domain: 0.30, subjects: 0.15, workStyle: 0, values: 0 };
+  // riasec-3: interest 0.55 → 0.65, world 0.30 → 0.20. At 0.30 the five world
+  // questions moved the shortlist more than the eighteen interest questions,
+  // and one click on D5 swapped about 1.6 of five careers on average
+  // (measured with D:\Crackeer\quiz-accuracy, 2026-11-21).
+  const RS_FIT_WEIGHTS = { interest: 0.65, domain: 0.20, subjects: 0.15, workStyle: 0, values: 0 };
+  // A flat profile (SD below RS_FLAT_SD) has no real interest shape: its
+  // pattern match is mostly noise. Those students keep the riasec-2 blend,
+  // so their worlds and subjects carry more of the match. At 0.65 interest
+  // their retakes agreed on #1 only 6% of the time (10% before) and just a
+  // third of their top five came from the world they chose (half before).
+  const RS_FLAT_FIT_WEIGHTS = { interest: 0.55, domain: 0.30, subjects: 0.15, workStyle: 0, values: 0 };
 
-  // scoring: the rsScore() result.
+  // scoring: the rsScore() result (or any { pct, domains, subjects }).
   // extras: { workStyle?: (career)=>0..1, values?: (career)=>0..1 }
+  // weights: overrides both blends when given.
   function rsCareerFit(scoring, career, extras, weights) {
-    const W = weights || RS_FIT_WEIGHTS;
+    const W = weights || (rsProfileSd(scoring.pct) < RS_FLAT_SD ? RS_FLAT_FIT_WEIGHTS : RS_FIT_WEIGHTS);
     // Every layer is on a 0-1 scale so the weighted blend stays meaningful.
     // A layer the student has no answers for is null and drops out.
     const parts = {
@@ -689,11 +726,17 @@
   }
 
   // ── Minimum-fit rule (doc section 13) ───────────────────────────────────
-  // On the blended scale an unrelated interest pattern (0.5) in the
-  // student's favourite world scores about 68, and a near-perfect interest
-  // match in a world they did not pick scores about 62. 65 keeps the first
-  // (an undecided student still gets careers in the world they chose) and
-  // drops the second.
+  // With the riasec-3 blend (and subjects at a typical 0.7), an unrelated
+  // interest pattern (0.5) in the student's favourite world scores about 63,
+  // and a near-perfect interest match (0.95) in a world they never picked
+  // scores about 76. So 65 now drops the first and keeps the second: a
+  // career has to suit how the student likes to work, and a strong interest
+  // match is not thrown away over one world answer. In the favourite world
+  // the interest pattern only needs to lean the right way (r ≥ about 0.06);
+  // in a world never picked it must match well (r ≥ about 0.55).
+  // (Under the 0.55/0.30 blend it is the other way round, 68 and 62, and
+  // that blend still applies to flat profiles: with no real interest shape,
+  // a career in the world they chose is the better bet.)
   const RS_MIN_FIT = 65;
 
   // ── Diversity rule (doc section 14) ─────────────────────────────────────
@@ -736,9 +779,13 @@
     // to. A hard cap is still available via maxPerFamily on its own.
     const famOf = s => s.career.family || s.career.title;
     const take = cap => {
+      // Pass 1 decides how many places each family gets. The extra-slot
+      // check runs career by career, so a family can earn its extra place
+      // only at a weaker career further down, after its stronger ones were
+      // skipped while a close alternative still existed.
       const perFamily = {};
-      const picked = [];
-      for (let i = 0; i < qualified.length && picked.length < limit; i++) {
+      let count = 0;
+      for (let i = 0; i < qualified.length && count < limit; i++) {
         const s = qualified[i];
         const fam = famOf(s);
         const n = perFamily[fam] || 0;
@@ -749,9 +796,22 @@
           if (alt && alt.match_pct >= s.match_pct - RS_VARIETY_MARGIN) continue;
         }
         perFamily[fam] = n + 1;
-        picked.push(s);
+        count++;
       }
-      return picked;
+      // Pass 2 fills each family's places with its STRONGEST careers. Without
+      // this, the extra place went to whichever career earned it: a student
+      // with Big Data Engineer at 83% got Computer Science Engineer at 79%
+      // instead. A stronger career only widens the gap to the alternatives,
+      // so it qualifies for the extra place wherever the weaker one did.
+      // Invariant: no career is left out while a weaker one from its family
+      // is in. `qualified` is sorted, so the list stays best first.
+      const used = {};
+      return qualified.filter(s => {
+        const fam = famOf(s);
+        if ((used[fam] || 0) >= (perFamily[fam] || 0)) return false;
+        used[fam] = (used[fam] || 0) + 1;
+        return true;
+      });
     };
 
     let shortlist = take(maxPerFamily);
@@ -1140,13 +1200,7 @@
   function rsBuildResults(scoring, database, options) {
     const match = rsMatchCareers(scoring, database, options);
     const profile = rsProfileFor(scoring);
-    const streams = rsRankStreams(scoring, match.all);
-    const top3 = scoring.ranked.slice(0, 3);
-
-    const strongest = top3.map(r => r.plain.toLowerCase()).slice(0, 2).join(' and ');
-    const streamReason = (scoring.flat
-      ? 'Your interests are spread out, so this comes mostly from the worlds and subjects you chose. '
-      : 'Your strongest areas are ' + strongest + '. ') + streams[0].reason;
+    const sf = rsStreamFields(scoring, match.all);
 
     return {
       // Lets a saved run be recognised as coming from an older question set.
@@ -1154,21 +1208,11 @@
       // ── existing shape, consumed across app.html ──
       personality_type: profile.type,
       personality_desc: profile.desc,
-      stream_recommendation: rsStreamRecommendation(streams),
-      stream_reason: streamReason,
+      stream_recommendation: sf.stream_recommendation,
+      stream_reason: sf.stream_reason,
       // All four streams, best first (see rsRankStreams).
-      streams: streams,
-      top_careers: match.shortlist.map((s, i) => ({
-        rank: i + 1,
-        title: s.career.title,
-        emoji: s.career.emoji,
-        field: s.career.field,
-        match_pct: s.match_pct,
-        fit_label: rsFitLabel(s.match_pct),
-        why: s.career.why,
-        stream: s.career.stream,
-        salary: s.career.salary
-      })),
+      streams: sf.streams,
+      top_careers: rsTopCareers(match.shortlist),
 
       // ── new RIASEC material (doc section 15) ──
       riasec: {
@@ -1202,9 +1246,89 @@
     };
   }
 
-  // True when a saved results object came from the current question set.
+  // The stream part of a result. `scoring` needs subjects, flat and ranked
+  // (items with .plain); a saved result's riasec block supplies the same
+  // (subjectScores, flat, ranked), so a re-match can rebuild it.
+  function rsStreamFields(scoring, matchAll) {
+    const streams = rsRankStreams(scoring, matchAll);
+    const strongest = (scoring.ranked || []).slice(0, 2).map(r => String(r.plain || '').toLowerCase()).join(' and ');
+    const reason = (scoring.flat
+      ? 'Your interests are spread out, so this comes mostly from the worlds and subjects you chose. '
+      : 'Your strongest areas are ' + strongest + '. ') + streams[0].reason;
+    return { streams: streams, stream_recommendation: rsStreamRecommendation(streams), stream_reason: reason };
+  }
+
+  // True when a saved results object came from the current question set
+  // (any version in RS_SAME_QUESTIONS), whatever scoring produced it.
   function rsIsCurrentResult(results) {
-    return !!results && results.engine_version === RS_ENGINE_VERSION;
+    return !!results && RS_SAME_QUESTIONS.indexOf(results.engine_version) !== -1;
+  }
+
+  // ── Joint top matches ───────────────────────────────────────────────────
+  // Careers within RS_TIE_POINTS of #1 are shown as equally strong. The quiz
+  // cannot separate them: most retake flips of #1 happen inside this gap,
+  // and near-twin careers (e.g. Cybersecurity and Big Data) share almost the
+  // same interest shape, world and subjects. Judged on the rounded % the
+  // student sees, so the tie always matches the numbers on screen.
+  const RS_TIE_POINTS = 3;
+
+  // How many leading careers of a saved shortlist are joint top matches:
+  // 1 = no tie, 0 = no careers. Works on any saved result (no stored field).
+  function rsJointTop(topCareers) {
+    const list = Array.isArray(topCareers) ? topCareers : [];
+    if (!list.length) return 0;
+    const top = Math.round(list[0].match_pct || 0);
+    let n = 1;
+    while (n < list.length && top - Math.round(list[n].match_pct || 0) <= RS_TIE_POINTS) n++;
+    return n;
+  }
+
+  // The saved shape of a shortlist (results.top_careers).
+  function rsTopCareers(shortlist) {
+    return shortlist.map((s, i) => ({
+      rank: i + 1,
+      title: s.career.title,
+      emoji: s.career.emoji,
+      field: s.career.field,
+      match_pct: s.match_pct,
+      fit_label: rsFitLabel(s.match_pct),
+      why: s.career.why,
+      stream: s.career.stream,
+      salary: s.career.salary
+    }));
+  }
+
+  // Re-matches a saved result against `database` with today's scoring and
+  // shortlist rules, so a fix reaches students without a retake. Only
+  // results from the current question set carry the scores needed
+  // (riasec.pct, domainScores, subjectScores); anything else, or a re-match
+  // that would leave no careers, comes back unchanged.
+  //  - Older scoring version (e.g. riasec-2 under riasec-3): the whole match
+  //    is redone, #1 and the recommended stream included, and the copy is
+  //    stamped with today's version. Only this device's copy changes; the
+  //    server keeps the run as saved, and the student's chosen career stays.
+  //  - Same version: a different #1 can only mean the catalogue changed
+  //    (the shortlist rules never move #1), and #1 is saved on the server
+  //    (career leaderboards group by it), so that result is left alone.
+  function rsRerankResults(results, database) {
+    const r = results && results.riasec;
+    const db = database || (typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : []);
+    if (!rsIsCurrentResult(results) || !r || !r.pct || !db.length) return results;
+    const subjects = r.subjectScores || null;
+    const match = rsMatchCareers({ pct: r.pct, domains: r.domainScores || null, subjects: subjects }, db);
+    const saved = results.top_careers || [];
+    if (!match.shortlist.length) return results;
+    const rescored = results.engine_version !== RS_ENGINE_VERSION;
+    if (!rescored && (!saved.length || match.shortlist[0].career.title !== saved[0].title)) return results;
+    const out = Object.assign({}, results, {
+      top_careers: rsTopCareers(match.shortlist),
+      riasec: Object.assign({}, r, { qualifiedCount: match.qualifiedCount, consideredCount: match.all.length })
+    });
+    if (rescored) {
+      Object.assign(out, rsStreamFields({ subjects: subjects, flat: !!r.flat, ranked: r.ranked || [] }, match.all));
+      out.engine_version = RS_ENGINE_VERSION;
+    }
+    return out;
   }
 
   return {
@@ -1217,9 +1341,10 @@
     RS_SUBJECTS, RS_SUBJECT_KEYS, RS_HEXAGON, rsNeighbours, rsHexDistance, RS_FLAT_SD,
     RS_STREAMS, rsCareerStreams, rsRankStreams, rsStreamRecommendation, rsFitLabel, rsSubjectFit,
     RS_CLOSE_THRESHOLD, RS_MIN_FIT, RS_MAX_PER_FAMILY, RS_VARIETY_MARGIN,
-    RS_FIT_WEIGHTS, RS_SECOND_DOMAIN,
+    RS_FIT_WEIGHTS, RS_FLAT_FIT_WEIGHTS, RS_SECOND_DOMAIN, RS_DOMAIN_FLOOR, rsProfileSd,
     rsComputeMaxima, rsComputeDomainMaxima, rsScore, rsCloseGroups, rsEnjoyList,
-    rsDomainFit, rsCareerFit, rsMatchCareers, rsIsCurrentResult,
+    rsDomainFit, rsCareerFit, rsMatchCareers, rsIsCurrentResult, rsTopCareers, rsRerankResults,
+    RS_SAME_QUESTIONS, rsStreamFields, RS_TIE_POINTS, rsJointTop,
     rsMulberry32, rsShuffled, rsBuildOrder,
     rsValidateQuestions, rsValidateCareers,
   };
