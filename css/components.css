@@ -464,7 +464,6 @@ a.list-row:hover .list-title { text-decoration: underline; text-underline-offset
 .metric-value .icon { width: 0.9em; height: 0.9em; color: var(--contest-shadow); }
 .metric-label { font-size: 0.75rem; color: var(--contest-muted); }
 .countdown { font-family: var(--font-num); font-weight: 700; font-size: 1.75rem; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.dim-names { font-size: var(--fs-small); color: var(--muted); }
 .card-ink .btn-ghost { color: var(--contest-ink); text-decoration: underline; text-underline-offset: 0.2em; }
 .card-ink .btn-ghost:hover { background: var(--contest-well); }
 .code-key { display: grid; gap: var(--sp-3); margin: 0; }
