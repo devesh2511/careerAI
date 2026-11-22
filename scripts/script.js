@@ -2947,8 +2947,6 @@
       const main = document.getElementById('db-main');
       const title = document.getElementById('db-title');
       const sub = document.getElementById('db-sub');
-      const ctaBtn = document.getElementById('db-cta-btn');
-      const retakeBtn = document.getElementById('db-retake-btn');
       const codeEl = document.getElementById('db-code');
       // One quiet line greets the student; the card below is the big thing.
       title.textContent = dbHello(appResults);
@@ -2957,8 +2955,6 @@
       // ── No results yet: the quiz is the one thing to do ─────────────
       if (!appResults) {
         sub.hidden = true;
-        ctaBtn.hidden = true;
-        if (retakeBtn) retakeBtn.hidden = true;
         main.innerHTML = dbStart();
         return;
       }
@@ -2966,7 +2962,7 @@
       // ── With results ───────────────────────────────────────────────
       // top is undefined when every career scored under RS_MIN_FIT.
       const d = appResults, list = d.top_careers || [], top = list[0];
-      // The student's interest code under the greeting, strongest first,
+      // The student's interest code beside the greeting, strongest first,
       // each letter named in plain words so it is never an unexplained acronym.
       const code = String((d.riasec || {}).code || '').split('').filter(l => 'RIASEC'.includes(l));
       if (codeEl && code.length) {
@@ -2982,13 +2978,10 @@
         : (d.stream_recommendation ? cqStreamLabel(d) + ' is your recommended stream for Class 11.' : '');
       sub.textContent = desc || '';
       sub.hidden = !desc;
-      ctaBtn.hidden = !!top;
-      ctaBtn.textContent = 'Explore careers';
-      ctaBtn.onclick = () => navTo('explorer');
-      if (retakeBtn) retakeBtn.hidden = false;
 
       let html = '';
-      if (!rsIsCurrentResult(d)) {
+      const current = rsIsCurrentResult(d);
+      if (!current) {
         html += '<div class="alert alert-warn">' + cqRetakeNotice() + '</div>';
       }
 
@@ -3013,12 +3006,19 @@
       } else {
         html += '<section class="card-flat">' + '<div class="empty">' + illo('magnifier', 'lg') + '<h2 class="empty-title">No strong match yet</h2>' +
           '<p class="empty-text">No career scored above ' + RS_MIN_FIT + '% from your answers. Browse every career and see how each one fits you.</p>' +
-          '<div class="cluster"><button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore careers</button></div></div></section>';
+          '<div class="cluster"><button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore careers</button>' +
+          '<button class="btn btn-secondary" type="button" onclick="cqStart()">' + icon('refresh-cw') + 'Retake career quiz</button></div></div></section>';
       }
       if (d.stream_recommendation && top) {
         html += '<section class="db-stream" aria-label="Recommended stream">' + dbIcon('graduation-cap') +
           '<p class="db-stream-text">Your stream for Class 11: <b>' + esc(cqStreamLabel(d)) + '</b></p>' +
           '<button class="btn btn-ghost btn-sm" type="button" onclick="exploreStream(appResults && appResults.stream_recommendation)">See careers in this stream</button></section>';
+      }
+      // Retaking comes after the recommendations, once the student has seen
+      // them. An older result already offers it in the notice at the top.
+      if (top && current) {
+        html += '<p class="db-retake">Think you\'d answer differently now?' +
+          '<button class="btn btn-ghost btn-sm" type="button" onclick="cqStart()">' + icon('refresh-cw') + 'Retake career quiz</button></p>';
       }
       main.innerHTML = html;
     }

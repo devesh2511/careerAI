@@ -169,13 +169,35 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
      3  section, card titles 17-18px           Fraunces 600   .db-alts-title, .db-alt-title, .db-why-title
      4  body                15-17px            Inter 400/500
      5  meta                13px               Inter          kicker, labels, %, alt reasons */
-.db-head { align-items: flex-start; }
-/* Retake stays beside the greeting; the interest code wraps in its own column. */
-@media (min-width: 768px) { .db-head { flex-wrap: nowrap; } .db-head > .cluster { flex: 0 0 auto; } }
-#db-retake-btn { margin-top: 2px; }
+/* Header: the greeting and what the type means, then the interest code.
+   Wide screens put the code in a second column on the same grid as the
+   top-match card below, so the code sits right above "Why it's you",
+   which uses the same stickers. */
+.db-head { display: grid; gap: var(--sp-3); align-items: start; }
+.db-head-main { min-width: 0; }
 .db-sub { max-width: 72ch; margin-top: var(--sp-2); }
+/* Home lays itself out by its own width (container queries on "db"), not
+   the screen's, so the sidebar that appears at 1024px is accounted for.
+   Home also uses more of a wide screen than the other pages (1200px): its
+   content is in columns, so no line gets longer than it should. Browsers
+   without container queries get the stacked layout. */
+#dashboard { container: db / inline-size; max-width: 1520px; }
+/* --db-side is the width of the right-hand column, shared by the header
+   and the top-match card so the two line up. The header's right padding
+   equals the card's padding and border. */
+.db-head, .db-pick { --db-side: clamp(300px, 32cqi, 500px); }
+@container db (min-width: 900px) {
+  .db-head {
+    grid-template-columns: minmax(0, 1fr) var(--db-side); column-gap: var(--sp-9);
+    padding-right: calc(var(--sp-8) + var(--outline-w));
+  }
+}
 /* The student's interest code, strongest first, each letter in plain words. */
-.db-code { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-3); }
+.db-code { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+@container db (min-width: 900px) {
+  .db-code { display: grid; gap: var(--sp-2); justify-items: start; padding-inline: var(--sp-5); }
+  .db-code .db-code-list { display: grid; gap: var(--sp-2); }
+}
 .db-code-label { font-size: var(--fs-small); color: var(--muted); }
 .db-code-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
 .db-code-list li { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); font-weight: 500; }
@@ -193,32 +215,27 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
   to { transform: none; opacity: 1; }
 }
 .db-hello {
-  font-size: clamp(1.375rem, 1.05rem + 0.9vw, 1.75rem); font-weight: 700;
+  font-size: clamp(1.375rem, 1rem + 1.2cqi, 1.75rem); font-weight: 700;
   line-height: 1.15; letter-spacing: -0.015em;
 }
-/* Retake is a quiet text button beside the one filled button. */
-#db-retake-btn { color: var(--muted); }
-#db-retake-btn:hover { color: var(--ink); background: var(--sunk); }
-/* Phones: the main action comes first, under the headline. */
-@media (max-width: 767.98px) { #db-retake-btn { order: 1; } }
 
 /* The top match: the career on the left, why it is this student's on the
    right, side by side so the card uses the full width of the page. */
 .db-pick { display: grid; gap: var(--sp-6); padding: var(--sp-6) var(--sp-5); }
-@media (min-width: 640px) { .db-pick { padding: var(--sp-7) var(--sp-8); } }
+@container db (min-width: 560px) { .db-pick { padding: var(--sp-7) var(--sp-8); } }
 /* Only split when there are reasons to show; alone, the career keeps the whole card. */
-@media (min-width: 1000px) {
-  .db-pick-split { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: var(--sp-9); align-items: center; }
+@container db (min-width: 900px) {
+  .db-pick-split { grid-template-columns: minmax(0, 1fr) var(--db-side); gap: var(--sp-9); align-items: center; }
 }
 .db-pick:not(.db-pick-split) .db-pick-title { max-width: 22ch; }
 .db-pick-main { display: grid; gap: var(--sp-3); align-content: start; justify-items: start; }
 .db-pick-kicker { color: var(--accent-text); font-size: var(--fs-small); font-weight: 600; }
 .db-pick-title {
-  font-size: clamp(2rem, 1.3rem + 1.6vw, 2.875rem); font-weight: 800;
-  line-height: 1.04; letter-spacing: -0.026em; max-width: 17ch;
+  font-size: clamp(2rem, 1.1rem + 2.4cqi, 2.875rem); font-weight: 800;
+  line-height: 1.04; letter-spacing: -0.026em; max-width: 17ch; overflow-wrap: break-word;
 }
 .db-pick-what { font-size: var(--fs-body-lg); color: var(--muted); max-width: 46ch; }
-@media (min-width: 768px) { .db-pick-what { font-size: 1.0625rem; } }
+@container db (min-width: 700px) { .db-pick-what { font-size: 1.0625rem; } }
 .db-pick-fit { font-size: var(--fs-small); color: var(--muted); }
 .db-pick-pct { font-family: var(--font-num); font-weight: 700; font-size: 1rem; color: var(--ink); }
 .db-pick-actions { margin-top: var(--sp-2); }
@@ -235,6 +252,14 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 .db-why-text { display: grid; gap: 2px; min-width: 0; font-weight: 500; }
 .db-why-label { font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
 .db-why-value { font-weight: 500; }
+/* Phones: less padding and a narrower sticker column, so labels stay on one line. */
+@container db (max-width: 519.98px) {
+  .db-why { padding: var(--sp-4); }
+  .db-why-row { grid-template-columns: 56px minmax(0, 1fr); gap: var(--sp-2); }
+  .db-why-tiles .riasec-tile { width: 26px; height: 26px; font-size: 0.875rem; }
+  .db-why .db-why-tiles .db-tile-blank { width: 16px; height: 26px; font-size: 0.6875rem; }
+  .db-why-row .icon-tile { width: 32px; height: 32px; }
+}
 
 /* Every other match: smaller, side by side. */
 .db-alts { display: grid; gap: var(--sp-3); }
@@ -243,13 +268,13 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 .db-alts-head .btn-ghost { margin-right: calc(-1 * var(--sp-3)); }
 /* --cols (set by syncDashboard) is the number of other matches, 2 to 4, so
    wide screens fill one row edge to edge (one career takes half of it).
-   Below 1400px four cards would be too narrow, so they go two by two. */
+   Narrower than 1100px, four cards would be too tight, so they go two by two. */
 .db-alt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
-@media (min-width: 640px) and (max-width: 1399.98px) {
+@container db (min-width: 600px) and (max-width: 1099.98px) {
   .db-alt-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .db-alt-list > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
-@media (min-width: 1400px) { .db-alt-list { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); } }
+@container db (min-width: 1100px) { .db-alt-list { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); } }
 .db-alt {
   display: grid; grid-template-rows: auto auto 1fr; gap: var(--sp-2); width: 100%; height: 100%;
   padding: var(--sp-4) var(--sp-5); text-align: left; color: var(--ink);
@@ -258,7 +283,7 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 }
 .db-alt:hover { border-color: var(--line); box-shadow: var(--shadow-hard-sm); transform: translate(-1px, -1px); }
 .db-alt-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); }
-.db-alt-title { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1.2; text-wrap: balance; }
+.db-alt-title { min-width: 0; font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1.2; text-wrap: balance; overflow-wrap: break-word; }
 .db-alt-score { display: grid; justify-items: end; gap: 2px; }
 .db-alt-pct { font-family: var(--font-num); font-weight: 700; font-size: 0.9375rem; white-space: nowrap; }
 .db-alt-tie { font-size: 0.75rem; font-weight: 600; color: var(--accent-text); white-space: nowrap; }
@@ -271,6 +296,9 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 .db-stream { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); background: var(--sunk); border-radius: var(--r-card); }
 .db-stream .icon-tile { width: 32px; height: 32px; border-radius: 10px; }
 .db-stream-text { flex: 1 1 16rem; min-width: 0; }
+
+/* Retake: last, after every recommendation, and quiet. */
+.db-retake { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); color: var(--muted); }
 
 /* Before the first quiz: the quiz card, then a quiet way out. Blank
    stickers stand where the student's interest code will go. */
