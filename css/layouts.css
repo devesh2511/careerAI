@@ -155,8 +155,6 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 .grid-main-side { display: grid; gap: var(--sp-5); align-items: start; }
 .grid-main-side > * { min-width: 0; }
 @media (min-width: 1100px) { .grid-main-side { grid-template-columns: minmax(0, 1.75fr) minmax(300px, 1fr); } }
-.grid-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (min-width: 768px) { .grid-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .hero-card { display: grid; gap: var(--sp-5); }
 @media (min-width: 640px) { .hero-card-media { grid-template-columns: auto minmax(0, 1fr); align-items: center; } }
 .scroll-row { display: flex; gap: var(--sp-3); overflow-x: auto; padding: 2px 4px 8px 2px; margin: -2px -4px -8px -2px; scrollbar-width: thin; }
@@ -166,12 +164,34 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 /* Type ladder for Home with results. The career made for the student is
    the one big thing; the line that greets them is a step down, and every
    other line is quieter again:
-     1  top-match career    52px / 32px phone  Fraunces 800   .db-pick-title
+     1  top-match career    46px / 32px phone  Fraunces 800   .db-pick-title
      2  greeting            28px / 22px        Fraunces 700   .db-hello
      3  section, card titles 17-18px           Fraunces 600   .db-alts-title, .db-alt-title, .db-why-title
      4  body                15-17px            Inter 400/500
      5  meta                13px               Inter          kicker, labels, %, alt reasons */
-.db-head { align-items: center; }
+.db-head { align-items: flex-start; }
+/* Retake stays beside the greeting; the interest code wraps in its own column. */
+@media (min-width: 768px) { .db-head { flex-wrap: nowrap; } .db-head > .cluster { flex: 0 0 auto; } }
+#db-retake-btn { margin-top: 2px; }
+.db-sub { max-width: 72ch; margin-top: var(--sp-2); }
+/* The student's interest code, strongest first, each letter in plain words. */
+.db-code { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-3); }
+.db-code-label { font-size: var(--fs-small); color: var(--muted); }
+.db-code-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
+.db-code-list li { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); font-weight: 500; }
+.db-code-list .riasec-tile { width: 26px; height: 26px; font-size: 0.875rem; border-radius: var(--r-sm); box-shadow: var(--shadow-hard-sm); rotate: -3deg; }
+.db-code-list li:nth-child(2) .riasec-tile { rotate: 2deg; }
+.db-code-list li:nth-child(3) .riasec-tile { rotate: -1deg; }
+@media (prefers-reduced-motion: no-preference) {
+  .db-code-stick .riasec-tile { animation: db-stick 460ms var(--ease-out) 200ms both; }
+  .db-code-stick li:nth-child(2) .riasec-tile { animation-delay: 340ms; }
+  .db-code-stick li:nth-child(3) .riasec-tile { animation-delay: 480ms; }
+}
+@keyframes db-stick {
+  from { transform: translateY(-10px) scale(1.45); opacity: 0; box-shadow: none; }
+  55% { opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
 .db-hello {
   font-size: clamp(1.375rem, 1.05rem + 0.9vw, 1.75rem); font-weight: 700;
   line-height: 1.15; letter-spacing: -0.015em;
@@ -185,7 +205,7 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 /* The top match: the career on the left, why it is this student's on the
    right, side by side so the card uses the full width of the page. */
 .db-pick { display: grid; gap: var(--sp-6); padding: var(--sp-6) var(--sp-5); }
-@media (min-width: 640px) { .db-pick { padding: var(--sp-8); } }
+@media (min-width: 640px) { .db-pick { padding: var(--sp-7) var(--sp-8); } }
 /* Only split when there are reasons to show; alone, the career keeps the whole card. */
 @media (min-width: 1000px) {
   .db-pick-split { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: var(--sp-9); align-items: center; }
@@ -194,40 +214,42 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 .db-pick-main { display: grid; gap: var(--sp-3); align-content: start; justify-items: start; }
 .db-pick-kicker { color: var(--accent-text); font-size: var(--fs-small); font-weight: 600; }
 .db-pick-title {
-  font-size: clamp(2rem, 1.2rem + 2.2vw, 3.25rem); font-weight: 800;
-  line-height: 1.02; letter-spacing: -0.028em; max-width: 15ch;
+  font-size: clamp(2rem, 1.3rem + 1.6vw, 2.875rem); font-weight: 800;
+  line-height: 1.04; letter-spacing: -0.026em; max-width: 17ch;
 }
 .db-pick-what { font-size: var(--fs-body-lg); color: var(--muted); max-width: 46ch; }
 @media (min-width: 768px) { .db-pick-what { font-size: 1.0625rem; } }
 .db-pick-fit { font-size: var(--fs-small); color: var(--muted); }
 .db-pick-pct { font-family: var(--font-num); font-weight: 700; font-size: 1rem; color: var(--ink); }
-.db-pick-actions { margin-top: var(--sp-3); }
+.db-pick-actions { margin-top: var(--sp-2); }
 
 /* Why it's you: each row pairs a reason with the answer it came from. */
-.db-why { display: grid; gap: var(--sp-4); align-content: start; padding: var(--sp-5); background: var(--sunk); border-radius: var(--r-input); }
+.db-why { display: grid; gap: var(--sp-3); align-content: start; padding: var(--sp-5); background: var(--sunk); border-radius: var(--r-input); }
 .db-why-title { font-size: 1.0625rem; font-weight: 600; line-height: 1.25; }
-.db-why-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-4); }
-.db-why-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
+.db-why-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
+.db-why-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
 .db-why-row .icon-tile { width: 36px; height: 36px; border-radius: 10px; }
 .db-why-tiles { display: flex; gap: 4px; }
 .db-why-tiles .riasec-tile { width: 30px; height: 30px; font-size: 0.9375rem; border-radius: var(--r-sm); box-shadow: var(--shadow-hard-sm); rotate: -3deg; }
 .db-why-tiles .riasec-tile + .riasec-tile { rotate: 2deg; }
 .db-why-text { display: grid; gap: 2px; min-width: 0; font-weight: 500; }
 .db-why-label { font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
+.db-why-value { font-weight: 500; }
 
-/* The careers the quiz scored just as close: smaller, side by side. */
+/* Every other match: smaller, side by side. */
 .db-alts { display: grid; gap: var(--sp-3); }
 .db-alts-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sp-2) var(--sp-4); }
 .db-alts-title { font-size: 1.125rem; font-weight: 600; }
 .db-alts-head .btn-ghost { margin-right: calc(-1 * var(--sp-3)); }
-/* --cols (set by syncDashboard) is the number of close careers, 2 to 4, so
-   the row is always filled edge to edge; one career takes half of it. */
+/* --cols (set by syncDashboard) is the number of other matches, 2 to 4, so
+   wide screens fill one row edge to edge (one career takes half of it).
+   Below 1400px four cards would be too narrow, so they go two by two. */
 .db-alt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
-@media (min-width: 640px) and (max-width: 1099.98px) {
+@media (min-width: 640px) and (max-width: 1399.98px) {
   .db-alt-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .db-alt-list > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
-@media (min-width: 1100px) { .db-alt-list { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); } }
+@media (min-width: 1400px) { .db-alt-list { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); } }
 .db-alt {
   display: grid; grid-template-rows: auto auto 1fr; gap: var(--sp-2); width: 100%; height: 100%;
   padding: var(--sp-4) var(--sp-5); text-align: left; color: var(--ink);
@@ -237,7 +259,9 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 .db-alt:hover { border-color: var(--line); box-shadow: var(--shadow-hard-sm); transform: translate(-1px, -1px); }
 .db-alt-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); }
 .db-alt-title { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1.2; text-wrap: balance; }
+.db-alt-score { display: grid; justify-items: end; gap: 2px; }
 .db-alt-pct { font-family: var(--font-num); font-weight: 700; font-size: 0.9375rem; white-space: nowrap; }
+.db-alt-tie { font-size: 0.75rem; font-weight: 600; color: var(--accent-text); white-space: nowrap; }
 .db-alt-line { font-size: var(--fs-small); color: var(--muted); }
 .db-alt-uses { display: flex; align-items: center; gap: var(--sp-2); align-self: end; margin-top: var(--sp-1); font-size: var(--fs-small); font-weight: 500; }
 .db-alt-uses .riasec-tile { width: 24px; height: 24px; font-size: 0.8125rem; box-shadow: none; }
@@ -248,26 +272,11 @@ body.nav-open .sheet-scrim { opacity: 1; pointer-events: auto; }
 .db-stream .icon-tile { width: 32px; height: 32px; border-radius: 10px; }
 .db-stream-text { flex: 1 1 16rem; min-width: 0; }
 
-/* "Keep exploring" (dbLinks): shown on Home before the first quiz. */
-.db-side-title { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1.25; }
+/* Before the first quiz: the quiz card, then a quiet way out. Blank
+   stickers stand where the student's interest code will go. */
+.db-why-tiles .db-tile-blank { width: 21px; height: 30px; font-size: 0.8125rem; background: transparent; border-style: dashed; border-color: var(--muted); color: var(--muted); box-shadow: none; }
+.db-start-alt { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); color: var(--muted); }
 
-.db-links { display: grid; gap: var(--sp-1); }
-.db-link-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.db-link-list > li + li { border-top: var(--outline-soft); }
-.db-link {
-  display: flex; align-items: center; gap: var(--sp-3);
-  width: calc(100% + 2 * var(--sp-2)); margin-inline: calc(-1 * var(--sp-2)); padding: var(--sp-3) var(--sp-2);
-  border-radius: var(--r-input); color: var(--ink); text-align: left;
-  transition: background-color var(--dur-fast) var(--ease);
-}
-.db-link:hover { background: var(--sunk); }
-.db-link .icon-tile { width: 32px; height: 32px; border-radius: 10px; }
-.db-link-text { display: grid; gap: 2px; min-width: 0; }
-.db-link-title { font-size: 0.875rem; font-weight: 600; }
-
-/* No quiz yet: contests and the links side by side under the quiz card. */
-.db-pair { display: grid; gap: var(--sp-5); align-items: start; }
-@media (min-width: 900px) { .db-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .report-hero { padding-top: var(--sp-4); }
 .report-lede { font-size: var(--fs-body-lg); max-width: 62ch; }
 @media (min-width: 768px) { .report-lede { font-size: 1.125rem; } }

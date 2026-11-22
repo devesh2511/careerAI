@@ -87,7 +87,7 @@
   // ══════════════════════════════════════════════════════════════
   // THE QUESTIONS  (riasec-2)
   //
-  // Three parts, always shown in this order (25 questions, ~6 minutes):
+  // Three parts, always shown in this order (25 questions, ~10 minutes):
   //
   // Part 1 — 18 scenario questions. Each is a different everyday situation
   //   with six options, one for each RIASEC area; the student picks up to

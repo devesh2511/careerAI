@@ -1021,7 +1021,7 @@
         // Home greets the student by name; it rendered before /me answered.
         dbFirstName = String(m.student.full_name || '').trim().split(/\s+/)[0] || '';
         const dbTitle = document.getElementById('db-title');
-        if (appResults && dbFirstName && dbTitle && dbTitle.classList.contains('db-hello')) dbTitle.textContent = dbHello(appResults);
+        if (dbFirstName && dbTitle && appView === 'dashboard') dbTitle.textContent = dbHello(appResults);
         const cls = document.getElementById('user-class');
         if (cls) { cls.textContent = profileSummary(m.student); cls.title = cls.textContent; }
       }, () => { });
@@ -2556,7 +2556,7 @@
     // which can't be re-scored because the questions changed.
     function cqRetakeNotice() {
       return '<svg class="icon" aria-hidden="true"><use href="' + SPRITE + '#i-info"/></svg><div class="stack-sm stack">' +
-        '<p><span class="alert-title">This result is from the older quiz.</span> The new quiz takes about 6 minutes and matches you with more careers, including new ones in AI, space, climate and biotech.</p>' +
+        '<p><span class="alert-title">This result is from the older quiz.</span> The new quiz takes about 10 minutes and matches you with more careers, including new ones in AI, space, climate and biotech.</p>' +
         '<div><button class="btn btn-secondary btn-sm" onclick="cqStart()">Retake the quiz</button></div></div>';
     }
 
@@ -2797,41 +2797,16 @@
     // SYNC QUIZ RESULTS → DASHBOARD / RESULTS / STREAM / PROGRESS
     // ══════════════════════════════════════════════════════════════
 
-    // Builds one stat tile. Four of these sit in a fixed row, so the value,
-    // label and sub-line all come through the same shape whether the card is
-    // populated or still locked. Every value is text (career titles and the
-    // stream reason come from the API or a saved run), so all of it is escaped.
-    function dbStat(o) {
-      return '<div class="stat' + (o.locked ? ' locked' : '') + '">' +
-        '<span class="stat-value">' + (o.locked ? icon('lock') + 'Locked' : esc(o.val)) + '</span>' +
-        '<span class="stat-label">' + esc(o.label) + '</span></div>';
-    }
-
-    function dbToday() {
-      try { return new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { return ''; }
-    }
-
-    // "Keep exploring": the same four ways on from Home, whatever the state.
-    function dbLinks() {
-      const link = (on, ic, t, s) => '<li><button class="db-link" type="button" onclick="' + on + '">' +
-        '<span class="icon-tile">' + icon(ic) + '</span><span class="db-link-text"><span class="db-link-title">' + t + '</span>' +
-        '<span class="card-sub">' + s + '</span></span></button></li>';
-      return '<section class="card-flat db-links" aria-labelledby="db-links-title"><h2 class="db-side-title" id="db-links-title">Keep exploring</h2><ul class="db-link-list">' +
-        link('navTo(\'explorer\')', 'search', 'Explore careers', 'Compare careers by stream, salary and fit.') +
-        link('navTo(\'chat\')', 'message-square', 'Ask AI Chat', '&ldquo;Which entrance exams do I need for my top career?&rdquo;') +
-        link('navTo(\'space\')', 'newspaper', 'Career Space', 'News, internships and jobs for your career.') +
-        link('cqDownloadReport()', 'download', 'Download your report', 'A printable PDF of your quiz results.') +
-        '</ul></section>';
-    }
-
-    // ── Home with results: one career made for this student ─────────
-    // The top match leads, with the reasons it fits drawn from the
-    // student's own answers. The careers the quiz scored just as close
-    // (rsJointTop) follow as smaller cards, or the next two when one career
-    // is clearly ahead; every match is one click away in Career Matches.
+    // ── Home (app.html#/dashboard), drawn by syncDashboard() ────────
+    // With results, the top match leads, with the reasons it fits drawn
+    // from the student's own answers, then every other match as a smaller
+    // card. Before the first quiz, the quiz is the one thing on the page.
 
     // Filled in by syncUser() once GET /me answers; Home renders without it first.
     let dbFirstName = '';
+    // The interest-code stickers stick down once per page load, not on
+    // every return to Home.
+    let dbCodeStuck = false;
 
     // "The Applied Investigator" → "an Applied Investigator".
     function dbTypePhrase(type) {
@@ -2839,8 +2814,10 @@
       return t ? (/^[aeiou]/i.test(t) ? 'an ' : 'a ') + t : '';
     }
 
-    // "Devesh, you're an Applied Investigator." The name is left out until known.
+    // The greeting, with the name left out until it is known.
+    // d is the quiz result, or null before the first quiz.
     function dbHello(d) {
+      if (!d) return 'Let\'s find your direction' + (dbFirstName ? ', ' + dbFirstName : '') + '.';
       const type = dbTypePhrase(d.personality_type);
       return type
         ? (dbFirstName ? dbFirstName + ', you\'re ' : 'You\'re ') + type + '.'
@@ -2858,9 +2835,9 @@
       if (!cat) return out;
       const mine = String(r.code || '').split('').filter(l => 'RIASEC'.includes(l));
       if (cat.riasec && mine.length) {
-        out.dims = Object.keys(cat.riasec).filter(l => mine.includes(l))
-          .sort((a, b) => (cat.riasec[b] || 0) - (cat.riasec[a] || 0))
-          .filter(l => (cat.riasec[l] || 0) >= 50).slice(0, 2);
+        // The student's own order (strongest first, as in the code under
+        // the greeting), so every card names shared interests the same way.
+        out.dims = mine.filter(l => (cat.riasec[l] || 0) >= 50).slice(0, 2);
       }
       const worlds = Array.isArray(r.domains) ? r.domains.map(d => d.key)
         : r.domainScores ? Object.keys(r.domainScores).filter(k => r.domainScores[k] >= 0.5) : [];
@@ -2882,8 +2859,22 @@
       const x = (r.ranked || []).find(z => z.dim === l) || {};
       return x.plain || (typeof RS_DIM_PLAIN !== 'undefined' && RS_DIM_PLAIN[l]) || x.name || l;
     }
-    const dbLower = t => t.charAt(0).toLowerCase() + t.slice(1);
+    const dbCap = t => t.charAt(0).toUpperCase() + t.slice(1);
+    // "Investigating & problem solving" → "investigating": short enough to
+    // name every interest a row of stickers shows in one line. The header
+    // lists the full names.
+    const dbShort = l => dbPlain(l).split(/[\s&,]+/)[0].toLowerCase();
     const dbAnd = list => list.length > 1 ? list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1] : list[0] || '';
+    const dbTiles = dims => '<span class="db-why-tiles" aria-hidden="true">' +
+      dims.map(l => '<span class="riasec-tile" data-dim="' + l + '">' + l + '</span>').join('') + '</span>';
+
+    // A row of the side panel: a mark (stickers or an icon), a muted label
+    // and the line that matters. label comes first unless lead is set.
+    function dbRow(mark, label, text, lead) {
+      const l = '<span class="db-why-label">' + label + '</span>', t = '<span class="db-why-value">' + esc(text) + '</span>';
+      return '<li class="db-why-row">' + mark + '<span class="db-why-text">' + (lead ? t + l : l + t) + '</span></li>';
+    }
+    const dbIcon = name => '<span class="icon-tile" aria-hidden="true">' + icon(name) + '</span>';
 
     // The featured career: big title, what the work is, and why it is this
     // student's, each reason next to the thing in their answers it came from.
@@ -2894,15 +2885,10 @@
       // With no overlap to show, the interest row falls back to the
       // student's own strongest interests, which are true whatever the career.
       const dims = why.dims.length ? why.dims : code.slice(0, 2);
-      const row = (mark, label, text) => '<li class="db-why-row">' + mark +
-        '<span class="db-why-text"><span class="db-why-label">' + label + '</span><span>' + esc(text) + '</span></span></li>';
       const rows = [];
-      if (dims.length) {
-        rows.push(row('<span class="db-why-tiles" aria-hidden="true">' + dims.map(l => '<span class="riasec-tile" data-dim="' + l + '">' + l + '</span>').join('') + '</span>',
-          why.dims.length ? 'Uses what you enjoy most' : 'What you enjoy most', dbAnd(dims.map(dbPlain).map((t, i) => i ? dbLower(t) : t))));
-      }
-      if (why.world) rows.push(row('<span class="icon-tile" aria-hidden="true">' + icon('compass') + '</span>', 'In the world you picked', why.world));
-      if (why.subjects.length) rows.push(row('<span class="icon-tile" aria-hidden="true">' + icon('book-open') + '</span>', 'Built on subjects you picked', dbAnd(why.subjects)));
+      if (dims.length) rows.push(dbRow(dbTiles(dims), why.dims.length ? 'Uses what you enjoy most' : 'What you enjoy most', dbCap(dbAnd(dims.map(dbShort)))));
+      if (why.world) rows.push(dbRow(dbIcon('compass'), 'In the world you picked', why.world));
+      if (why.subjects.length) rows.push(dbRow(dbIcon('book-open'), 'Built on subjects you picked', dbAnd(why.subjects)));
       return '<section class="card db-pick' + (rows.length ? ' db-pick-split' : '') + '" aria-labelledby="db-pick-title">' +
         '<div class="db-pick-main">' +
           '<p class="db-pick-kicker">Your top match</p>' +
@@ -2918,74 +2904,84 @@
         '</section>';
     }
 
-    // One smaller card per close career: what the work is (which is what
-    // tells the close careers apart), and stickers for the interests of the
-    // student's that it uses. withUses is false when every card would show
-    // the same interests, since the same line on each card says nothing.
-    function dbAlt(c, withUses) {
+    // One smaller card per other match: what the work is (which is what
+    // tells close careers apart), and the student's interest stickers it
+    // uses, named in short words. withUses is false when every card would
+    // show the same interests, since the same line on each card says nothing.
+    // tied marks a career the quiz scored as close as the top match.
+    function dbAlt(c, withUses, tied) {
       const p = Math.round(c.match_pct || 0);
       const dims = withUses ? dbReasons(c).dims : [];
-      const uses = dims.length ? 'Uses your ' + dbLower(dbPlain(dims[0])) : '';
       return '<li><button class="db-alt" type="button" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
-        '<span class="db-alt-head"><span class="db-alt-title">' + esc(c.title) + '</span><span class="db-alt-pct">' + p + '%</span></span>' +
+        '<span class="db-alt-head"><span class="db-alt-title">' + esc(c.title) + '</span><span class="db-alt-score"><span class="db-alt-pct">' + p + '%</span>' +
+        (tied ? '<span class="db-alt-tie">Joint top</span>' : '') + '</span></span>' +
         (c.why ? '<span class="db-alt-line">' + esc(c.why) + '</span>' : '') +
-        (dims.length ? '<span class="db-alt-uses"><span class="db-why-tiles" aria-hidden="true">' +
-          dims.map(l => '<span class="riasec-tile" data-dim="' + l + '">' + l + '</span>').join('') +
-          '</span><span>' + esc(uses) + '</span></span>' : '') + '</button></li>';
+        (dims.length ? '<span class="db-alt-uses">' + dbTiles(dims) +
+          '<span><span class="visually-hidden">Uses your </span>' + esc(dbCap(dbAnd(dims.map(dbShort)))) + '</span></span>' : '') +
+        '</button></li>';
+    }
+
+    // Before the first quiz: what the quiz is, and what the student gets
+    // from it, laid out like the results it turns into. The three blank
+    // stickers are where their interest code will go.
+    function dbStart() {
+      const blank = '<span class="db-why-tiles" aria-hidden="true">' + '<span class="riasec-tile db-tile-blank">?</span>'.repeat(3) + '</span>';
+      return '<section class="card db-pick db-pick-split" aria-labelledby="db-quiz-title">' +
+        '<div class="db-pick-main">' +
+          '<p class="db-pick-kicker">Start here</p>' +
+          '<h2 class="db-pick-title" id="db-quiz-title">Take the career quiz</h2>' +
+          '<p class="db-pick-what">25 questions about what you enjoy, in about 10 minutes. There are no right or wrong answers, just pick what sounds like you.</p>' +
+          '<div class="cluster cluster-lg db-pick-actions"><button class="btn btn-primary" type="button" onclick="cqStart()">Start the quiz</button>' +
+          '<span class="small muted">You can pause and come back.</span></div>' +
+        '</div>' +
+        '<div class="db-why"><h3 class="db-why-title">What you\'ll get</h3><ul class="db-why-list">' +
+          dbRow(blank, 'The three kinds of work you enjoy most', 'Your interest code', true) +
+          dbRow(dbIcon('compass'), 'Ranked by your interests, subjects and stream', 'Careers that fit you', true) +
+          dbRow(dbIcon('graduation-cap'), 'Science, Commerce or Humanities, and why', 'Your stream for Class 11', true) +
+          dbRow(dbIcon('route'), 'What to study and which exams to take, year by year', 'A roadmap for the career you pick', true) +
+        '</ul></div></section>' +
+        '<p class="db-start-alt">Not ready yet? <button class="btn btn-ghost btn-sm" type="button" onclick="navTo(\'explorer\')">Browse every career</button></p>';
     }
 
     function syncDashboard() {
       const main = document.getElementById('db-main');
-      const stats = document.getElementById('db-stats');
-      const statsWrap = document.getElementById('db-stats-wrap');
       const title = document.getElementById('db-title');
       const sub = document.getElementById('db-sub');
       const ctaBtn = document.getElementById('db-cta-btn');
       const retakeBtn = document.getElementById('db-retake-btn');
-      const date = document.getElementById('db-date');
-      const head = title.closest('.page-head');
-      // Shown whenever there are results; with none, the hero card below is
-      // the quiz button.
-      if (retakeBtn) retakeBtn.hidden = true;
+      const codeEl = document.getElementById('db-code');
+      // One quiet line greets the student; the card below is the big thing.
+      title.textContent = dbHello(appResults);
+      if (codeEl) { codeEl.hidden = true; codeEl.innerHTML = ''; }
 
       // ── No results yet: the quiz is the one thing to do ─────────────
       if (!appResults) {
-        if (head) head.classList.remove('db-head');
-        if (date) { date.hidden = false; date.textContent = dbToday(); }
-        sub.hidden = false;
-        // The quiz card is the focus here, so the headline keeps the normal size.
-        title.className = '';
-        title.innerHTML = 'Let\'s find <span class="hl">your direction</span>.';
-        sub.textContent = 'Answer 25 quick questions about what you enjoy. We\'ll match you with careers and build a step-by-step roadmap for the one you pick.';
+        sub.hidden = true;
         ctaBtn.hidden = true;
-        ctaBtn.textContent = 'Start the quiz';
-        ctaBtn.onclick = cqStart;
-        main.innerHTML =
-          '<section class="card hero-card hero-card-media" aria-labelledby="db-quiz-title">' + illo('rocket', 'lg') +
-          '<div class="stack"><div class="stack-sm stack"><h2 class="card-title-lg" id="db-quiz-title">Take the career quiz</h2>' +
-          '<p class="card-sub">25 questions and about 6 minutes. There are no right or wrong answers, just pick what sounds like you.</p></div>' +
-          '<div class="cluster cluster-lg"><button class="btn btn-primary" onclick="cqStart()">Start the quiz</button><span class="small muted">You can pause and come back.</span></div></div></section>' +
-          '<div class="db-pair"><aside class="card-flat stack"><div class="cluster cluster-lg">' + illo('trophy', 'sm') +
-          '<div class="grow stack-xs stack"><h2 class="card-title">Weekly contests</h2><p class="card-sub">Five questions every Saturday about your future career. They unlock once you have a career match.</p></div></div></aside>' +
-          dbLinks() + '</div>';
-        if (statsWrap) statsWrap.hidden = false;
-        stats.innerHTML = ['Top match', 'Strong matches', 'Recommended stream', 'Questions answered'].map(l => dbStat({ locked: 1, label: l })).join('');
+        if (retakeBtn) retakeBtn.hidden = true;
+        main.innerHTML = dbStart();
         return;
       }
 
       // ── With results ───────────────────────────────────────────────
       // top is undefined when every career scored under RS_MIN_FIT.
-      if (statsWrap) statsWrap.hidden = true;
-      if (stats) stats.innerHTML = '';
       const d = appResults, list = d.top_careers || [], top = list[0];
-      // One quiet line names the student and their type; the career below
-      // is the big thing on the screen.
-      if (head) head.classList.add('db-head');
-      if (date) date.hidden = true;
-      title.className = 'db-hello';
-      title.textContent = dbHello(d);
-      sub.hidden = !!top;
-      sub.textContent = top ? '' : (d.stream_recommendation ? cqStreamLabel(d) + ' is your recommended stream for Class 11.' : '');
+      // The student's interest code under the greeting, strongest first,
+      // each letter named in plain words so it is never an unexplained acronym.
+      const code = String((d.riasec || {}).code || '').split('').filter(l => 'RIASEC'.includes(l));
+      if (codeEl && code.length) {
+        codeEl.innerHTML = '<span class="db-code-label">Your interest code</span><ul class="db-code-list">' +
+          code.map(l => '<li><span class="riasec-tile" data-dim="' + l + '" aria-hidden="true">' + l + '</span>' + esc(dbPlain(l)) + '</li>').join('') + '</ul>';
+        codeEl.classList.toggle('db-code-stick', !dbCodeStuck);
+        dbCodeStuck = true;
+        codeEl.hidden = false;
+      }
+      // What the type means, in the quiz's own words; with no strong match,
+      // the stream is the one result left to state.
+      const desc = top ? d.personality_desc
+        : (d.stream_recommendation ? cqStreamLabel(d) + ' is your recommended stream for Class 11.' : '');
+      sub.textContent = desc || '';
+      sub.hidden = !desc;
       ctaBtn.hidden = !!top;
       ctaBtn.textContent = 'Explore careers';
       ctaBtn.onclick = () => navTo('explorer');
@@ -2998,19 +2994,21 @@
 
       if (top) {
         html += dbPick(top);
-        // Careers the quiz can't tell apart from the top one are all shown;
-        // with a clear leader, the next two.
+        // Every other match (the shortlist is at most five), in one row.
+        // Careers the quiz can't tell apart from the top one (rsJointTop)
+        // carry a "Joint top" tag; the heading says so when all of them are.
         const joint = Math.max(1, rsJointTop(list));
-        const alts = list.slice(1, joint >= 2 ? joint : 3);
-        const more = list.length - 1 - alts.length;
+        const alts = list.slice(1);
         const uses = alts.map(c => dbReasons(c).dims.join(''));
         const sameUses = alts.length > 1 && uses.every(u => u === uses[0]);
         if (alts.length) {
+          const allTied = joint >= list.length, noneTied = joint < 2;
           html += '<section class="db-alts" aria-labelledby="db-alts-title"><div class="db-alts-head">' +
-            '<h2 class="db-alts-title" id="db-alts-title">' + (joint >= 2 ? 'Just as close for you' : 'Also a good fit for you') + '</h2>' +
-            '<button class="btn btn-ghost btn-sm" type="button" onclick="navTo(\'results\')">' +
-            (more > 0 ? 'See all ' + list.length + ' matches' : 'Compare them') + '</button></div>' +
-            '<ul class="db-alt-list" style="--cols:' + Math.max(2, Math.min(alts.length, 4)) + '">' + alts.map(c => dbAlt(c, !sameUses)).join('') + '</ul></section>';
+            '<h2 class="db-alts-title" id="db-alts-title">' +
+            (allTied ? 'Just as close for you' : noneTied ? 'Also a good fit for you' : 'Your other matches') + '</h2>' +
+            '<button class="btn btn-ghost btn-sm" type="button" onclick="navTo(\'results\')">Compare all ' + list.length + '</button></div>' +
+            '<ul class="db-alt-list" style="--cols:' + Math.max(2, Math.min(alts.length, 4)) + '">' +
+            alts.map((c, i) => dbAlt(c, !sameUses, !allTied && i + 1 < joint)).join('') + '</ul></section>';
         }
       } else {
         html += '<section class="card-flat">' + '<div class="empty">' + illo('magnifier', 'lg') + '<h2 class="empty-title">No strong match yet</h2>' +
@@ -3018,8 +3016,7 @@
           '<div class="cluster"><button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore careers</button></div></div></section>';
       }
       if (d.stream_recommendation && top) {
-        html += '<section class="db-stream" aria-label="Recommended stream">' +
-          '<span class="icon-tile" aria-hidden="true">' + icon('graduation-cap') + '</span>' +
+        html += '<section class="db-stream" aria-label="Recommended stream">' + dbIcon('graduation-cap') +
           '<p class="db-stream-text">Your stream for Class 11: <b>' + esc(cqStreamLabel(d)) + '</b></p>' +
           '<button class="btn btn-ghost btn-sm" type="button" onclick="exploreStream(appResults && appResults.stream_recommendation)">See careers in this stream</button></section>';
       }
@@ -3045,7 +3042,7 @@
         if (bar) bar.innerHTML = '';
         if (streamVal) streamVal.textContent = '';
         if (list) list.innerHTML = empty('rocket', 'Take the quiz to see your matches',
-          'Answer 25 questions about what you enjoy and we\'ll rank every career for you. It takes about 6 minutes.',
+          'Answer 25 questions about what you enjoy and we\'ll rank every career for you. It takes about 10 minutes.',
           '<button class="btn btn-primary" onclick="cqStart()">Start the career quiz</button>');
         return;
       }
