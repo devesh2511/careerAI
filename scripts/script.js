@@ -1018,6 +1018,10 @@
         if (av) av.textContent = m.student.full_name.charAt(0).toUpperCase();
         const hi = document.getElementById('chat-hello-name');
         if (hi) hi.textContent = ' ' + m.student.full_name.split(' ')[0];
+        // Home greets the student by name; it rendered before /me answered.
+        dbFirstName = String(m.student.full_name || '').trim().split(/\s+/)[0] || '';
+        const dbTitle = document.getElementById('db-title');
+        if (appResults && dbFirstName && dbTitle && dbTitle.classList.contains('db-hello')) dbTitle.textContent = dbHello(appResults);
         const cls = document.getElementById('user-class');
         if (cls) { cls.textContent = profileSummary(m.student); cls.title = cls.textContent; }
       }, () => { });
@@ -2820,21 +2824,115 @@
         '</ul></section>';
     }
 
-    // One row of the best-fit list. The whole row opens the career; titles
-    // carry & and /, so they travel in data-career, not in the onclick.
-    function dbFitRow(c) {
-      const p = Math.round(c.match_pct || 0);
-      return '<li><button class="db-fit" type="button" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
-        '<span class="db-fit-main"><span class="db-fit-title">' + esc(c.title) + '</span>' +
-        (c.why ? '<span class="db-fit-why">' + esc(c.why) + '</span>' : '') + '</span>' +
-        '<span class="db-fit-score"><span class="db-fit-pct">' + p + '<span class="db-fit-unit">%</span></span>' +
-        '<span class="badge ' + fitClass(p) + '">' + esc(fitLabel(p).split(',')[0]) + '</span></span>' +
-        '<progress class="progress progress-ink db-fit-meter" max="100" value="' + p + '" aria-hidden="true"></progress>' +
-        '</button></li>';
+    // ── Home with results: one career made for this student ─────────
+    // The top match leads, with the reasons it fits drawn from the
+    // student's own answers. The careers the quiz scored just as close
+    // (rsJointTop) follow as smaller cards, or the next two when one career
+    // is clearly ahead; every match is one click away in Career Matches.
+
+    // Filled in by syncUser() once GET /me answers; Home renders without it first.
+    let dbFirstName = '';
+
+    // "The Applied Investigator" → "an Applied Investigator".
+    function dbTypePhrase(type) {
+      const t = String(type || '').replace(/^the\s+/i, '').trim();
+      return t ? (/^[aeiou]/i.test(t) ? 'an ' : 'a ') + t : '';
     }
 
-    // The bracket is drawn in once per page load, not on every return to Home.
-    let dbPenDrawn = false;
+    // "Devesh, you're an Applied Investigator." The name is left out until known.
+    function dbHello(d) {
+      const type = dbTypePhrase(d.personality_type);
+      return type
+        ? (dbFirstName ? dbFirstName + ', you\'re ' : 'You\'re ') + type + '.'
+        : (dbFirstName ? dbFirstName + ', your' : 'Your') + ' results are in.';
+    }
+
+    // Why a career fits, from what this student actually answered. Every
+    // part is an overlap between the student and the career; a part with
+    // no overlap (or no data, as in a run saved before the world and subject
+    // questions) is left out rather than guessed.
+    function dbReasons(c) {
+      const r = (appResults && appResults.riasec) || {};
+      const cat = (typeof RIASEC_CAREERS !== 'undefined' ? RIASEC_CAREERS : []).find(x => x.title === c.title);
+      const out = { dims: [], world: '', subjects: [] };
+      if (!cat) return out;
+      const mine = String(r.code || '').split('').filter(l => 'RIASEC'.includes(l));
+      if (cat.riasec && mine.length) {
+        out.dims = Object.keys(cat.riasec).filter(l => mine.includes(l))
+          .sort((a, b) => (cat.riasec[b] || 0) - (cat.riasec[a] || 0))
+          .filter(l => (cat.riasec[l] || 0) >= 50).slice(0, 2);
+      }
+      const worlds = Array.isArray(r.domains) ? r.domains.map(d => d.key)
+        : r.domainScores ? Object.keys(r.domainScores).filter(k => r.domainScores[k] >= 0.5) : [];
+      const w = (cat.domains || []).find(k => worlds.includes(k));
+      if (w && typeof RS_DOMAINS !== 'undefined' && RS_DOMAINS[w]) out.world = RS_DOMAINS[w].label;
+      const s = r.subjectScores;
+      if (s && typeof RS_SUBJECTS !== 'undefined') {
+        const best = Math.max.apply(null, Object.keys(s).map(k => s[k] || 0));
+        if (best > 0) {
+          out.subjects = (cat.subjects || []).filter(k => (s[k] || 0) >= best * 0.5 && RS_SUBJECTS[k])
+            .slice(0, 2).map(k => RS_SUBJECTS[k].label);
+        }
+      }
+      return out;
+    }
+
+    function dbPlain(l) {
+      const r = (appResults && appResults.riasec) || {};
+      const x = (r.ranked || []).find(z => z.dim === l) || {};
+      return x.plain || (typeof RS_DIM_PLAIN !== 'undefined' && RS_DIM_PLAIN[l]) || x.name || l;
+    }
+    const dbLower = t => t.charAt(0).toLowerCase() + t.slice(1);
+    const dbAnd = list => list.length > 1 ? list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1] : list[0] || '';
+
+    // The featured career: big title, what the work is, and why it is this
+    // student's, each reason next to the thing in their answers it came from.
+    function dbPick(c) {
+      const p = Math.round(c.match_pct || 0);
+      const why = dbReasons(c);
+      const code = String((appResults.riasec || {}).code || '').split('').filter(l => 'RIASEC'.includes(l));
+      // With no overlap to show, the interest row falls back to the
+      // student's own strongest interests, which are true whatever the career.
+      const dims = why.dims.length ? why.dims : code.slice(0, 2);
+      const row = (mark, label, text) => '<li class="db-why-row">' + mark +
+        '<span class="db-why-text"><span class="db-why-label">' + label + '</span><span>' + esc(text) + '</span></span></li>';
+      const rows = [];
+      if (dims.length) {
+        rows.push(row('<span class="db-why-tiles" aria-hidden="true">' + dims.map(l => '<span class="riasec-tile" data-dim="' + l + '">' + l + '</span>').join('') + '</span>',
+          why.dims.length ? 'Uses what you enjoy most' : 'What you enjoy most', dbAnd(dims.map(dbPlain).map((t, i) => i ? dbLower(t) : t))));
+      }
+      if (why.world) rows.push(row('<span class="icon-tile" aria-hidden="true">' + icon('compass') + '</span>', 'In the world you picked', why.world));
+      if (why.subjects.length) rows.push(row('<span class="icon-tile" aria-hidden="true">' + icon('book-open') + '</span>', 'Built on subjects you picked', dbAnd(why.subjects)));
+      return '<section class="card db-pick' + (rows.length ? ' db-pick-split' : '') + '" aria-labelledby="db-pick-title">' +
+        '<div class="db-pick-main">' +
+          '<p class="db-pick-kicker">Your top match</p>' +
+          '<h2 class="db-pick-title" id="db-pick-title">' + esc(c.title) + '</h2>' +
+          (c.why ? '<p class="db-pick-what">' + esc(c.why) + '</p>' : '') +
+          '<p class="db-pick-fit"><span class="db-pick-pct">' + p + '%</span> ' + esc(fitLabel(p).split(',')[0].toLowerCase()) + ' for you</p>' +
+          '<div class="cluster cluster-lg db-pick-actions">' +
+            '<button class="btn btn-primary" type="button" data-career="' + esc(c.title) + '" onclick="rmRemember(this.dataset.career);navTo(\'roadmap\')">' + icon('route') + 'See its roadmap</button>' +
+            '<button class="btn btn-ghost" type="button" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">What the work is like</button>' +
+          '</div>' +
+        '</div>' +
+        (rows.length ? '<div class="db-why"><h3 class="db-why-title">Why it\'s you</h3><ul class="db-why-list">' + rows.join('') + '</ul></div>' : '') +
+        '</section>';
+    }
+
+    // One smaller card per close career: what the work is (which is what
+    // tells the close careers apart), and stickers for the interests of the
+    // student's that it uses. withUses is false when every card would show
+    // the same interests, since the same line on each card says nothing.
+    function dbAlt(c, withUses) {
+      const p = Math.round(c.match_pct || 0);
+      const dims = withUses ? dbReasons(c).dims : [];
+      const uses = dims.length ? 'Uses your ' + dbLower(dbPlain(dims[0])) : '';
+      return '<li><button class="db-alt" type="button" data-career="' + esc(c.title) + '" onclick="cdOpen(this.dataset.career)">' +
+        '<span class="db-alt-head"><span class="db-alt-title">' + esc(c.title) + '</span><span class="db-alt-pct">' + p + '%</span></span>' +
+        (c.why ? '<span class="db-alt-line">' + esc(c.why) + '</span>' : '') +
+        (dims.length ? '<span class="db-alt-uses"><span class="db-why-tiles" aria-hidden="true">' +
+          dims.map(l => '<span class="riasec-tile" data-dim="' + l + '">' + l + '</span>').join('') +
+          '</span><span>' + esc(uses) + '</span></span>' : '') + '</button></li>';
+    }
 
     function syncDashboard() {
       const main = document.getElementById('db-main');
@@ -2845,13 +2943,16 @@
       const ctaBtn = document.getElementById('db-cta-btn');
       const retakeBtn = document.getElementById('db-retake-btn');
       const date = document.getElementById('db-date');
-      if (date) date.textContent = dbToday();
+      const head = title.closest('.page-head');
       // Shown whenever there are results; with none, the hero card below is
       // the quiz button.
       if (retakeBtn) retakeBtn.hidden = true;
 
       // ── No results yet: the quiz is the one thing to do ─────────────
       if (!appResults) {
+        if (head) head.classList.remove('db-head');
+        if (date) { date.hidden = false; date.textContent = dbToday(); }
+        sub.hidden = false;
         // The quiz card is the focus here, so the headline keeps the normal size.
         title.className = '';
         title.innerHTML = 'Let\'s find <span class="hl">your direction</span>.';
@@ -2874,87 +2975,54 @@
 
       // ── With results ───────────────────────────────────────────────
       // top is undefined when every career scored under RS_MIN_FIT.
-      // The stat tiles only repeated what the cards below already say.
       if (statsWrap) statsWrap.hidden = true;
       if (stats) stats.innerHTML = '';
-      const d = appResults, list = d.top_careers || [], top = list[0], r = d.riasec || {};
-      // The headline is the one big thing on Home, so it states the result:
-      // how many careers are tied at the top, or the one that is clearly ahead.
-      const joint = top ? Math.max(1, rsJointTop(list)) : 0;
-      const countWord = n => ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][n] || String(n);
-      title.className = top ? 'db-hero-title' : '';
-      title.textContent = !top ? 'Your results are in.'
-        : joint >= 2 ? countWord(joint) + ' careers fit you almost equally.'
-        : top.title + ' fits you best.';
-      // The personality type heads the interest-code card; with no code, it leads the subtitle.
-      const hasCode = /[RIASEC]/.test(r.code || '');
-      sub.textContent = top
-        ? (!hasCode && d.personality_type ? d.personality_type + '. ' : '') +
-          (joint >= 2 ? 'Explore each one, then pick a career to build your roadmap.' : 'Compare it with your other matches, then pick one to build your roadmap.')
-        : (d.stream_recommendation ? cqStreamLabel(d) + ' is your recommended stream for Class 11.' : '');
-      ctaBtn.hidden = false;
-      ctaBtn.innerHTML = top ? icon('route') + 'Open my roadmap' : 'Explore careers';
-      ctaBtn.onclick = () => navTo(top ? 'roadmap' : 'explorer');
+      const d = appResults, list = d.top_careers || [], top = list[0];
+      // One quiet line names the student and their type; the career below
+      // is the big thing on the screen.
+      if (head) head.classList.add('db-head');
+      if (date) date.hidden = true;
+      title.className = 'db-hello';
+      title.textContent = dbHello(d);
+      sub.hidden = !!top;
+      sub.textContent = top ? '' : (d.stream_recommendation ? cqStreamLabel(d) + ' is your recommended stream for Class 11.' : '');
+      ctaBtn.hidden = !!top;
+      ctaBtn.textContent = 'Explore careers';
+      ctaBtn.onclick = () => navTo('explorer');
       if (retakeBtn) retakeBtn.hidden = false;
 
       let html = '';
       if (!rsIsCurrentResult(d)) {
         html += '<div class="alert alert-warn">' + cqRetakeNotice() + '</div>';
       }
-      html += '<div class="grid-main-side"><div class="stack-lg stack">';
 
-      // Every match in one list. Careers within RS_TIE_POINTS of #1 are joint
-      // top matches: the quiz can't separate them, so a margin bracket groups
-      // them and none is crowned. One career clearly ahead gets the bracket alone.
       if (top) {
-        // The headline already says how many are tied; the note says what to do about it.
-        const lead = list[1] ? Math.round(top.match_pct || 0) - Math.round(list[1].match_pct || 0) : 0;
-        const note = joint >= 2
-          ? 'The quiz can\'t separate these, so explore each before you choose.'
-          : (lead ? lead + ' points ahead of your next match' : 'Your best fit');
-        const rest = list.length > joint
-          ? '<ul class="db-fit-list db-fit-rest">' + list.slice(joint).map(dbFitRow).join('') + '</ul>'
-          : '';
-        html += '<section class="card db-fits" aria-labelledby="db-fits-title">' +
-          '<h2 class="visually-hidden" id="db-fits-title">Your best-fit careers</h2>' +
-          '<div class="db-fit-group' + (dbPenDrawn ? ' db-fit-still' : '') + '"><p class="db-fit-note">' + esc(note) + '</p>' +
-          '<ul class="db-fit-list">' + list.slice(0, joint).map(dbFitRow).join('') + '</ul></div>' +
-          rest + '<div class="db-fits-foot"><button class="btn btn-ghost" type="button" onclick="navTo(\'results\')">Compare them in Career Matches</button></div></section>';
-        dbPenDrawn = true;
+        html += dbPick(top);
+        // Careers the quiz can't tell apart from the top one are all shown;
+        // with a clear leader, the next two.
+        const joint = Math.max(1, rsJointTop(list));
+        const alts = list.slice(1, joint >= 2 ? joint : 3);
+        const more = list.length - 1 - alts.length;
+        const uses = alts.map(c => dbReasons(c).dims.join(''));
+        const sameUses = alts.length > 1 && uses.every(u => u === uses[0]);
+        if (alts.length) {
+          html += '<section class="db-alts" aria-labelledby="db-alts-title"><div class="db-alts-head">' +
+            '<h2 class="db-alts-title" id="db-alts-title">' + (joint >= 2 ? 'Just as close for you' : 'Also a good fit for you') + '</h2>' +
+            '<button class="btn btn-ghost btn-sm" type="button" onclick="navTo(\'results\')">' +
+            (more > 0 ? 'See all ' + list.length + ' matches' : 'Compare them') + '</button></div>' +
+            '<ul class="db-alt-list" style="--cols:' + Math.max(2, Math.min(alts.length, 4)) + '">' + alts.map(c => dbAlt(c, !sameUses)).join('') + '</ul></section>';
+        }
       } else {
         html += '<section class="card-flat">' + '<div class="empty">' + illo('magnifier', 'lg') + '<h2 class="empty-title">No strong match yet</h2>' +
           '<p class="empty-text">No career scored above ' + RS_MIN_FIT + '% from your answers. Browse every career and see how each one fits you.</p>' +
           '<div class="cluster"><button class="btn btn-primary" onclick="navTo(\'explorer\')">Explore careers</button></div></div></section>';
       }
-      if (d.stream_recommendation) {
-        html += '<section class="card-flat db-stream" aria-labelledby="db-stream-title">' + illo('map-pin', 'sm') +
-          '<div class="stack-sm stack"><p class="small muted">Recommended stream for Class 11</p>' +
-          '<h2 class="db-stream-title" id="db-stream-title">' + esc(cqStreamLabel(d)) + '</h2>' +
-          (d.stream_reason ? '<p class="db-stream-reason">' + esc(d.stream_reason) + '</p>' : '') +
-          '<div><button class="btn btn-secondary btn-sm" onclick="exploreStream(appResults && appResults.stream_recommendation)">See careers in this stream</button></div></div></section>';
+      if (d.stream_recommendation && top) {
+        html += '<section class="db-stream" aria-label="Recommended stream">' +
+          '<span class="icon-tile" aria-hidden="true">' + icon('graduation-cap') + '</span>' +
+          '<p class="db-stream-text">Your stream for Class 11: <b>' + esc(cqStreamLabel(d)) + '</b></p>' +
+          '<button class="btn btn-ghost btn-sm" type="button" onclick="exploreStream(appResults && appResults.stream_recommendation)">See careers in this stream</button></section>';
       }
-      html += '</div><aside class="stack db-side">';
-
-      // The interest code, each letter in plain words (names like
-      // "Investigative" are only the fallback).
-      const code = (r.code || '').split('').filter(l => 'RIASEC'.includes(l));
-      if (code.length) {
-        const plain = l => {
-          const x = (r.ranked || []).find(z => z.dim === l) || {};
-          return x.plain || (typeof RS_DIM_PLAIN !== 'undefined' && RS_DIM_PLAIN[l]) || x.name || l;
-        };
-        html += '<section class="card-flat db-code" aria-labelledby="db-code-title">' +
-          '<div class="stack-xs stack"><h2 class="db-side-title" id="db-code-title">' + esc(d.personality_type || 'Your interest code') + '</h2>' +
-          '<p class="card-sub">What you enjoy most, strongest first</p></div>' +
-          '<ul class="db-code-list">' + code.map(l => '<li><span class="riasec-tile" data-dim="' + l + '" aria-hidden="true">' + l + '</span><span>' + esc(plain(l)) + '</span></li>').join('') +
-          '</ul></section>';
-      }
-      // A light card here: on Home the contest supports the matches, it doesn't lead.
-      html += '<section class="card-flat db-contest" aria-labelledby="db-contest-title">' + illo('trophy', 'sm') +
-        '<div class="grow stack-xs stack"><h2 class="db-side-title" id="db-contest-title">Weekly contests</h2><p class="card-sub">Five questions every Saturday about your career. Climb the leaderboard and keep your streak.</p>' +
-        '<div><button class="btn btn-secondary btn-sm" onclick="navTo(\'contests\')">Go to contests</button></div></div></section>';
-      html += dbLinks();
-      html += '</aside></div>';
       main.innerHTML = html;
     }
 
